@@ -1,0 +1,29 @@
+name: Validate repository
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required files
+        shell: bash
+        run: |
+          test -f README.md
+          test -f AI.md
+          test -f AGENTS.md
+          test -f CLAUDE.md
+          test -f CONTRIBUTING.md
+          test -f docs/security.md
+          test -f docs/source-index.md
+      - name: Scan for obvious secret markers
+        shell: bash
+        run: |
+          if grep -RInE 'AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----|api[_-]?key[[:space:]]*[:=]' . --exclude-dir=.git; then
+            echo 'Potential secret marker found. Review before merge.'
+            exit 1
+          fi
