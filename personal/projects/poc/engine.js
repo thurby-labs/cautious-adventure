@@ -2,17 +2,85 @@
    Units are yards. x runs 0..30 sideline to sideline, y is yards downfield from the line of scrimmage. */
 const DT = 0.05, TMAX = 4.0, FIELD_W = 30, MID = 15;
 
+/* Plays transcribed from the coach's diagrams. A star marks the designed target or ball carrier.
+   motion: pre-snap path ending at the alignment. dashed: fake or ball-carrier path. handoff.at: route point where the ball is handed or pitched. */
+const QB = (x, y, route, routeName, extra = {}) => ({ id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [x, y], route, routeName, delay: 0.15, speed: 3.4, qb: true, ...extra });
 const PLAYS = [{
   id: 'split-t-z-fake-left-center-out',
   name: 'Split T, Z Fake Left, Center Out',
-  formation: 'Split T',
-  concept: 'Play-action bootleg right',
+  type: 'pass', concept: 'Play-action bootleg right',
   players: [
     { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [5, 0], route: [[5, 14], [3.5, 19]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
     { id: 'C', label: 'C', name: 'Center', color: 'ink', shape: 'star', start: [15, 0], route: [[15, 4], [19.5, 4]], routeName: 'Out (4)', delay: 0.35, speed: 5.0, eligible: true },
-    { id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [15, -2.5], route: [[18.5, -4.5]], routeName: 'Bootleg right', delay: 0.15, speed: 3.4, qb: true },
+    QB(15, -2.5, [[18.5, -4.5]], 'Bootleg right'),
     { id: 'Z', label: 'Z', name: 'Back', color: 'green', start: [15, -5.5], route: [[14.2, -3.4, 0.35], [13.2, -0.5], [12.5, 16]], routeName: 'Fake left, seam', delay: 0.1, speed: 5.2, eligible: true },
     { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [24, 0], route: [[24, 18]], routeName: 'Go', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'y-shallow-roll-left',
+  name: 'Y Shallow Cross, Roll Left',
+  type: 'pass', concept: 'Rollout left, shallow cross',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [4.3, 0], route: [[4.3, 9], [3, 17]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 17]], routeName: 'Seam', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -4, [[9, -4.6]], 'Roll left'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', start: [19, -4], route: [[19.5, -0.5], [22, 2.3], [28, 3.8]], routeName: 'Arrow right', delay: 0.1, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', shape: 'star', start: [27.5, 0], route: [[23.5, 2.5], [16, 4.5], [8, 5]], routeName: 'Shallow cross', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'z-motion-left-flat',
+  name: 'Z Motion Left, Flat',
+  type: 'pass', concept: 'Motion to the flat',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [4.9, 0], route: [[4.9, 9], [2.7, 17]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 7], [16.8, 5.5]], routeName: 'Stop & out', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -4.4, [[15, -5.2]], 'Drop'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', shape: 'star', motion: [[20.3, -2.3]], start: [11, -2], route: [[11, 0.5], [10, 2.5], [7.5, 3.5]], routeName: 'Flat left', delay: 0, speed: 5.6, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [25.6, 0], route: [[25.6, 9], [21.5, 15]], routeName: 'Post', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'y-reverse-z-fake-right',
+  name: 'Y Reverse, Z Fake Right',
+  type: 'run', concept: 'Reverse run', handoff: { to: 'Y', at: 0 },
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [3.1, 0], route: [[3.1, 9], [1.8, 17]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[20, 5.6], [21.5, 8]], routeName: 'Release right', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -2.4, [[15.3, -3.2]], 'Pitch'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', dashed: true, start: [10.6, -5.2], route: [[19.3, -1.6], [24, 0.5]], routeName: 'Fake sweep right', delay: 0, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', shape: 'star', start: [19.8, -5.2], route: [[15.7, -4.6], [12.5, -2.2], [11.2, 1.5], [11, 6]], routeName: 'Reverse left', delay: 0, speed: 5.4, eligible: true }
+  ]
+}, {
+  id: 'x-corner-backs-release',
+  name: 'X Corner, Backs Release',
+  type: 'pass', concept: 'Two-back flood left',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', shape: 'star', start: [6.6, 0], route: [[6.6, 5.8], [3.8, 9.5]], routeName: 'Corner (6)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 6], [11.5, 6]], routeName: 'Out left (6)', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -2.5, [[15, -3.5]], 'Drop'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', start: [10.4, -5.2], route: [[10.5, 0.5], [9, 2.5], [5, 3]], routeName: 'Flat left', delay: 0.1, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [19.8, -5.2], route: [[19.8, 4.5], [20.5, 7.5], [23, 10]], routeName: 'Corner right', delay: 0.1, speed: 5.4, eligible: true }
+  ]
+}, {
+  id: 'x-post-center-shallow',
+  name: 'X Post, Center Shallow',
+  type: 'pass', concept: 'Post over shallow',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', shape: 'star', start: [4.3, 0], route: [[4.3, 5.8], [12.4, 10.5]], routeName: 'Post (6)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 2], [13, 3.5], [7.5, 3.8]], routeName: 'Shallow left', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -4.4, [[15, -5.2]], 'Drop'),
+    { id: 'Z', label: 'Z', name: 'Slot', color: 'green', start: [20.8, -1.5], route: [[20.8, 5.6], [28, 5.6]], routeName: 'Out (5)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [25.2, 0], route: [[25.2, 9], [23.2, 7.5]], routeName: 'Curl (9)', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'z-toss-sweep-right',
+  name: 'Z Toss Sweep Right',
+  type: 'run', concept: 'Toss sweep', handoff: { to: 'Z', at: 0 },
+  players: [
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [10.4, 0], route: [[19, 5.3]], routeName: 'Release right', delay: 0.35, speed: 5.0, eligible: true },
+    QB(10.3, -2.8, [[10.8, -3.6]], 'Toss right'),
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [16.2, 0], route: [[13.5, -0.8], [9, -0.6], [4, 3.7]], routeName: 'Jet left (decoy)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', shape: 'star', dashed: true, start: [10.3, -5.6], route: [[15.4, -5.4], [21, -3.5], [23.5, 0], [24.5, 3.5], [25, 8]], routeName: 'Toss sweep right', delay: 0, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [21.8, 0], route: [[22, 8], [23.3, 17]], routeName: 'Go', delay: 0, speed: 5.6, eligible: true }
   ]
 }];
 
@@ -31,7 +99,7 @@ const COVERAGES = {
     weakness: 'Covering more than one deep route.',
     beat: 'Buy time and send two or more deep routes so the lone safety has to pick one.',
     blitz: 'QB spots the blitzer before the snap.',
-    calls: '#13 Three Verts, #21 Deep Cross, #23 Post-Wheel'
+    concepts: ['Three receivers vertical to outnumber the lone safety', 'Two deep routes with a crosser underneath', 'A post with a wheel up the sideline behind it']
   },
   c2: {
     id: 'c2', name: 'Cover 2', short: 'C2', blitzer: 'LB',
@@ -47,7 +115,7 @@ const COVERAGES = {
     weakness: 'The middle of the field, especially when the LB blitzes.',
     beat: 'Throw short into the holes between the corners and the LB, then run after the catch.',
     blitz: 'QB spots the blitzer before the snap.',
-    calls: '#11 Dragon-Smash, #12 All Hitches, #21 Deep Cross'
+    concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Every receiver runs a 5-yard hitch', 'Flood one side with a go, a crosser and a flat']
   },
   c3: {
     id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'FS',
@@ -63,7 +131,7 @@ const COVERAGES = {
     weakness: 'Large holes in the short zones, especially the flats.',
     beat: 'Throw short to players who can make a defender miss.',
     blitz: 'QB spots the blitzer before the snap.',
-    calls: '#11 Dragon-Smash, #12 All Hitches, #21 Deep Cross'
+    concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Quick hitches into the flats', 'Flood one side with a go, a crosser and a flat']
   },
   man: {
     id: 'man', name: 'Man to Man', short: 'Man', blitzer: 'FS',
@@ -79,7 +147,7 @@ const COVERAGES = {
     weakness: 'High risk. One missed step can be a touchdown.',
     beat: 'Crossing and rub routes free a receiver in space.',
     blitz: 'The fifth defender either blitzes or plays deep safety.',
-    calls: '#11 Dragon-Smash, #22 Mesh, #23 Post-Wheel'
+    concepts: ['Slant-flat with the two routes crossing close (a rub)', 'Two shallow crossers passing close to each other', 'A post with a wheel up the sideline behind it']
   }
 };
 const COV_ORDER = ['c1', 'c2', 'c3', 'man'];
@@ -189,7 +257,13 @@ function buildDefense(covId, play, opts = {}) {
 
 function simulate(play, defense, opts = {}) {
   const paths = {};
-  play.players.forEach(p => { paths[p.id] = buildPath(p); });
+  const ho = play.handoff;
+  play.players.forEach(p => {
+    // the ball carrier keeps running upfield after the drawn path ends
+    const pl = ho && ho.to === p.id ? { ...p, route: [...p.route, [p.route[p.route.length - 1][0], 40]] } : p;
+    paths[p.id] = buildPath(pl);
+  });
+  const ballRun = ho ? { id: ho.to, th: paths[ho.to].ptTimes[ho.at + 1], tackle: null } : null;
   const elig = play.players.filter(p => p.eligible);
   const qb = play.players.find(p => p.qb);
   const defs = defense.defenders.map(d => ({ ...d, p: [...d.pos], cushion: null, rubbed: new Set(), rubLag: 0 }));
@@ -200,11 +274,19 @@ function simulate(play, defense, opts = {}) {
     const t = +(k * DT).toFixed(3);
     const off = {};
     play.players.forEach(p => { off[p.id] = posAt(paths[p.id], t); });
+    if (ballRun && ballRun.tackle) off[ballRun.id] = [...ballRun.tackle.pos];
+    const carrier = ballRun && t >= ballRun.th ? off[ballRun.id] : null;
     if (k > 0) {
       for (const d of defs) {
         let target = d.p, speed = 0;
-        if (d.role === 'rush') { target = off[qb.id]; speed = 5.4; }
+        const sees = carrier && t >= ballRun.th + (d.role === 'man' ? 0.5 : d.deep ? 0.35 : 0.25);
+        if (d.role === 'rush') { target = carrier || off[qb.id]; speed = 5.4; }
         else if (t < 0.25) { /* reading the snap */ }
+        else if (sees) {
+          // run recognized: take a pursuit angle on the ball carrier
+          const ahead = ballRun.tackle ? carrier : posAt(paths[ballRun.id], t + 0.35);
+          target = ahead; speed = d.deep ? 5.0 : 5.3;
+        }
         else if (d.role === 'man') {
           const rp = paths[d.man];
           for (const o of play.players) {
@@ -240,12 +322,16 @@ function simulate(play, defense, opts = {}) {
         if (m > 0) d.p = m <= step ? [...target] : [d.p[0] + dx / m * step, d.p[1] + dy / m * step];
       }
     }
+    if (carrier && !ballRun.tackle) {
+      const i = defs.findIndex(d => dist(d.p, carrier) < 1.0);
+      if (i >= 0) ballRun.tackle = { t, pos: [...carrier], by: defs[i].label };
+    }
     frames.push({ t, off, def: defs.map(d => [...d.p]) });
     const rusher = defs.find(d => d.role === 'rush');
-    if (rusher && pressure === null && dist(rusher.p, off[qb.id]) < 1.2) pressure = t;
+    if (!ballRun && rusher && pressure === null && dist(rusher.p, off[qb.id]) < 1.2) pressure = t;
   }
   const throwBy = opts.throwBy || 3.0;
-  return { frames, pressure, deadline: pressure !== null ? Math.min(throwBy, pressure) : throwBy, roles: defs.map(d => d.role), paths };
+  return { frames, pressure, deadline: pressure !== null ? Math.min(throwBy, pressure) : throwBy, roles: defs.map(d => d.role), paths, ballRun };
 }
 
 /* How open is a receiver at one moment: space to the nearest cover defender, minus anyone sitting in the throwing lane. */
@@ -272,6 +358,17 @@ function throwValue(eff, y) {
 }
 
 function evaluate(play, sim) {
+  if (sim.ballRun) {
+    const br = sim.ballRun, last = sim.frames[sim.frames.length - 1];
+    const end = br.tackle ? br.tackle.pos : last.off[br.id];
+    const yards = end[1];
+    const score = clamp(yards / 8, -0.2, 1.4);
+    return {
+      run: { id: br.id, yards, th: br.th, t: br.tackle ? br.tackle.t : null, by: br.tackle ? br.tackle.by : null, pos: end },
+      receivers: { [br.id]: { best: { v: score, t: br.th, eff: yards, pos: end }, series: [] } },
+      order: [br.id], score, grade: gradeFor(score)
+    };
+  }
   const qb = play.players.find(p => p.qb);
   const out = {};
   play.players.filter(p => p.eligible).forEach(r => {
@@ -334,24 +431,56 @@ function routeVariants(pl) {
     (straight ? dirs.slice(0, 1) : dirs).forEach(([i, o, tag]) => {
       const pts = R.pts(i, o).map(([dx, y]) => [clamp(bx + dx, 1, FIELD_W - 1), y]);
       const name = R.name + (straight ? '' : tag);
-      if (name === pl.routeName) return;
+      if (name === pl.routeName || R.name.split(' (')[0] === pl.routeName.split(' (')[0]) return;
       list.push({ key: R.key + tag, name, fam: R.fam, route: [...lead, ...pts] });
     });
   }
   return list;
 }
 
+function runLanes(pl, at) {
+  const lead = pl.route.slice(0, at + 1);
+  const [hx, hy] = lead[lead.length - 1];
+  const cx = x => clamp(x, 1.5, 28.5);
+  return [
+    { name: 'Sweep right', route: [[cx(hx + 6), Math.min(hy + 2, -1)], [27.5, 2], [27.5, 12]], dir: 1 },
+    { name: 'Sweep left', route: [[cx(hx - 6), Math.min(hy + 2, -1)], [2.5, 2], [2.5, 12]], dir: -1 },
+    { name: 'Off-tackle right', route: [[cx(hx + 3), 0.5], [cx(hx + 4.5), 12]], dir: 1 },
+    { name: 'Off-tackle left', route: [[cx(hx - 3), 0.5], [cx(hx - 4.5), 12]], dir: -1 },
+    { name: 'Straight upfield', route: [[hx, 0.5], [hx, 12]], dir: 0 }
+  ].filter(l => l.name !== pl.routeName).map(l => ({ ...l, route: [...lead, ...l.route], hx }));
+}
+
+function laneTip(def, hx, dir) {
+  if (!dir) return 'Hit it straight up the field before the defense can flow to the ball.';
+  const side = def.defenders.filter(d => d.role !== 'rush' && d.pos[1] < 9 && (dir > 0 ? d.pos[0] > hx : d.pos[0] < hx)).length;
+  const word = dir > 0 ? 'right' : 'left';
+  return `Only ${side} short defender${side === 1 ? '' : 's'} line${side === 1 ? 's' : ''} up to the ${word} of the handoff. Run where the defense is thin.`;
+}
+
 function suggest(play, covId, opts, baseScore) {
   const out = [];
+  const ho = play.handoff;
+  const def0 = buildDefense(covId, play, opts);
+  const tryChange = (pl, v) => {
+    const trial = clone(play);
+    const tp = trial.players.find(p => p.id === pl.id);
+    tp.route = v.route; tp.routeName = v.name;
+    return runPlay(trial, covId, opts);
+  };
   play.players.filter(p => p.eligible).forEach(pl => {
     let best = null;
-    for (const v of routeVariants(pl)) {
-      const trial = clone(play);
-      const tp = trial.players.find(p => p.id === pl.id);
-      tp.route = v.route; tp.routeName = v.name;
-      const r = runPlay(trial, covId, opts);
+    const isCarrier = ho && ho.to === pl.id;
+    const variants = isCarrier ? runLanes(pl, ho.at) : routeVariants(pl);
+    for (const v of variants) {
+      const r = tryChange(pl, v);
       const gain = r.ev.score - baseScore;
-      if (!best || gain > best.gain) best = { id: pl.id, from: pl.routeName, to: v.name, fam: v.fam, route: v.route, gain, ev: r.ev, tip: TIPS[covId][v.fam] };
+      if (!best || gain > best.gain) {
+        const tip = isCarrier ? laneTip(def0, v.hx, v.dir)
+          : ho ? 'A better decoy. This route pulls a defender away from the ball carrier.'
+          : TIPS[covId][v.fam];
+        best = { id: pl.id, from: pl.routeName, to: v.name, fam: v.fam, route: v.route, gain, ev: r.ev, tip };
+      }
     }
     if (best && best.gain > 0.06) out.push(best);
   });

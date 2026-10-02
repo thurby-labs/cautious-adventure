@@ -154,6 +154,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 dl.notes { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 14px; }
 dl.notes dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding-top: 2px; }
 dl.notes dd { margin: 0; }
+.concepts { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .src { font-size: 12px; color: var(--muted); margin: 0; }
 .empty { color: var(--muted); margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -230,17 +232,85 @@ dl.notes dd { margin: 0; }
    Units are yards. x runs 0..30 sideline to sideline, y is yards downfield from the line of scrimmage. */
 const DT = 0.05, TMAX = 4.0, FIELD_W = 30, MID = 15;
 
+/* Plays transcribed from the coach's diagrams. A star marks the designed target or ball carrier.
+   motion: pre-snap path ending at the alignment. dashed: fake or ball-carrier path. handoff.at: route point where the ball is handed or pitched. */
+const QB = (x, y, route, routeName, extra = {}) => ({ id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [x, y], route, routeName, delay: 0.15, speed: 3.4, qb: true, ...extra });
 const PLAYS = [{
   id: 'split-t-z-fake-left-center-out',
   name: 'Split T, Z Fake Left, Center Out',
-  formation: 'Split T',
-  concept: 'Play-action bootleg right',
+  type: 'pass', concept: 'Play-action bootleg right',
   players: [
     { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [5, 0], route: [[5, 14], [3.5, 19]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
     { id: 'C', label: 'C', name: 'Center', color: 'ink', shape: 'star', start: [15, 0], route: [[15, 4], [19.5, 4]], routeName: 'Out (4)', delay: 0.35, speed: 5.0, eligible: true },
-    { id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [15, -2.5], route: [[18.5, -4.5]], routeName: 'Bootleg right', delay: 0.15, speed: 3.4, qb: true },
+    QB(15, -2.5, [[18.5, -4.5]], 'Bootleg right'),
     { id: 'Z', label: 'Z', name: 'Back', color: 'green', start: [15, -5.5], route: [[14.2, -3.4, 0.35], [13.2, -0.5], [12.5, 16]], routeName: 'Fake left, seam', delay: 0.1, speed: 5.2, eligible: true },
     { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [24, 0], route: [[24, 18]], routeName: 'Go', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'y-shallow-roll-left',
+  name: 'Y Shallow Cross, Roll Left',
+  type: 'pass', concept: 'Rollout left, shallow cross',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [4.3, 0], route: [[4.3, 9], [3, 17]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 17]], routeName: 'Seam', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -4, [[9, -4.6]], 'Roll left'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', start: [19, -4], route: [[19.5, -0.5], [22, 2.3], [28, 3.8]], routeName: 'Arrow right', delay: 0.1, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', shape: 'star', start: [27.5, 0], route: [[23.5, 2.5], [16, 4.5], [8, 5]], routeName: 'Shallow cross', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'z-motion-left-flat',
+  name: 'Z Motion Left, Flat',
+  type: 'pass', concept: 'Motion to the flat',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [4.9, 0], route: [[4.9, 9], [2.7, 17]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 7], [16.8, 5.5]], routeName: 'Stop & out', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -4.4, [[15, -5.2]], 'Drop'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', shape: 'star', motion: [[20.3, -2.3]], start: [11, -2], route: [[11, 0.5], [10, 2.5], [7.5, 3.5]], routeName: 'Flat left', delay: 0, speed: 5.6, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [25.6, 0], route: [[25.6, 9], [21.5, 15]], routeName: 'Post', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'y-reverse-z-fake-right',
+  name: 'Y Reverse, Z Fake Right',
+  type: 'run', concept: 'Reverse run', handoff: { to: 'Y', at: 0 },
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [3.1, 0], route: [[3.1, 9], [1.8, 17]], routeName: 'Go (fade)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[20, 5.6], [21.5, 8]], routeName: 'Release right', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -2.4, [[15.3, -3.2]], 'Pitch'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', dashed: true, start: [10.6, -5.2], route: [[19.3, -1.6], [24, 0.5]], routeName: 'Fake sweep right', delay: 0, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', shape: 'star', start: [19.8, -5.2], route: [[15.7, -4.6], [12.5, -2.2], [11.2, 1.5], [11, 6]], routeName: 'Reverse left', delay: 0, speed: 5.4, eligible: true }
+  ]
+}, {
+  id: 'x-corner-backs-release',
+  name: 'X Corner, Backs Release',
+  type: 'pass', concept: 'Two-back flood left',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', shape: 'star', start: [6.6, 0], route: [[6.6, 5.8], [3.8, 9.5]], routeName: 'Corner (6)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 6], [11.5, 6]], routeName: 'Out left (6)', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -2.5, [[15, -3.5]], 'Drop'),
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', start: [10.4, -5.2], route: [[10.5, 0.5], [9, 2.5], [5, 3]], routeName: 'Flat left', delay: 0.1, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [19.8, -5.2], route: [[19.8, 4.5], [20.5, 7.5], [23, 10]], routeName: 'Corner right', delay: 0.1, speed: 5.4, eligible: true }
+  ]
+}, {
+  id: 'x-post-center-shallow',
+  name: 'X Post, Center Shallow',
+  type: 'pass', concept: 'Post over shallow',
+  players: [
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', shape: 'star', start: [4.3, 0], route: [[4.3, 5.8], [12.4, 10.5]], routeName: 'Post (6)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [15, 0], route: [[15, 2], [13, 3.5], [7.5, 3.8]], routeName: 'Shallow left', delay: 0.35, speed: 5.0, eligible: true },
+    QB(15, -4.4, [[15, -5.2]], 'Drop'),
+    { id: 'Z', label: 'Z', name: 'Slot', color: 'green', start: [20.8, -1.5], route: [[20.8, 5.6], [28, 5.6]], routeName: 'Out (5)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [25.2, 0], route: [[25.2, 9], [23.2, 7.5]], routeName: 'Curl (9)', delay: 0, speed: 5.6, eligible: true }
+  ]
+}, {
+  id: 'z-toss-sweep-right',
+  name: 'Z Toss Sweep Right',
+  type: 'run', concept: 'Toss sweep', handoff: { to: 'Z', at: 0 },
+  players: [
+    { id: 'C', label: 'C', name: 'Center', color: 'ink', start: [10.4, 0], route: [[19, 5.3]], routeName: 'Release right', delay: 0.35, speed: 5.0, eligible: true },
+    QB(10.3, -2.8, [[10.8, -3.6]], 'Toss right'),
+    { id: 'X', label: 'X', name: 'Orange WR', color: 'orange', start: [16.2, 0], route: [[13.5, -0.8], [9, -0.6], [4, 3.7]], routeName: 'Jet left (decoy)', delay: 0, speed: 5.6, eligible: true },
+    { id: 'Z', label: 'Z', name: 'Back', color: 'green', shape: 'star', dashed: true, start: [10.3, -5.6], route: [[15.4, -5.4], [21, -3.5], [23.5, 0], [24.5, 3.5], [25, 8]], routeName: 'Toss sweep right', delay: 0, speed: 5.4, eligible: true },
+    { id: 'Y', label: 'Y', name: 'Purple WR', color: 'purple', start: [21.8, 0], route: [[22, 8], [23.3, 17]], routeName: 'Go', delay: 0, speed: 5.6, eligible: true }
   ]
 }];
 
@@ -259,7 +329,7 @@ const COVERAGES = {
     weakness: 'Covering more than one deep route.',
     beat: 'Buy time and send two or more deep routes so the lone safety has to pick one.',
     blitz: 'QB spots the blitzer before the snap.',
-    calls: '#13 Three Verts, #21 Deep Cross, #23 Post-Wheel'
+    concepts: ['Three receivers vertical to outnumber the lone safety', 'Two deep routes with a crosser underneath', 'A post with a wheel up the sideline behind it']
   },
   c2: {
     id: 'c2', name: 'Cover 2', short: 'C2', blitzer: 'LB',
@@ -275,7 +345,7 @@ const COVERAGES = {
     weakness: 'The middle of the field, especially when the LB blitzes.',
     beat: 'Throw short into the holes between the corners and the LB, then run after the catch.',
     blitz: 'QB spots the blitzer before the snap.',
-    calls: '#11 Dragon-Smash, #12 All Hitches, #21 Deep Cross'
+    concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Every receiver runs a 5-yard hitch', 'Flood one side with a go, a crosser and a flat']
   },
   c3: {
     id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'FS',
@@ -291,7 +361,7 @@ const COVERAGES = {
     weakness: 'Large holes in the short zones, especially the flats.',
     beat: 'Throw short to players who can make a defender miss.',
     blitz: 'QB spots the blitzer before the snap.',
-    calls: '#11 Dragon-Smash, #12 All Hitches, #21 Deep Cross'
+    concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Quick hitches into the flats', 'Flood one side with a go, a crosser and a flat']
   },
   man: {
     id: 'man', name: 'Man to Man', short: 'Man', blitzer: 'FS',
@@ -307,7 +377,7 @@ const COVERAGES = {
     weakness: 'High risk. One missed step can be a touchdown.',
     beat: 'Crossing and rub routes free a receiver in space.',
     blitz: 'The fifth defender either blitzes or plays deep safety.',
-    calls: '#11 Dragon-Smash, #22 Mesh, #23 Post-Wheel'
+    concepts: ['Slant-flat with the two routes crossing close (a rub)', 'Two shallow crossers passing close to each other', 'A post with a wheel up the sideline behind it']
   }
 };
 const COV_ORDER = ['c1', 'c2', 'c3', 'man'];
@@ -417,7 +487,13 @@ function buildDefense(covId, play, opts = {}) {
 
 function simulate(play, defense, opts = {}) {
   const paths = {};
-  play.players.forEach(p => { paths[p.id] = buildPath(p); });
+  const ho = play.handoff;
+  play.players.forEach(p => {
+    // the ball carrier keeps running upfield after the drawn path ends
+    const pl = ho && ho.to === p.id ? { ...p, route: [...p.route, [p.route[p.route.length - 1][0], 40]] } : p;
+    paths[p.id] = buildPath(pl);
+  });
+  const ballRun = ho ? { id: ho.to, th: paths[ho.to].ptTimes[ho.at + 1], tackle: null } : null;
   const elig = play.players.filter(p => p.eligible);
   const qb = play.players.find(p => p.qb);
   const defs = defense.defenders.map(d => ({ ...d, p: [...d.pos], cushion: null, rubbed: new Set(), rubLag: 0 }));
@@ -428,11 +504,19 @@ function simulate(play, defense, opts = {}) {
     const t = +(k * DT).toFixed(3);
     const off = {};
     play.players.forEach(p => { off[p.id] = posAt(paths[p.id], t); });
+    if (ballRun && ballRun.tackle) off[ballRun.id] = [...ballRun.tackle.pos];
+    const carrier = ballRun && t >= ballRun.th ? off[ballRun.id] : null;
     if (k > 0) {
       for (const d of defs) {
         let target = d.p, speed = 0;
-        if (d.role === 'rush') { target = off[qb.id]; speed = 5.4; }
+        const sees = carrier && t >= ballRun.th + (d.role === 'man' ? 0.5 : d.deep ? 0.35 : 0.25);
+        if (d.role === 'rush') { target = carrier || off[qb.id]; speed = 5.4; }
         else if (t < 0.25) { /* reading the snap */ }
+        else if (sees) {
+          // run recognized: take a pursuit angle on the ball carrier
+          const ahead = ballRun.tackle ? carrier : posAt(paths[ballRun.id], t + 0.35);
+          target = ahead; speed = d.deep ? 5.0 : 5.3;
+        }
         else if (d.role === 'man') {
           const rp = paths[d.man];
           for (const o of play.players) {
@@ -468,12 +552,16 @@ function simulate(play, defense, opts = {}) {
         if (m > 0) d.p = m <= step ? [...target] : [d.p[0] + dx / m * step, d.p[1] + dy / m * step];
       }
     }
+    if (carrier && !ballRun.tackle) {
+      const i = defs.findIndex(d => dist(d.p, carrier) < 1.0);
+      if (i >= 0) ballRun.tackle = { t, pos: [...carrier], by: defs[i].label };
+    }
     frames.push({ t, off, def: defs.map(d => [...d.p]) });
     const rusher = defs.find(d => d.role === 'rush');
-    if (rusher && pressure === null && dist(rusher.p, off[qb.id]) < 1.2) pressure = t;
+    if (!ballRun && rusher && pressure === null && dist(rusher.p, off[qb.id]) < 1.2) pressure = t;
   }
   const throwBy = opts.throwBy || 3.0;
-  return { frames, pressure, deadline: pressure !== null ? Math.min(throwBy, pressure) : throwBy, roles: defs.map(d => d.role), paths };
+  return { frames, pressure, deadline: pressure !== null ? Math.min(throwBy, pressure) : throwBy, roles: defs.map(d => d.role), paths, ballRun };
 }
 
 /* How open is a receiver at one moment: space to the nearest cover defender, minus anyone sitting in the throwing lane. */
@@ -500,6 +588,17 @@ function throwValue(eff, y) {
 }
 
 function evaluate(play, sim) {
+  if (sim.ballRun) {
+    const br = sim.ballRun, last = sim.frames[sim.frames.length - 1];
+    const end = br.tackle ? br.tackle.pos : last.off[br.id];
+    const yards = end[1];
+    const score = clamp(yards / 8, -0.2, 1.4);
+    return {
+      run: { id: br.id, yards, th: br.th, t: br.tackle ? br.tackle.t : null, by: br.tackle ? br.tackle.by : null, pos: end },
+      receivers: { [br.id]: { best: { v: score, t: br.th, eff: yards, pos: end }, series: [] } },
+      order: [br.id], score, grade: gradeFor(score)
+    };
+  }
   const qb = play.players.find(p => p.qb);
   const out = {};
   play.players.filter(p => p.eligible).forEach(r => {
@@ -562,24 +661,56 @@ function routeVariants(pl) {
     (straight ? dirs.slice(0, 1) : dirs).forEach(([i, o, tag]) => {
       const pts = R.pts(i, o).map(([dx, y]) => [clamp(bx + dx, 1, FIELD_W - 1), y]);
       const name = R.name + (straight ? '' : tag);
-      if (name === pl.routeName) return;
+      if (name === pl.routeName || R.name.split(' (')[0] === pl.routeName.split(' (')[0]) return;
       list.push({ key: R.key + tag, name, fam: R.fam, route: [...lead, ...pts] });
     });
   }
   return list;
 }
 
+function runLanes(pl, at) {
+  const lead = pl.route.slice(0, at + 1);
+  const [hx, hy] = lead[lead.length - 1];
+  const cx = x => clamp(x, 1.5, 28.5);
+  return [
+    { name: 'Sweep right', route: [[cx(hx + 6), Math.min(hy + 2, -1)], [27.5, 2], [27.5, 12]], dir: 1 },
+    { name: 'Sweep left', route: [[cx(hx - 6), Math.min(hy + 2, -1)], [2.5, 2], [2.5, 12]], dir: -1 },
+    { name: 'Off-tackle right', route: [[cx(hx + 3), 0.5], [cx(hx + 4.5), 12]], dir: 1 },
+    { name: 'Off-tackle left', route: [[cx(hx - 3), 0.5], [cx(hx - 4.5), 12]], dir: -1 },
+    { name: 'Straight upfield', route: [[hx, 0.5], [hx, 12]], dir: 0 }
+  ].filter(l => l.name !== pl.routeName).map(l => ({ ...l, route: [...lead, ...l.route], hx }));
+}
+
+function laneTip(def, hx, dir) {
+  if (!dir) return 'Hit it straight up the field before the defense can flow to the ball.';
+  const side = def.defenders.filter(d => d.role !== 'rush' && d.pos[1] < 9 && (dir > 0 ? d.pos[0] > hx : d.pos[0] < hx)).length;
+  const word = dir > 0 ? 'right' : 'left';
+  return `Only ${side} short defender${side === 1 ? '' : 's'} line${side === 1 ? 's' : ''} up to the ${word} of the handoff. Run where the defense is thin.`;
+}
+
 function suggest(play, covId, opts, baseScore) {
   const out = [];
+  const ho = play.handoff;
+  const def0 = buildDefense(covId, play, opts);
+  const tryChange = (pl, v) => {
+    const trial = clone(play);
+    const tp = trial.players.find(p => p.id === pl.id);
+    tp.route = v.route; tp.routeName = v.name;
+    return runPlay(trial, covId, opts);
+  };
   play.players.filter(p => p.eligible).forEach(pl => {
     let best = null;
-    for (const v of routeVariants(pl)) {
-      const trial = clone(play);
-      const tp = trial.players.find(p => p.id === pl.id);
-      tp.route = v.route; tp.routeName = v.name;
-      const r = runPlay(trial, covId, opts);
+    const isCarrier = ho && ho.to === pl.id;
+    const variants = isCarrier ? runLanes(pl, ho.at) : routeVariants(pl);
+    for (const v of variants) {
+      const r = tryChange(pl, v);
       const gain = r.ev.score - baseScore;
-      if (!best || gain > best.gain) best = { id: pl.id, from: pl.routeName, to: v.name, fam: v.fam, route: v.route, gain, ev: r.ev, tip: TIPS[covId][v.fam] };
+      if (!best || gain > best.gain) {
+        const tip = isCarrier ? laneTip(def0, v.hx, v.dir)
+          : ho ? 'A better decoy. This route pulls a defender away from the ball carrier.'
+          : TIPS[covId][v.fam];
+        best = { id: pl.id, from: pl.routeName, to: v.name, fam: v.fam, route: v.route, gain, ev: r.ev, tip };
+      }
     }
     if (best && best.gain > 0.06) out.push(best);
   });
@@ -595,8 +726,10 @@ const X = x => x * S, Y = y => (YTOP - y) * S;
 const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)' };
 const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
 
+let savedPlay = 0;
+try { savedPlay = Math.max(0, PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'))); } catch (e) {}
 const state = {
-  basePlay: clone(PLAYS[0]), play: clone(PLAYS[0]), changes: {},
+  basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
   cov: 'c2', blitz: false, holes: true, t: 0, playing: false, speed: 0.5, nudges: {},
   run: null, scout: {}, sugs: []
 };
@@ -646,6 +779,18 @@ const STATIC = staticField();
 
 function routePath(pl) {
   return [pl.start, ...pl.route].map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(' ');
+}
+function zigzag(pts) {
+  let d = `M${X(pts[0][0])} ${Y(pts[0][1])}`;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], L = dist(a, b), n = Math.max(2, Math.round(L / 0.55));
+    const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
+    for (let k = 1; k <= n; k++) {
+      const u = k / n * L, off = k === n ? 0 : (k % 2 ? 0.35 : -0.35);
+      d += ` L${X(a[0] + ux * u - uy * off).toFixed(1)} ${Y(a[1] + uy * u + ux * off).toFixed(1)}`;
+    }
+  }
+  return d;
 }
 function starPts(cx, cy, r1, r2) {
   const pts = [];
@@ -725,7 +870,10 @@ function renderField() {
     }
   });
   play.players.forEach(pl => {
-    const dash = pl.qb ? ' stroke-dasharray="1 0"' : '';
+    if (pl.motion) s += `<path d="${zigzag([...pl.motion, pl.start])}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  play.players.forEach(pl => {
+    const dash = pl.dashed ? ' stroke-dasharray="5 5"' : '';
     s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="${pl.qb ? 2.5 : 3}" stroke-linejoin="round" stroke-linecap="round"${dash} marker-end="url(#ah-${pl.color})"/>`;
     if (state.changes[pl.id]) {
       const e = pl.route[pl.route.length - 1];
@@ -742,7 +890,13 @@ function renderField() {
 
   // planned throw: catch spot + dotted ball path, like the play card
   const qb = play.players.find(p => p.qb);
-  if (run) {
+  if (run && run.ev.run) {
+    const r = run.ev.run, hp = playerById(r.id);
+    const h = hp.route[play.handoff.at];
+    const q = frameAt(r.th).off[qb.id];
+    s += `<line x1="${X(q[0])}" y1="${Y(q[1])}" x2="${X(h[0])}" y2="${Y(h[1])}" style="stroke:var(--r-red)" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"/>`;
+    if (t < r.th) s += football(X(h[0]), Y(h[1]));
+  } else if (run) {
     const top = run.ev.order[0], b = run.ev.receivers[top].best;
     if (b.t !== null) {
       const ft = frameAt(b.t), q = ft.off[qb.id];
@@ -763,7 +917,7 @@ function renderField() {
   play.players.forEach(pl => {
     const p = run ? f.off[pl.id] : pl.start;
     const cx = X(p[0]), cy = Y(p[1]);
-    if (run && pl.eligible && t >= Math.max(0.7, run.sim.paths[pl.id].window) && t <= run.sim.deadline + 0.2) {
+    if (run && !run.ev.run && pl.eligible && t >= Math.max(0.7, run.sim.paths[pl.id].window) && t <= run.sim.deadline + 0.2) {
       const eff = run.ev.receivers[pl.id].series[Math.round(t / DT)];
       s += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" style="stroke:${ST[statusFor(eff)]}" stroke-width="3"/>`;
     }
@@ -775,7 +929,12 @@ function renderField() {
       s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" class="lbl" font-size="11" fill="#fff">${pl.label}</text>`;
     }
   });
-  if (run && run.sim.pressure !== null && t >= run.sim.pressure) {
+  if (run && run.ev.run && t >= run.ev.run.th) {
+    const r = run.ev.run, cp = f.off[r.id];
+    s += football(X(cp[0]) + 11, Y(cp[1]) - 9, -40);
+    if (r.t !== null && t >= r.t) s += `<text x="${X(cp[0])}" y="${Y(cp[1]) + 26}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED · ${r.yards >= 0 ? '+' : ''}${r.yards.toFixed(1)} YDS</text>`;
+  }
+  if (run && !run.ev.run && run.sim.pressure !== null && t >= run.sim.pressure) {
     const q = f.off[qb.id];
     s += `<text x="${X(q[0])}" y="${Y(q[1]) + 24}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED</text>`;
   }
@@ -808,7 +967,11 @@ function renderMarks() {
   const m = $('marks');
   let s = '';
   [0, 1, 2, 3, 4].forEach(v => { s += `<span class="mk bot tick" style="left:${v / TMAX * 100}%">${v}s</span>`; });
-  if (state.run) {
+  if (state.run && state.run.ev.run) {
+    const r = state.run.ev.run;
+    s += `<span class="mk top throw" style="left:${r.th / TMAX * 100}%">● Handoff</span>`;
+    if (r.t !== null) s += `<span class="mk top rush" style="left:${r.t / TMAX * 100}%">▼ Flag ${fmtT(r.t)}</span>`;
+  } else if (state.run) {
     const sim = state.run.sim;
     if (sim.pressure !== null) s += `<span class="mk top rush" style="left:${sim.pressure / TMAX * 100}%">▼ Rush ${fmtT(sim.pressure)}</span>`;
     else s += `<span class="mk top tick" style="left:${sim.deadline / TMAX * 100}%">▼ Throw by ${fmtT(sim.deadline)}</span>`;
@@ -861,6 +1024,18 @@ function renderRead() {
   const top = ev.order[0], tb = ev.receivers[top].best, tp = playerById(top);
   const g = ev.grade;
   const head = g === 'A' || g === 'B' ? `Beats ${cov.name}` : g === 'C' ? `Works, but it's tight` : `${cov.name} takes this away`;
+  if (ev.run) {
+    const r = ev.run;
+    let rs = `<b>${tp.label}</b> gets the ball at ${fmtT(r.th)} and ` + (r.t !== null
+      ? `gains <b>${r.yards.toFixed(1)} yds</b> before the ${r.by} pulls the flag at ${fmtT(r.t)}.`
+      : `is still running at ${fmtT(TMAX)}, <b>${r.yards.toFixed(1)} yds</b> downfield.`);
+    h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + blitz' : ''}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
+    const st = r.yards >= 5 ? 'open' : r.yards >= 2.5 ? 'tight' : 'covered';
+    h += `<div class="card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${tp.routeName}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
+      <p class="src">Gain is measured to where the first defender reaches the ball carrier. Tap to jump there.</p></div>`;
+    h += sugsHtml(g, cov) + notesHtml(cov);
+    $('read').innerHTML = h; return;
+  }
   let sum = tb.t !== null
     ? `Best throw: <b>${tp.label}</b> on the ${tp.routeName.toLowerCase()} at <b>${fmtT(tb.t)}</b>, with ${tb.eff.toFixed(1)} yds of space ${fmtY(tb.pos[1])} yds downfield.`
     : `No receiver gets clear of a defender before ${fmtT(sim.deadline)}.`;
@@ -873,40 +1048,57 @@ function renderRead() {
     const st = b.t === null ? 'covered' : statusFor(b.eff);
     const pct = b.t === null ? 4 : clamp(b.eff / 7 * 100, 6, 100);
     const when = b.t === null ? 'no window' : `${b.eff.toFixed(1)} yds at ${fmtT(b.t)}`;
-    h += `<li><button data-jump="${b.t ?? ''}"><span class="num">${i + 1}</span>${dotFor(pl)}<span class="rname"><b>${pl.routeName}</b> <small>${when}</small><span class="bar"><i style="width:${pct}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st}</span></button></li>`;
+    h += `<li><button data-jump="${b.t ?? ''}"><span class="num">${i + 1}</span>${dotFor(pl)}<span class="rname"><b>${pl.routeName}</b>${pl.shape === 'star' ? ' <small style="display:inline">★ designed</small>' : ''} <small>${when}</small><span class="bar"><i style="width:${pct}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st}</span></button></li>`;
   });
   h += `</ol><p class="src">Tap a receiver to jump to their best moment.</p></div>`;
 
-  h += `<div class="card"><h3>Coach's adjustments</h3>`;
+  h += sugsHtml(g, cov) + notesHtml(cov);
+  $('read').innerHTML = h;
+}
+
+function sugsHtml(g, cov) {
+  let h = `<div class="card"><h3>Coach's adjustments</h3>`;
   if (!state.sugs.length) {
     h += g === 'A'
       ? `<p class="empty">This play already beats ${cov.name}. Run it as drawn.</p>`
-      : `<p class="empty">No single route change helps much here. Try one of the playbook calls below.</p>`;
+      : `<p class="empty">No single route change helps much here. Try one of the concepts or your plays listed below.</p>`;
   }
   state.sugs.forEach((sg, i) => {
-    const pl = playerById(sg.id), nb = sg.ev.receivers[sg.id].best;
+    const pl = playerById(sg.id), nb = sg.ev.run ? null : sg.ev.receivers[sg.id].best;
     h += `<div class="sug"><div class="sug-top">${dotFor(pl)}<span><b>${pl.label}</b> ${sg.from} <span class="arrow">→</span> <b>${sg.to}</b></span><span class="delta"><span class="g${g}">${g}</span> <span class="arrow">→</span> <span class="g${sg.ev.grade}">${sg.ev.grade}</span></span></div>`;
     h += `<p>${sg.tip}</p>`;
-    if (nb.t !== null) h += `<p class="muted">${pl.label} gets ${nb.eff.toFixed(1)} yds of space at ${fmtT(nb.t)}, ${fmtY(nb.pos[1])} yds downfield.</p>`;
+    if (sg.ev.run) h += `<p class="muted">Ball carrier gains ${sg.ev.run.yards.toFixed(1)} yds instead of ${state.run.ev.run.yards.toFixed(1)}.</p>`;
+    else if (nb.t !== null) h += `<p class="muted">${pl.label} gets ${nb.eff.toFixed(1)} yds of space at ${fmtT(nb.t)}, ${fmtY(nb.pos[1])} yds downfield.</p>`;
     h += `<div class="sug-actions"><button class="btn" data-sug="${i}">Try it</button></div></div>`;
   });
   h += `</div>`;
 
+  return h;
+}
+const bestCache = {};
+function bestPlaysFor(covId) {
+  const key = covId + (state.blitz ? '+b' : '');
+  if (!bestCache[key]) bestCache[key] = PLAYS.map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
+    .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
+  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${p.name}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
+}
+function notesHtml(cov) {
+  let h = '';
   h += `<div class="card"><h3>${cov.name} at a glance</h3><dl class="notes">
     <dt>Spot it</dt><dd>${cov.spot}</dd>
     <dt>Strength</dt><dd>${cov.strength}</dd>
     <dt>Weakness</dt><dd>${cov.weakness}</dd>
     <dt>How to beat</dt><dd>${cov.beat}</dd>
     <dt>Blitz</dt><dd>${cov.blitz}</dd>
-    <dt>Playbook calls</dt><dd>${cov.calls}</dd></dl>
-    <p class="src">From your Air Raid 5v5 playbook, “Reading the Defense.”</p></div>`;
-  $('read').innerHTML = h;
+    <dt>Concepts that work</dt><dd><ul class="concepts">${cov.concepts.map(c => `<li>${c}</li>`).join('')}</ul></dd>
+    <dt>Your best plays</dt><dd>${bestPlaysFor(cov.id)}</dd></dl></div>`;
+  return h;
 }
 
 function renderHead() {
   $('playName').textContent = state.play.name;
   const n = Object.keys(state.changes).length;
-  let t = `<span class="tag">${state.play.formation}</span><span class="tag">${state.play.concept}</span>`;
+  let t = `<span class="tag">${state.play.type === 'run' ? 'Run' : 'Pass'}</span><span class="tag">${state.play.concept}</span>`;
   if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
   $('playTags').innerHTML = t;
   document.querySelectorAll('.cov').forEach(c => c.setAttribute('aria-pressed', c.dataset.cov === state.cov));
@@ -938,7 +1130,7 @@ function startCardDrag(e) {
   const card = e.currentTarget, id = card.dataset.cov, wrap = $('fieldWrap');
   const sx = e.clientX, sy = e.clientY;
   let ghost = null;
-  card.setPointerCapture(e.pointerId);
+  try { card.setPointerCapture(e.pointerId); } catch (err) {}
   const over = ev => { const r = wrap.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom; };
   const move = ev => {
     if (!ghost && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) {
@@ -976,7 +1168,7 @@ svg.addEventListener('pointerdown', e => {
   const id = g.dataset.id, start = toYards(e), n0 = state.nudges[id] ? [...state.nudges[id]] : [0, 0];
   const base = state.run.def.defenders.find(d => d.id === id).pos;
   const orig = [base[0] - n0[0], base[1] - n0[1]];
-  svg.setPointerCapture(e.pointerId);
+  try { svg.setPointerCapture(e.pointerId); } catch (err) {}
   const move = ev => {
     const p = toYards(ev);
     const nx = clamp(orig[0] + n0[0] + p[0] - start[0], 1, 29), ny = clamp(orig[1] + n0[1] + p[1] - start[1], 1, 19);
@@ -988,9 +1180,17 @@ svg.addEventListener('pointerdown', e => {
 });
 
 /* ---------- wiring ---------- */
-$('playSel').innerHTML = PLAYS.map(p => `<option value="${p.id}">${p.name}</option>`).join('') + `<option disabled>More plays coming…</option>`;
+$('playSel').innerHTML = PLAYS.map(p => `<option value="${p.id}">${p.type === 'run' ? 'Run · ' : ''}${p.name}</option>`).join('');
+$('playSel').value = state.basePlay.id;
+$('playSel').addEventListener('change', e => {
+  const pl = PLAYS.find(p => p.id === e.target.value);
+  state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {};
+  try { localStorage.setItem('og-play', pl.id); } catch (err) {}
+  stop(); recompute(); setT(0);
+});
 $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov); return; }
+  const pb = e.target.closest('[data-play]'); if (pb) { $('playSel').value = pb.dataset.play; $('playSel').dispatchEvent(new Event('change')); return; }
   const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); return; }
   const sb = e.target.closest('[data-sug]');
   if (sb) {
