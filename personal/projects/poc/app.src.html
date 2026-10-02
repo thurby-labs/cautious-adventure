@@ -154,6 +154,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 dl.notes { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 14px; }
 dl.notes dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding-top: 2px; }
 dl.notes dd { margin: 0; }
+.concepts { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .src { font-size: 12px; color: var(--muted); margin: 0; }
 .empty { color: var(--muted); margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -234,8 +236,10 @@ const X = x => x * S, Y = y => (YTOP - y) * S;
 const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)' };
 const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
 
+let savedPlay = 0;
+try { savedPlay = Math.max(0, PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'))); } catch (e) {}
 const state = {
-  basePlay: clone(PLAYS[0]), play: clone(PLAYS[0]), changes: {},
+  basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
   cov: 'c2', blitz: false, holes: true, t: 0, playing: false, speed: 0.5, nudges: {},
   run: null, scout: {}, sugs: []
 };
@@ -285,6 +289,18 @@ const STATIC = staticField();
 
 function routePath(pl) {
   return [pl.start, ...pl.route].map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(' ');
+}
+function zigzag(pts) {
+  let d = `M${X(pts[0][0])} ${Y(pts[0][1])}`;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], L = dist(a, b), n = Math.max(2, Math.round(L / 0.55));
+    const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L;
+    for (let k = 1; k <= n; k++) {
+      const u = k / n * L, off = k === n ? 0 : (k % 2 ? 0.35 : -0.35);
+      d += ` L${X(a[0] + ux * u - uy * off).toFixed(1)} ${Y(a[1] + uy * u + ux * off).toFixed(1)}`;
+    }
+  }
+  return d;
 }
 function starPts(cx, cy, r1, r2) {
   const pts = [];
@@ -364,7 +380,10 @@ function renderField() {
     }
   });
   play.players.forEach(pl => {
-    const dash = pl.qb ? ' stroke-dasharray="1 0"' : '';
+    if (pl.motion) s += `<path d="${zigzag([...pl.motion, pl.start])}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  play.players.forEach(pl => {
+    const dash = pl.dashed ? ' stroke-dasharray="5 5"' : '';
     s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="${pl.qb ? 2.5 : 3}" stroke-linejoin="round" stroke-linecap="round"${dash} marker-end="url(#ah-${pl.color})"/>`;
     if (state.changes[pl.id]) {
       const e = pl.route[pl.route.length - 1];
@@ -381,7 +400,13 @@ function renderField() {
 
   // planned throw: catch spot + dotted ball path, like the play card
   const qb = play.players.find(p => p.qb);
-  if (run) {
+  if (run && run.ev.run) {
+    const r = run.ev.run, hp = playerById(r.id);
+    const h = hp.route[play.handoff.at];
+    const q = frameAt(r.th).off[qb.id];
+    s += `<line x1="${X(q[0])}" y1="${Y(q[1])}" x2="${X(h[0])}" y2="${Y(h[1])}" style="stroke:var(--r-red)" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"/>`;
+    if (t < r.th) s += football(X(h[0]), Y(h[1]));
+  } else if (run) {
     const top = run.ev.order[0], b = run.ev.receivers[top].best;
     if (b.t !== null) {
       const ft = frameAt(b.t), q = ft.off[qb.id];
@@ -402,7 +427,7 @@ function renderField() {
   play.players.forEach(pl => {
     const p = run ? f.off[pl.id] : pl.start;
     const cx = X(p[0]), cy = Y(p[1]);
-    if (run && pl.eligible && t >= Math.max(0.7, run.sim.paths[pl.id].window) && t <= run.sim.deadline + 0.2) {
+    if (run && !run.ev.run && pl.eligible && t >= Math.max(0.7, run.sim.paths[pl.id].window) && t <= run.sim.deadline + 0.2) {
       const eff = run.ev.receivers[pl.id].series[Math.round(t / DT)];
       s += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" style="stroke:${ST[statusFor(eff)]}" stroke-width="3"/>`;
     }
@@ -414,7 +439,12 @@ function renderField() {
       s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" class="lbl" font-size="11" fill="#fff">${pl.label}</text>`;
     }
   });
-  if (run && run.sim.pressure !== null && t >= run.sim.pressure) {
+  if (run && run.ev.run && t >= run.ev.run.th) {
+    const r = run.ev.run, cp = f.off[r.id];
+    s += football(X(cp[0]) + 11, Y(cp[1]) - 9, -40);
+    if (r.t !== null && t >= r.t) s += `<text x="${X(cp[0])}" y="${Y(cp[1]) + 26}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED · ${r.yards >= 0 ? '+' : ''}${r.yards.toFixed(1)} YDS</text>`;
+  }
+  if (run && !run.ev.run && run.sim.pressure !== null && t >= run.sim.pressure) {
     const q = f.off[qb.id];
     s += `<text x="${X(q[0])}" y="${Y(q[1]) + 24}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED</text>`;
   }
@@ -447,7 +477,11 @@ function renderMarks() {
   const m = $('marks');
   let s = '';
   [0, 1, 2, 3, 4].forEach(v => { s += `<span class="mk bot tick" style="left:${v / TMAX * 100}%">${v}s</span>`; });
-  if (state.run) {
+  if (state.run && state.run.ev.run) {
+    const r = state.run.ev.run;
+    s += `<span class="mk top throw" style="left:${r.th / TMAX * 100}%">● Handoff</span>`;
+    if (r.t !== null) s += `<span class="mk top rush" style="left:${r.t / TMAX * 100}%">▼ Flag ${fmtT(r.t)}</span>`;
+  } else if (state.run) {
     const sim = state.run.sim;
     if (sim.pressure !== null) s += `<span class="mk top rush" style="left:${sim.pressure / TMAX * 100}%">▼ Rush ${fmtT(sim.pressure)}</span>`;
     else s += `<span class="mk top tick" style="left:${sim.deadline / TMAX * 100}%">▼ Throw by ${fmtT(sim.deadline)}</span>`;
@@ -500,6 +534,18 @@ function renderRead() {
   const top = ev.order[0], tb = ev.receivers[top].best, tp = playerById(top);
   const g = ev.grade;
   const head = g === 'A' || g === 'B' ? `Beats ${cov.name}` : g === 'C' ? `Works, but it's tight` : `${cov.name} takes this away`;
+  if (ev.run) {
+    const r = ev.run;
+    let rs = `<b>${tp.label}</b> gets the ball at ${fmtT(r.th)} and ` + (r.t !== null
+      ? `gains <b>${r.yards.toFixed(1)} yds</b> before the ${r.by} pulls the flag at ${fmtT(r.t)}.`
+      : `is still running at ${fmtT(TMAX)}, <b>${r.yards.toFixed(1)} yds</b> downfield.`);
+    h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + blitz' : ''}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
+    const st = r.yards >= 5 ? 'open' : r.yards >= 2.5 ? 'tight' : 'covered';
+    h += `<div class="card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${tp.routeName}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
+      <p class="src">Gain is measured to where the first defender reaches the ball carrier. Tap to jump there.</p></div>`;
+    h += sugsHtml(g, cov) + notesHtml(cov);
+    $('read').innerHTML = h; return;
+  }
   let sum = tb.t !== null
     ? `Best throw: <b>${tp.label}</b> on the ${tp.routeName.toLowerCase()} at <b>${fmtT(tb.t)}</b>, with ${tb.eff.toFixed(1)} yds of space ${fmtY(tb.pos[1])} yds downfield.`
     : `No receiver gets clear of a defender before ${fmtT(sim.deadline)}.`;
@@ -512,40 +558,57 @@ function renderRead() {
     const st = b.t === null ? 'covered' : statusFor(b.eff);
     const pct = b.t === null ? 4 : clamp(b.eff / 7 * 100, 6, 100);
     const when = b.t === null ? 'no window' : `${b.eff.toFixed(1)} yds at ${fmtT(b.t)}`;
-    h += `<li><button data-jump="${b.t ?? ''}"><span class="num">${i + 1}</span>${dotFor(pl)}<span class="rname"><b>${pl.routeName}</b> <small>${when}</small><span class="bar"><i style="width:${pct}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st}</span></button></li>`;
+    h += `<li><button data-jump="${b.t ?? ''}"><span class="num">${i + 1}</span>${dotFor(pl)}<span class="rname"><b>${pl.routeName}</b>${pl.shape === 'star' ? ' <small style="display:inline">★ designed</small>' : ''} <small>${when}</small><span class="bar"><i style="width:${pct}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st}</span></button></li>`;
   });
   h += `</ol><p class="src">Tap a receiver to jump to their best moment.</p></div>`;
 
-  h += `<div class="card"><h3>Coach's adjustments</h3>`;
+  h += sugsHtml(g, cov) + notesHtml(cov);
+  $('read').innerHTML = h;
+}
+
+function sugsHtml(g, cov) {
+  let h = `<div class="card"><h3>Coach's adjustments</h3>`;
   if (!state.sugs.length) {
     h += g === 'A'
       ? `<p class="empty">This play already beats ${cov.name}. Run it as drawn.</p>`
-      : `<p class="empty">No single route change helps much here. Try one of the playbook calls below.</p>`;
+      : `<p class="empty">No single route change helps much here. Try one of the concepts or your plays listed below.</p>`;
   }
   state.sugs.forEach((sg, i) => {
-    const pl = playerById(sg.id), nb = sg.ev.receivers[sg.id].best;
+    const pl = playerById(sg.id), nb = sg.ev.run ? null : sg.ev.receivers[sg.id].best;
     h += `<div class="sug"><div class="sug-top">${dotFor(pl)}<span><b>${pl.label}</b> ${sg.from} <span class="arrow">→</span> <b>${sg.to}</b></span><span class="delta"><span class="g${g}">${g}</span> <span class="arrow">→</span> <span class="g${sg.ev.grade}">${sg.ev.grade}</span></span></div>`;
     h += `<p>${sg.tip}</p>`;
-    if (nb.t !== null) h += `<p class="muted">${pl.label} gets ${nb.eff.toFixed(1)} yds of space at ${fmtT(nb.t)}, ${fmtY(nb.pos[1])} yds downfield.</p>`;
+    if (sg.ev.run) h += `<p class="muted">Ball carrier gains ${sg.ev.run.yards.toFixed(1)} yds instead of ${state.run.ev.run.yards.toFixed(1)}.</p>`;
+    else if (nb.t !== null) h += `<p class="muted">${pl.label} gets ${nb.eff.toFixed(1)} yds of space at ${fmtT(nb.t)}, ${fmtY(nb.pos[1])} yds downfield.</p>`;
     h += `<div class="sug-actions"><button class="btn" data-sug="${i}">Try it</button></div></div>`;
   });
   h += `</div>`;
 
+  return h;
+}
+const bestCache = {};
+function bestPlaysFor(covId) {
+  const key = covId + (state.blitz ? '+b' : '');
+  if (!bestCache[key]) bestCache[key] = PLAYS.map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
+    .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
+  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${p.name}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
+}
+function notesHtml(cov) {
+  let h = '';
   h += `<div class="card"><h3>${cov.name} at a glance</h3><dl class="notes">
     <dt>Spot it</dt><dd>${cov.spot}</dd>
     <dt>Strength</dt><dd>${cov.strength}</dd>
     <dt>Weakness</dt><dd>${cov.weakness}</dd>
     <dt>How to beat</dt><dd>${cov.beat}</dd>
     <dt>Blitz</dt><dd>${cov.blitz}</dd>
-    <dt>Playbook calls</dt><dd>${cov.calls}</dd></dl>
-    <p class="src">From your Air Raid 5v5 playbook, “Reading the Defense.”</p></div>`;
-  $('read').innerHTML = h;
+    <dt>Concepts that work</dt><dd><ul class="concepts">${cov.concepts.map(c => `<li>${c}</li>`).join('')}</ul></dd>
+    <dt>Your best plays</dt><dd>${bestPlaysFor(cov.id)}</dd></dl></div>`;
+  return h;
 }
 
 function renderHead() {
   $('playName').textContent = state.play.name;
   const n = Object.keys(state.changes).length;
-  let t = `<span class="tag">${state.play.formation}</span><span class="tag">${state.play.concept}</span>`;
+  let t = `<span class="tag">${state.play.type === 'run' ? 'Run' : 'Pass'}</span><span class="tag">${state.play.concept}</span>`;
   if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
   $('playTags').innerHTML = t;
   document.querySelectorAll('.cov').forEach(c => c.setAttribute('aria-pressed', c.dataset.cov === state.cov));
@@ -577,7 +640,7 @@ function startCardDrag(e) {
   const card = e.currentTarget, id = card.dataset.cov, wrap = $('fieldWrap');
   const sx = e.clientX, sy = e.clientY;
   let ghost = null;
-  card.setPointerCapture(e.pointerId);
+  try { card.setPointerCapture(e.pointerId); } catch (err) {}
   const over = ev => { const r = wrap.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom; };
   const move = ev => {
     if (!ghost && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) {
@@ -615,7 +678,7 @@ svg.addEventListener('pointerdown', e => {
   const id = g.dataset.id, start = toYards(e), n0 = state.nudges[id] ? [...state.nudges[id]] : [0, 0];
   const base = state.run.def.defenders.find(d => d.id === id).pos;
   const orig = [base[0] - n0[0], base[1] - n0[1]];
-  svg.setPointerCapture(e.pointerId);
+  try { svg.setPointerCapture(e.pointerId); } catch (err) {}
   const move = ev => {
     const p = toYards(ev);
     const nx = clamp(orig[0] + n0[0] + p[0] - start[0], 1, 29), ny = clamp(orig[1] + n0[1] + p[1] - start[1], 1, 19);
@@ -627,9 +690,17 @@ svg.addEventListener('pointerdown', e => {
 });
 
 /* ---------- wiring ---------- */
-$('playSel').innerHTML = PLAYS.map(p => `<option value="${p.id}">${p.name}</option>`).join('') + `<option disabled>More plays coming…</option>`;
+$('playSel').innerHTML = PLAYS.map(p => `<option value="${p.id}">${p.type === 'run' ? 'Run · ' : ''}${p.name}</option>`).join('');
+$('playSel').value = state.basePlay.id;
+$('playSel').addEventListener('change', e => {
+  const pl = PLAYS.find(p => p.id === e.target.value);
+  state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {};
+  try { localStorage.setItem('og-play', pl.id); } catch (err) {}
+  stop(); recompute(); setT(0);
+});
 $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov); return; }
+  const pb = e.target.closest('[data-play]'); if (pb) { $('playSel').value = pb.dataset.play; $('playSel').dispatchEvent(new Event('change')); return; }
   const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); return; }
   const sb = e.target.closest('[data-sug]');
   if (sb) {
