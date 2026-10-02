@@ -1,6 +1,5 @@
 /* ---------- Studio: My plays, favorites, AI drafting, uploads, share links, GIFs, exports ---------- */
-const ARTIFACT_URL = 'https://claude.ai/artifact/Cq4uf8d2WQEwUdbMXa5NVY';
-const cap = name => (window.claude && window.claude.use ? Promise.resolve(window.claude.use(name)).catch(() => null) : Promise.resolve(null));
+const SITE_URL = 'https://open-grass.com/';
 const rid = () => Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 
 function toast(msg) {
@@ -9,68 +8,50 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 2800);
 }
 
-/* Each coach's plays and favorites live in their own private space in the app's database.
-   Without it (signed out, or a preview), they fall back to this browser's storage. */
+/* Each coach's plays and favorites live in this browser's storage (no account or backend). */
 const store = {
-  db: null, uid: null, ready: null,
-  init() {
-    this.ready = (async () => {
-      const [db, user] = await Promise.all([cap('db'), cap('user')]);
-      if (db && user) { try { this.uid = await user.id(); } catch (e) {} }
-      if (db && this.uid) this.db = db;
-    })();
-    return this.ready;
-  },
-  base() { return 'data/users/' + this.uid; },
   local(k, v) {
     try {
       if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null');
       localStorage.setItem(k, JSON.stringify(v));
-    } catch (e) { return null; }
+    } catch (e) { if (v !== undefined) throw e; return null; }
   },
-  async loadMine() {
-    if (this.db) {
-      const snap = await this.db.collection(this.base() + '/plays').get();
-      return snap.docs.map(d => d.data() && d.data().play).filter(Boolean).map(clone);
-    }
-    return this.local('og-mine') || [];
-  },
+  async loadMine() { return this.local('og-mine') || []; },
   async saveMine(play) {
-    if (this.db) return this.db.doc(this.base() + '/plays/' + play.id).set({ play, savedAt: Date.now() });
     const list = (this.local('og-mine') || []).filter(p => p.id !== play.id);
     list.push(play); this.local('og-mine', list);
   },
   async deleteMine(id) {
-    if (this.db) return this.db.doc(this.base() + '/plays/' + id).delete();
     this.local('og-mine', (this.local('og-mine') || []).filter(p => p.id !== id));
   },
-  async loadFavs() {
-    if (this.db) {
-      const s = await this.db.doc(this.base() + '/prefs/main').get();
-      return s.exists && Array.isArray(s.data().favorites) ? [...s.data().favorites] : [];
-    }
-    return this.local('og-favs') || [];
-  },
-  favChain: Promise.resolve(),
-  saveFavs(ids) {
-    // one write at a time to the favorites document
-    this.favChain = this.favChain.then(() => this.db
-      ? this.db.doc(this.base() + '/prefs/main').set({ favorites: ids })
-      : this.local('og-favs', ids)).catch(() => toast('Couldn’t save favorites. Try again.'));
-    return this.favChain;
-  },
-  async share(play) {
-    if (!this.db) throw new Error('nodb');
-    const id = rid();
-    await this.db.doc('shared/' + id).set({ play, by: this.uid, at: Date.now() });
-    return id;
-  },
-  async loadShared(id) {
-    if (!this.db) return null;
-    const s = await this.db.doc('shared/' + id).get();
-    return s.exists ? clone(s.data().play) : null;
+  async loadFavs() { return this.local('og-favs') || []; },
+  async saveFavs(ids) {
+    try { this.local('og-favs', ids); } catch (e) { toast('Couldn’t save favorites. Try again.'); }
   }
 };
+
+/* Custom plays travel inside the share link itself: "#j-<base64url JSON>.<coverage>". Nothing is uploaded. */
+const r2 = v => Math.round(v * 100) / 100;
+const pts = a => a.map(p => p.map(r2));
+function packPlay(play) {
+  const o = { name: play.name, concept: play.concept, players: play.players.map(p => {
+    const q = { id: p.id, start: p.start.map(r2), route: pts(p.route), routeName: p.routeName };
+    if (p.shape === 'star') q.star = true;
+    if (p.dashed) q.dashed = true;
+    if (p.fake) q.fake = true;
+    if (p.motion) q.motion = pts(p.motion);
+    return q;
+  }) };
+  if (play.handoff) o.handoff = play.handoff;
+  const bytes = new TextEncoder().encode(JSON.stringify(o));
+  let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function unpackPlay(tok) {
+  const bin = atob(tok.replace(/-/g, '+').replace(/_/g, '/'));
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+}
+const shortHash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
 
 /* ---------- turning AI output or an imported file into a safe, complete play ---------- */
 const DEFAULTS = { X: ['orange', 'Orange', [5, 0]], Y: ['purple', 'Purple', [25, 0]], Z: ['green', 'Green', [20, -2]], C: ['ink', 'Center', [15, 0]], Q: ['red', 'Quarterback', [15, -3.5]] };
@@ -125,40 +106,7 @@ function normalizePlay(raw, id) {
 }
 const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; return c; };
 
-/* ---------- AI: describe a play, or read a diagram ---------- */
-const slim = p => ({ name: p.name.replace(/^\d+\s*·\s*/, ''), type: p.type, concept: p.concept, players: p.players.map(q => ({ id: q.id, start: q.start, route: q.route, routeName: q.routeName, ...(q.shape === 'star' ? { star: true } : {}) })) });
-const PLAY_FORMAT = `Return ONLY one JSON object describing a youth 5v5 flag football play, in this shape:
-{"name": string, "type": "pass"|"run"|"trick", "concept": short string,
- "handoff": {"to": id, "at": routeIndex, "thenPass": boolean}   (only for runs and trick passes),
- "players": [{"id": "X"|"Y"|"Z"|"C"|"Q", "start": [x, y], "route": [[x, y], ...], "routeName": short string,
-   "star": true (exactly one: the designed target or ball carrier), "dashed": true (fake or decoy path),
-   "motion": [[x, y]] (only if the player motions before the snap: where the motion begins)}]}
-Field, in yards: x runs 0 (left sideline) to 30 (right sideline); the ball and C start at [15, 0]. y is yards past the line of scrimmage; negative is the backfield.
-Players: C is the center (snaps, then runs a route). Q is the quarterback, about [15, -3] to [15, -4.5]; Q's route is the drop or rollout, like [[15, -5]] or [[9, -4.5]]. X is orange, Y purple, Z green. Wideouts usually line up 3-6 yards from a sideline, slots 4-8 yards from the ball, backs at y -4 to -6.
-A route lists waypoints after the start; an optional third number is a pause in seconds. Depths: slant breaks at 2 and ends near 6; hitch runs to 5 and comes back to 4.5; outs and ins break at 5; corners and posts break at 6-7 then angle 4-6 yards; go routes end at y 17; flats end at y 3-5 near the sideline.
-Run play: "handoff.to" is the ball carrier and "at" is the index in that player's route where they meet Q. Trick pass: the same with "thenPass": true; the carrier throws from behind the line.
-Name the play by formation and key action, like "Trips Right, X Flat Left". Never use play names from published playbooks.
-Example of the format: ${JSON.stringify(slim(PLAYS.find(p => p.id === 'p12')))}`;
-
-let aiCtl = null;
-async function askAI(prompt, images, statusEl) {
-  const sample = await cap('sample');
-  if (!sample) throw { code: 'not_granted' };
-  if (aiCtl) aiCtl.abort();
-  aiCtl = new AbortController();
-  statusEl.className = 'status'; statusEl.textContent = 'Drawing the play…';
-  const raw = await sample.json(prompt, { modelTier: 'default', signal: aiCtl.signal, cache: false, ...(images ? { images } : {}) });
-  return normalizePlay(raw, 'd' + rid());
-}
-const AI_ERRORS = {
-  not_granted: 'AI drafting isn’t turned on for this app in your account.', sampling_disabled: 'AI isn’t available for this account.',
-  not_declared: 'AI drafting isn’t available in this version.', capability_disabled: 'AI isn’t available in this view.', capability_removed: 'AI isn’t available in this view.',
-  rate_limited: 'Too many requests right now. Wait a minute and try again.', session_expired: 'Sign in again, then try once more.',
-  image_rejected: 'That image couldn’t be read. Try a PNG or JPG screenshot.', images_unavailable: 'Reading images isn’t available here. Describe the play instead.',
-  refused: 'Claude couldn’t draw that one. Try describing it differently.', invalid_json: 'The answer didn’t come back as a play. Try again or add more detail.',
-  empty_completion: 'No answer came back. Add more detail and try again.', prompt_too_large: 'That’s too long. Shorten the description.'
-};
-const aiError = e => e && e.code ? (AI_ERRORS[e.code] || (e.code === 'cancelled' ? '' : 'Something went wrong reaching Claude. Try again.')) : (e && e.message) || 'That play couldn’t be built. Try again.';
+/* ---------- AI drafts (see ai.js) ---------- */
 function useDraft(play) {
   play.draft = true;
   closeDialog();
@@ -189,9 +137,10 @@ const EXAMPLES = [
   'Split T run: Z takes the handoff and runs off-tackle left. X and Y run go routes as decoys, C releases right.',
   'Bunch left. Y slants under, X runs a corner, Z sits at 5 yards, C runs an out right. Throw to Y.'
 ];
-async function openStudio(tab = 'text') {
-  const sample = await cap('sample');
+async function openStudio(tab) {
+  const sample = aiProvider();
   const lim = sample ? await sample.limits().catch(() => null) : null;
+  tab = tab || (sample ? 'text' : 'file');
   const img = lim && lim.images;
   openDialog(`${dlgHead('New play')}
     <div class="tabs" role="tablist">
@@ -204,14 +153,14 @@ async function openStudio(tab = 'text') {
       <textarea id="aiText" placeholder="Formation, each player's route, and who gets the ball."></textarea>
       <div class="examples">${EXAMPLES.map(x => `<button class="chipbtn" data-ex>${esc(x)}</button>`).join('')}</div>
       <div><button class="act primary" id="aiGo" ${sample ? '' : 'disabled'}>Draw this play</button></div>
-      <p class="status${sample ? '' : ' err'}" id="aiStatus">${sample ? '' : 'AI drafting isn’t available in this view. You can still import a play file.'}</p>
+      <p class="status${sample ? '' : ' err'}" id="aiStatus">${sample ? '' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="image" hidden>
-      <p class="muted">Upload a screenshot or photo of a play card. Claude reads the players, routes, motion and fakes, and draws it as a draft you can test and save.</p>
+      <p class="muted">Upload a screenshot or photo of a play card. The AI reads the players, routes, motion and fakes, and draws it as a draft you can test and save.</p>
       <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'}>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
-      <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : 'Reading images isn’t available in this view. Describe the play instead.'}</p>
+      <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : sample ? 'Reading images isn’t available here. Describe the play instead.' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="file" hidden>
       <p class="muted">Import plays from an Open Grass playbook file (.json), like the one Export favorites saves. They go into My plays.</p>
@@ -285,7 +234,7 @@ async function saveCurrentAsMine() {
     if (state.play.shared) library.shared = library.shared.filter(s => s.id !== state.basePlay.id);
     p.mine = true; library.mine.push(p); library.version++;
     loadPlay(p);
-    toast(store.db ? 'Saved to My plays.' : 'Saved to My plays in this browser.');
+    toast('Saved to My plays in this browser.');
   } catch (e) { toast('Couldn’t save the play. Try again.'); }
 }
 $('saveDraftBtn').addEventListener('click', saveCurrentAsMine);
@@ -322,29 +271,24 @@ $('favBtn').addEventListener('click', async () => {
 });
 
 /* ---------- share links ---------- */
-// Only a plain #token reaches the page from a link, so the token is "<playId>.<coverage>", or "s-<sharedId>.<coverage>" for a custom play.
-async function openShare() {
+// Only a plain #token reaches the page from a link, so the token is "<playId>.<coverage>" for a built-in play,
+// or "j-<packed play>.<coverage>" for a custom, edited or draft play (the whole play rides in the link).
+function openShare() {
   const custom = state.play.draft || state.play.mine || state.play.shared || Object.keys(state.changes).length > 0;
   const covTok = state.cov || 'none';
+  let url = '', err = '';
+  try { url = `${SITE_URL}#${custom ? 'j-' + packPlay(stripFlags(state.play)) : state.basePlay.id}.${covTok}`; }
+  catch (e) { err = 'Couldn’t create the link. Try again.'; }
+  const note = custom
+    ? 'This play is stored in the link itself, so anyone with it can open it. They can save it to their own My plays.'
+    : 'Anyone with the link can open it.';
   openDialog(`${dlgHead('Share this play')}
     <div class="sharebox">
       <label class="eyebrow" for="shareUrl">Link</label>
-      <input id="shareUrl" readonly value="${custom ? 'Creating link…' : esc(`${ARTIFACT_URL}#${state.basePlay.id}.${covTok}`)}">
-      <div><button class="act primary" id="copyLink" ${custom ? 'disabled' : ''}>Copy link</button></div>
-      <p class="status" id="shareStatus">Opens ${esc(state.play.name)} vs ${state.cov ? COVERAGES[state.cov].name : 'no defense'}. People need access to Open Grass to open it; add them from the app's Share menu.</p>
+      <input id="shareUrl" readonly value="${esc(url)}">
+      <div><button class="act primary" id="copyLink" ${url ? '' : 'disabled'}>Copy link</button></div>
+      <p class="status${err ? ' err' : ''}" id="shareStatus">${err || `Opens ${esc(state.play.name)} vs ${state.cov ? COVERAGES[state.cov].name : 'no defense'}. ${note}`}</p>
     </div>`);
-  if (custom) {
-    try {
-      const sid = await store.share(stripFlags(state.play));
-      if ($('shareUrl')) { $('shareUrl').value = `${ARTIFACT_URL}#s-${sid}.${covTok}`; $('copyLink').disabled = false; }
-    } catch (e) {
-      if ($('shareStatus')) {
-        $('shareUrl').value = '';
-        $('shareStatus').className = 'status err';
-        $('shareStatus').textContent = e.message === 'nodb' ? 'Sharing your own plays needs you signed in to Claude. Built-in plays can still be shared.' : 'Couldn’t create the link. Try again.';
-      }
-    }
-  }
   $('copyLink').addEventListener('click', async () => {
     const inp = $('shareUrl');
     try { await navigator.clipboard.writeText(inp.value); toast('Link copied.'); }
@@ -462,15 +406,17 @@ async function renderGif(progress) {
   return new Blob([encodeGif(frames, W, H, palette)], { type: 'image/gif' });
 }
 const slug = s => s.replace(/^\d+\s*·\s*/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'play';
-async function saveFile(filename, data) {
-  const dl = await cap('downloads');
-  if (!dl) { toast('Saving files isn’t available in this view.'); return false; }
-  try { await dl.save({ filename, data }); return true; }
-  catch (e) {
-    const msg = { declined: '', rate_limited: 'A save is already waiting for you. Finish that one first.', too_large: 'That file is too large to save here.' }[e && e.code];
-    if (msg !== '') toast(msg || 'Couldn’t save the file here.');
-    return false;
-  }
+const MIME = { gif: 'image/gif', json: 'application/json', csv: 'text/csv;charset=utf-8' };
+function saveFile(filename, data) {
+  try {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: MIME[filename.split('.').pop()] || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.hidden = true;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return true;
+  } catch (e) { toast('Couldn’t save the file. Try again.'); return false; }
 }
 $('gifBtn').addEventListener('click', async () => {
   const b = $('gifBtn'), label = b.lastChild;
@@ -520,15 +466,15 @@ $('newPlayBtn').addEventListener('click', () => openStudio());
 
 /* ---------- startup: links, then the coach's saved plays and favorites ---------- */
 function parseHash() {
-  const m = /^(s-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|man|none))?$/.exec((location.hash || '').slice(1));
-  return m ? { shared: !!m[1], id: m[2], cov: m[3] === 'none' ? null : m[3] } : null;
+  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|man|none))?$/.exec((location.hash || '').slice(1));
+  return m ? { shared: !!m[1], packed: m[1] === 'j-', id: m[2], cov: m[3] === 'none' ? null : m[3] } : null;
 }
 const link = parseHash();
 if (link && !link.shared) {
   const p = PLAYS.find(x => x.id === link.id);
   if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov);
 }
-store.init().then(async () => {
+(async () => {
   try {
     const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
@@ -536,15 +482,16 @@ store.init().then(async () => {
   } catch (e) { toast('Couldn’t load your saved plays.'); }
   if (link && link.shared) {
     try {
-      const raw = await store.loadShared(link.id);
+      // "s-" links came from the old hosted version, whose shared plays lived in its database
+      const raw = link.packed ? unpackPlay(link.id) : null;
       if (raw) {
-        const p = normalizePlay(raw, 's' + link.id); p.shared = true; p.series = 'shared';
+        const p = normalizePlay(raw, 's' + shortHash(link.id)); p.shared = true; p.series = 'shared';
         library.shared.push(p);
         library.version++;
         loadPlay(p, link.cov === undefined ? state.cov : link.cov);
         return;
       }
-      toast('That shared play wasn’t found.');
+      toast('That shared play link is from an older version of Open Grass and can’t be opened here.');
     } catch (e) { toast('Couldn’t open the shared play.'); }
   } else if (!link) {
     let saved = null;
@@ -554,4 +501,4 @@ store.init().then(async () => {
   }
   library.version++;
   buildSelect(); renderHead();
-});
+})();
