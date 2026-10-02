@@ -253,6 +253,7 @@ const playerById = id => state.play.players.find(p => p.id === id);
 /* ---------- compute ---------- */
 function recompute(full = true) {
   state.run = state.cov ? runPlay(state.play, state.cov, opts()) : null;
+  state.ball = planBall();
   if (full) {
     COV_ORDER.forEach(c => { state.scout[c] = runPlay(state.play, c, { blitz: state.blitz }).ev; });
     state.sugs = state.run ? suggest(state.play, state.cov, opts(), state.run.ev.score) : [];
@@ -307,8 +308,8 @@ function starPts(cx, cy, r1, r2) {
   for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? r2 : r1; pts.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1)); }
   return pts.join(' ');
 }
-function football(x, y, rot = -30) {
-  return `<g transform="translate(${x} ${y}) rotate(${rot})"><ellipse rx="8" ry="5" style="fill:var(--ball);stroke:var(--chalk)" stroke-width="1"/><path d="M-3 0h6M-1.5 -1.5v3M0 -1.5v3M1.5 -1.5v3" style="stroke:var(--chalk)" stroke-width=".9"/></g>`;
+function football(x, y, rot = -30, sc = 1) {
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${sc.toFixed(2)})"><ellipse rx="8" ry="5" style="fill:var(--ball);stroke:var(--chalk)" stroke-width="1"/><path d="M-3 0h6M-1.5 -1.5v3M0 -1.5v3M1.5 -1.5v3" style="stroke:var(--chalk)" stroke-width=".9"/></g>`;
 }
 
 function frameAt(t) {
@@ -317,6 +318,51 @@ function frameAt(t) {
 }
 
 /* Pre-snap, holes are the gaps between where each zone will be. After the snap, they are the gaps between actual defenders. */
+/* The ball's trip for this play: snap from C, held by Q, then thrown, pitched or handed off. Times in seconds after the snap. */
+const SNAP_T = 0.2, PASS_SPEED = 13, PITCH_SPEED = 8;
+function planBall() {
+  const run = state.run, play = state.play;
+  if (!run) return null;
+  const qb = play.players.find(p => p.qb), c = play.players.find(p => p.id === 'C');
+  const at = (id, t) => frameAt(clamp(t, 0, TMAX)).off[id];
+  const plan = { qb: qb.id, from: c ? [c.start[0], c.start[1] + 0.4] : null, to: null, release: null, arrive: null, kind: null };
+  if (run.ev.run) {
+    const r = run.ev.run, q = at(qb.id, r.th), h = at(r.id, r.th), d = dist(q, h);
+    plan.to = r.id; plan.arrive = r.th;
+    if (d > 1.5) { plan.kind = 'pitch'; plan.release = Math.max(SNAP_T, r.th - d / PITCH_SPEED); }
+    else { plan.kind = 'handoff'; plan.release = r.th; }
+    return plan;
+  }
+  const top = run.ev.order[0], b = run.ev.receivers[top].best;
+  if (b.t === null) return plan;
+  let arrive = b.t, release = Math.max(SNAP_T + 0.15, arrive - dist(at(qb.id, arrive), b.pos) / PASS_SPEED);
+  arrive = release + dist(at(qb.id, release), at(top, arrive)) / PASS_SPEED;
+  if (run.sim.pressure !== null && release > run.sim.pressure) return plan;
+  Object.assign(plan, { kind: 'pass', to: top, release, arrive });
+  return plan;
+}
+function ballLayer(t, f) {
+  const p = state.ball;
+  if (!p) return '';
+  const carried = (pos, rot = -40) => football(X(pos[0]) + 9, Y(pos[1]) - 8, rot, 0.9);
+  if (t < SNAP_T && p.from) {
+    const q = f.off[p.qb], u = t / SNAP_T;
+    if (t === 0) return football(X(p.from[0]), Y(p.from[1]), 0, 0.9);
+    return football(X(p.from[0] + (q[0] - p.from[0]) * u), Y(p.from[1] + (q[1] - p.from[1]) * u) - Math.sin(Math.PI * u) * 5, 90, 0.9);
+  }
+  if (!p.kind || t < p.release) return carried(f.off[p.qb]);
+  if (t >= p.arrive) return carried(f.off[p.to]);
+  // in the air: straight line on the ground with an arc lift and a shadow underneath
+  const a = frameAt(p.release).off[p.qb], b = frameAt(p.arrive).off[p.to];
+  const u = (t - p.release) / (p.arrive - p.release);
+  const gx = X(a[0] + (b[0] - a[0]) * u), gy = Y(a[1] + (b[1] - a[1]) * u);
+  const span = Math.hypot(X(b[0]) - X(a[0]), Y(b[1]) - Y(a[1]));
+  const arc = Math.sin(Math.PI * u), lift = arc * Math.min(26, span * (p.kind === 'pass' ? 0.22 : 0.12));
+  const rot = Math.atan2(Y(b[1]) - Y(a[1]), X(b[0]) - X(a[0])) * 180 / Math.PI;
+  return `<ellipse cx="${gx.toFixed(1)}" cy="${(gy + 3).toFixed(1)}" rx="${(6 - arc * 2).toFixed(1)}" ry="2.5" fill="#000" fill-opacity="${(0.25 - arc * 0.1).toFixed(2)}"/>`
+    + football(gx, gy - lift, rot, 1 + arc * 0.35);
+}
+
 function holesLayer(f, roles, t) {
   const defs = state.run.def.defenders;
   const zoneMode = t < 0.6;
@@ -398,23 +444,7 @@ function renderField() {
     s += `<line x1="${X(dp[0])}" y1="${Y(dp[1])}" x2="${X(rp[0])}" y2="${Y(rp[1])}" style="stroke:var(--zone)" stroke-width="1.3" stroke-dasharray="3 3" stroke-opacity=".8"/>`;
   });
 
-  // planned throw: catch spot + dotted ball path, like the play card
   const qb = play.players.find(p => p.qb);
-  if (run && run.ev.run) {
-    const r = run.ev.run, hp = playerById(r.id);
-    const h = hp.route[play.handoff.at];
-    const q = frameAt(r.th).off[qb.id];
-    s += `<line x1="${X(q[0])}" y1="${Y(q[1])}" x2="${X(h[0])}" y2="${Y(h[1])}" style="stroke:var(--r-red)" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"/>`;
-    if (t < r.th) s += football(X(h[0]), Y(h[1]));
-  } else if (run) {
-    const top = run.ev.order[0], b = run.ev.receivers[top].best;
-    if (b.t !== null) {
-      const ft = frameAt(b.t), q = ft.off[qb.id];
-      const thrown = t >= b.t;
-      s += `<line x1="${X(q[0])}" y1="${Y(q[1])}" x2="${X(b.pos[0])}" y2="${Y(b.pos[1])}" style="stroke:var(--r-red)" stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round" stroke-opacity="${thrown ? 1 : .55}"/>`;
-      s += football(X(b.pos[0]) + (thrown ? 0 : 0), Y(b.pos[1]) - (thrown ? 0 : 0), -30);
-    }
-  }
 
   // blitz arrow
   if (run) def.defenders.forEach((d, i) => {
@@ -439,9 +469,9 @@ function renderField() {
       s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" class="lbl" font-size="11" fill="#fff">${pl.label}</text>`;
     }
   });
+  if (run) s += ballLayer(t, f);
   if (run && run.ev.run && t >= run.ev.run.th) {
     const r = run.ev.run, cp = f.off[r.id];
-    s += football(X(cp[0]) + 11, Y(cp[1]) - 9, -40);
     if (r.t !== null && t >= r.t) s += `<text x="${X(cp[0])}" y="${Y(cp[1]) + 26}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED · ${r.yards >= 0 ? '+' : ''}${r.yards.toFixed(1)} YDS</text>`;
   }
   if (run && !run.ev.run && run.sim.pressure !== null && t >= run.sim.pressure) {
@@ -479,14 +509,16 @@ function renderMarks() {
   [0, 1, 2, 3, 4].forEach(v => { s += `<span class="mk bot tick" style="left:${v / TMAX * 100}%">${v}s</span>`; });
   if (state.run && state.run.ev.run) {
     const r = state.run.ev.run;
-    s += `<span class="mk top throw" style="left:${r.th / TMAX * 100}%">● Handoff</span>`;
+    const bp = state.ball;
+    s += `<span class="mk top throw" style="left:${bp.release / TMAX * 100}%">● ${bp.kind === 'pitch' ? 'Pitch' : 'Handoff'}</span>`;
     if (r.t !== null) s += `<span class="mk top rush" style="left:${r.t / TMAX * 100}%">▼ Flag ${fmtT(r.t)}</span>`;
   } else if (state.run) {
     const sim = state.run.sim;
     if (sim.pressure !== null) s += `<span class="mk top rush" style="left:${sim.pressure / TMAX * 100}%">▼ Rush ${fmtT(sim.pressure)}</span>`;
     else s += `<span class="mk top tick" style="left:${sim.deadline / TMAX * 100}%">▼ Throw by ${fmtT(sim.deadline)}</span>`;
     const b = state.run.ev.receivers[state.run.ev.order[0]].best;
-    if (b.t !== null) s += `<span class="mk top throw" style="left:${b.t / TMAX * 100}%">● Throw</span>`;
+    const bp = state.ball;
+    if (bp && bp.kind) s += `<span class="mk top throw" style="left:${bp.release / TMAX * 100}%">● Throw</span>`;
   }
   m.innerHTML = s;
 }
