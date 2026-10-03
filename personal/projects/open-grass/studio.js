@@ -180,7 +180,7 @@ async function openStudio(tab) {
     const text = $('aiText').value.trim(), st = $('aiStatus');
     if (!text) { st.className = 'status err'; st.textContent = 'Describe the play first.'; return; }
     $('aiGo').disabled = true;
-    try { useDraft(await askAI(`${PLAY_FORMAT}\n\nThe coach's description:\n${text}`, null, st)); }
+    try { useDraft(await askAI({ description: text }, st)); }
     catch (e) { if ($('aiStatus')) { st.className = 'status err'; st.textContent = aiError(e); } }
     finally { if ($('aiGo')) $('aiGo').disabled = false; }
   });
@@ -195,8 +195,7 @@ async function openStudio(tab) {
   $('imgGo').addEventListener('click', async () => {
     const st = $('imgStatus');
     $('imgGo').disabled = true;
-    const prompt = `${PLAY_FORMAT}\n\nThe attached image is a flag football play diagram. Conventions: orange circle = X, purple = Y, green = Z, gray or black square = C, red = Q. A star marks the target or ball carrier. A dotted red line is the throw or pitch. A zigzag line is pre-snap motion. Dashed lines are fakes or the ball carrier's path. The long horizontal line is the line of scrimmage. Transcribe this diagram, keeping its title as the name if it has one.`;
-    try { useDraft(await askAI(prompt, file, st)); }
+    try { useDraft(await askAI({ image: file }, st)); }
     catch (e) { if ($('imgStatus')) { st.className = 'status err'; st.textContent = aiError(e); } }
     finally { if ($('imgGo')) $('imgGo').disabled = false; }
   });
