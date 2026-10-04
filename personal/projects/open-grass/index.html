@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Youth 5v5 flag football play tester: overlay a coverage, animate the play, find the open grass.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='10' fill='%231C5A37'/%3E%3Cellipse cx='25' cy='24' rx='11' ry='7' fill='%23EBF25A'/%3E%3Ccircle cx='13' cy='13' r='3.2' fill='%23fff'/%3E%3Ccircle cx='33' cy='12' r='3.2' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="logo/open-grass-icon.png">
+<link rel="apple-touch-icon" href="logo/open-grass-icon.png">
 <title>Open Grass</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,7 +56,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand h1 { font-family: var(--f-display); font-weight: 900; font-size: 34px; line-height: .9; letter-spacing: .01em; margin: 0; text-transform: uppercase; }
 .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; letter-spacing: .02em; }
-.mark { width: 44px; height: 44px; flex: none; }
+.mark { height: 72px; width: auto; flex: none; display: block; }
+/* The wordmark's navy "OPEN" vanishes on the dark theme, so seat the logo on a light badge there. */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mark { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
+:root[data-theme="dark"] .mark { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .play-pick { display: flex; align-items: center; gap: 8px; }
 .play-pick label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .play-pick select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; max-width: 70vw; }
@@ -205,14 +210,8 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 <div class="app">
   <header class="top">
     <div class="brand">
-      <svg class="mark" viewBox="0 0 44 44" aria-hidden="true">
-        <rect width="44" height="44" rx="10" style="fill:var(--accent)"/>
-        <path d="M6 30h32M6 18h32" style="stroke:var(--accent-ink);stroke-opacity:.35" stroke-width="1.5"/>
-        <ellipse cx="25" cy="24" rx="11" ry="7" style="fill:var(--hole);stroke:#1d2208" stroke-width="1.2"/>
-        <circle cx="13" cy="13" r="3.2" style="fill:var(--accent-ink)"/>
-        <circle cx="33" cy="12" r="3.2" style="fill:var(--accent-ink)"/>
-      </svg>
-      <div><h1>Open Grass</h1><p>Find the hole. Beat the coverage.</p></div>
+      <img class="mark" src="logo/open-grass-logo-header.png" width="101" height="72" alt="">
+      <div><h1 class="sr-only">Open Grass</h1><p>Find the hole. Beat the coverage.</p></div>
     </div>
     <div class="head-actions">
       <div class="play-pick">
