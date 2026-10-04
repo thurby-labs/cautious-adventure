@@ -2,7 +2,9 @@
    Units: yards. x 0..30 sideline to sideline (ball usually at 15), y = yards past the line of scrimmage.
    Route points are [x, y] or [x, y, holdSeconds]. A star (shape: 'star') marks the player the diagram highlights.
    motion: pre-snap path ending at the alignment. dashed: fake or ball-carrier path.
-   handoff: { to, at } ball is handed or pitched to `to` at route point index `at`; thenPass: that player throws. */
+   handoff: { to, at } ball is handed or pitched to `to` at route point index `at`; thenPass: that player throws.
+   option: { label, name, concept, handoff, players } the play's called flip (e.g. the other back takes it the other way);
+   the app shows it as a toggle on the play, keeping the same number and id. */
 const QB = (x, y, route, routeName, extra = {}) => ({ id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [x, y], route, routeName, delay: 0.15, speed: 3.4, qb: true, ...extra });
 const P = (id, color, name, start, route, routeName, extra = {}) => ({ id, label: id, name, color, start, route, routeName, delay: id === 'C' ? 0.35 : 0, speed: id === 'C' ? 5.0 : 5.6, eligible: true, ...extra });
 const X_ = (s, r, n, e) => P('X', 'orange', 'Orange', s, r, n, e);
@@ -41,7 +43,14 @@ const PLAYS = [
   Z_([11, -2], [[11, 0.5], [10, 2.5], [7.5, 3.5]], 'Flat left', { shape: 'star', motion: [[20.3, -2.3]] }),
   Y_([25.6, 0], [[25.6, 9], [21.5, 15]], 'Post') ] },
 
-{ num: 5, series: 'wristband', id: 'p44', name: 'Split-Back Y Sweep Left (Z Fake Right)', type: 'run', concept: 'Sweep left, fake right', handoff: { to: 'Y', at: 0 }, players: [
+{ num: 5, series: 'wristband', id: 'p44', name: 'Split-Back Y Sweep Left (Z Right Option)', type: 'run', concept: 'Sweep left, fake right', handoff: { to: 'Y', at: 0 },
+  option: { label: 'Option: Z right', name: 'Split-Back Z Sweep Right (Option)', concept: 'Option: Z sweeps right, Y fakes left', handoff: { to: 'Z', at: 0 }, players: [
+    X_([3.8, 0], [[3.6, 9], [2.2, 17]], 'Go (fade)'),
+    C_([15, 0], [[19.4, 4.1], [21, 6]], 'Release right'),
+    QB(15, -2.1, [[14.8, -3.2]], 'Pitch'),
+    Y_([19.4, -5], [[11.2, -1.4], [7.2, 0.5]], 'Fake sweep left', { dashed: true, speed: 5.4 }),
+    Z_([10.7, -4.9], [[15, -4.6], [17.6, -1.4], [18.7, 3.2], [19, 8]], 'Sweep right', { shape: 'star', speed: 5.4 }) ] },
+  players: [
   X_([3.8, 0], [[3.6, 9], [2.2, 17]], 'Go (fade)'),
   C_([15, 0], [[19.4, 4.1], [21, 6]], 'Release right'),
   QB(15, -2.1, [[15.2, -3.2]], 'Pitch'),
@@ -118,4 +127,6 @@ const PLAYS = [
   Z_([15, -5.9], [[15.5, -2], [16.9, 3.5]], 'Fake dive', { speed: 5.4 }),
   X_([25.1, 0], [[20, -2.5], [15, -3.8], [10, -2.5], [7.3, -0.4]], 'Fake reverse left', { fake: true }) ] }
 ];
-PLAYS.forEach(p => { if (p.num) p.name = `${p.num} · ${p.name}`; });
+PLAYS.forEach(p => { if (p.num) { p.name = `${p.num} · ${p.name}`; if (p.option) p.option.name = `${p.num} · ${p.option.name}`; } });
+// The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
+const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });

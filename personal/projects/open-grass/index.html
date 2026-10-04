@@ -235,6 +235,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
       </div>
       <div class="actions" id="actions">
         <button class="act" id="favBtn" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Favorite</span></button>
+        <button class="act" id="optBtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg><span>Option</span></button>
         <button class="act" id="shareBtn"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share link</button>
         <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
         <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
@@ -289,7 +290,9 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
    Units: yards. x 0..30 sideline to sideline (ball usually at 15), y = yards past the line of scrimmage.
    Route points are [x, y] or [x, y, holdSeconds]. A star (shape: 'star') marks the player the diagram highlights.
    motion: pre-snap path ending at the alignment. dashed: fake or ball-carrier path.
-   handoff: { to, at } ball is handed or pitched to `to` at route point index `at`; thenPass: that player throws. */
+   handoff: { to, at } ball is handed or pitched to `to` at route point index `at`; thenPass: that player throws.
+   option: { label, name, concept, handoff, players } the play's called flip (e.g. the other back takes it the other way);
+   the app shows it as a toggle on the play, keeping the same number and id. */
 const QB = (x, y, route, routeName, extra = {}) => ({ id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [x, y], route, routeName, delay: 0.15, speed: 3.4, qb: true, ...extra });
 const P = (id, color, name, start, route, routeName, extra = {}) => ({ id, label: id, name, color, start, route, routeName, delay: id === 'C' ? 0.35 : 0, speed: id === 'C' ? 5.0 : 5.6, eligible: true, ...extra });
 const X_ = (s, r, n, e) => P('X', 'orange', 'Orange', s, r, n, e);
@@ -328,7 +331,14 @@ const PLAYS = [
   Z_([11, -2], [[11, 0.5], [10, 2.5], [7.5, 3.5]], 'Flat left', { shape: 'star', motion: [[20.3, -2.3]] }),
   Y_([25.6, 0], [[25.6, 9], [21.5, 15]], 'Post') ] },
 
-{ num: 5, series: 'wristband', id: 'p44', name: 'Split-Back Y Sweep Left (Z Fake Right)', type: 'run', concept: 'Sweep left, fake right', handoff: { to: 'Y', at: 0 }, players: [
+{ num: 5, series: 'wristband', id: 'p44', name: 'Split-Back Y Sweep Left (Z Right Option)', type: 'run', concept: 'Sweep left, fake right', handoff: { to: 'Y', at: 0 },
+  option: { label: 'Option: Z right', name: 'Split-Back Z Sweep Right (Option)', concept: 'Option: Z sweeps right, Y fakes left', handoff: { to: 'Z', at: 0 }, players: [
+    X_([3.8, 0], [[3.6, 9], [2.2, 17]], 'Go (fade)'),
+    C_([15, 0], [[19.4, 4.1], [21, 6]], 'Release right'),
+    QB(15, -2.1, [[14.8, -3.2]], 'Pitch'),
+    Y_([19.4, -5], [[11.2, -1.4], [7.2, 0.5]], 'Fake sweep left', { dashed: true, speed: 5.4 }),
+    Z_([10.7, -4.9], [[15, -4.6], [17.6, -1.4], [18.7, 3.2], [19, 8]], 'Sweep right', { shape: 'star', speed: 5.4 }) ] },
+  players: [
   X_([3.8, 0], [[3.6, 9], [2.2, 17]], 'Go (fade)'),
   C_([15, 0], [[19.4, 4.1], [21, 6]], 'Release right'),
   QB(15, -2.1, [[15.2, -3.2]], 'Pitch'),
@@ -405,7 +415,9 @@ const PLAYS = [
   Z_([15, -5.9], [[15.5, -2], [16.9, 3.5]], 'Fake dive', { speed: 5.4 }),
   X_([25.1, 0], [[20, -2.5], [15, -3.8], [10, -2.5], [7.3, -0.4]], 'Fake reverse left', { fake: true }) ] }
 ];
-PLAYS.forEach(p => { if (p.num) p.name = `${p.num} · ${p.name}`; });
+PLAYS.forEach(p => { if (p.num) { p.name = `${p.num} · ${p.name}`; if (p.option) p.option.name = `${p.num} · ${p.option.name}`; } });
+// The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
+const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });
 
 /* Open Grass engine: coverage simulation, scoring, and play adjustments.
    Units are yards. x runs 0..30 sideline to sideline, y is yards downfield from the line of scrimmage. */
@@ -1277,6 +1289,9 @@ function renderHead() {
   $('favBtn').setAttribute('aria-pressed', fav);
   $('favBtn').querySelector('span').textContent = fav ? 'Favorited' : 'Favorite';
   $('favBtn').hidden = !!state.play.draft;
+  const opt = state.basePlay.option;
+  $('optBtn').hidden = !opt || !!(state.play.draft || state.play.mine || state.play.shared);
+  if (opt) { $('optBtn').setAttribute('aria-pressed', !!state.basePlay.optionOn); $('optBtn').querySelector('span').textContent = opt.label; }
   const edited = n > 0 && !state.play.draft && !state.play.shared;
   $('saveDraftBtn').hidden = !(state.play.draft || state.play.shared || edited);
   $('saveDraftBtn').textContent = edited ? 'Save as My play' : 'Save to My plays';
@@ -1380,7 +1395,8 @@ function buildSelect() {
   $('playSel').innerHTML = h;
   $('playSel').value = state.basePlay.id;
 }
-function loadPlay(pl, cov) {
+function loadPlay(pl, cov, optionOn = false) {
+  if (optionOn && pl.option) pl = withOption(pl);
   state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {};
   if (!pl.draft) { try { localStorage.setItem('og-play', pl.id); } catch (err) {} }
   if (cov !== undefined) state.cov = cov;
@@ -1404,6 +1420,10 @@ $('read').addEventListener('click', e => {
     pl.route = clone(sg.route); pl.routeName = sg.to;
     stop(); recompute(); setT(0);
   }
+});
+$('optBtn').addEventListener('click', () => {
+  const pl = PLAYS.find(p => p.id === state.basePlay.id);
+  if (pl && pl.option) loadPlay(pl, undefined, !state.basePlay.optionOn);
 });
 $('playTags').addEventListener('click', e => {
   if (e.target.id === 'resetPlay') { state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
@@ -1593,7 +1613,7 @@ function normalizePlay(raw, id) {
   if (handoff) play.handoff = handoff;
   return play;
 }
-const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; return c; };
+const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; delete c.option; delete c.optionOn; return c; };
 
 /* ---------- AI drafts (see ai.js) ---------- */
 function useDraft(play) {
@@ -1761,11 +1781,12 @@ $('favBtn').addEventListener('click', async () => {
 /* ---------- share links ---------- */
 // Only a plain #token reaches the page from a link, so the token is "<playId>.<coverage>" for a built-in play,
 // or "j-<packed play>.<coverage>" for a custom, edited or draft play (the whole play rides in the link).
+// A built-in play with its option toggled on uses "<playId>~opt".
 function openShare() {
   const custom = state.play.draft || state.play.mine || state.play.shared || Object.keys(state.changes).length > 0;
   const covTok = state.cov || 'none';
   let url = '', err = '';
-  try { url = `${SITE_URL}#${custom ? 'j-' + packPlay(stripFlags(state.play)) : state.basePlay.id}.${covTok}`; }
+  try { url = `${SITE_URL}#${custom ? 'j-' + packPlay(stripFlags(state.play)) : state.basePlay.id + (state.basePlay.optionOn ? '~opt' : '')}.${covTok}`; }
   catch (e) { err = 'Couldn’t create the link. Try again.'; }
   const note = custom
     ? 'This play is stored in the link itself, so anyone with it can open it. They can save it to their own My plays.'
@@ -1959,8 +1980,9 @@ function parseHash() {
 }
 const link = parseHash();
 if (link && !link.shared) {
-  const p = PLAYS.find(x => x.id === link.id);
-  if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov);
+  const opt = link.id.endsWith('~opt');
+  const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
+  if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
 }
 (async () => {
   try {

@@ -235,6 +235,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
       </div>
       <div class="actions" id="actions">
         <button class="act" id="favBtn" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Favorite</span></button>
+        <button class="act" id="optBtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg><span>Option</span></button>
         <button class="act" id="shareBtn"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share link</button>
         <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
         <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
@@ -720,6 +721,9 @@ function renderHead() {
   $('favBtn').setAttribute('aria-pressed', fav);
   $('favBtn').querySelector('span').textContent = fav ? 'Favorited' : 'Favorite';
   $('favBtn').hidden = !!state.play.draft;
+  const opt = state.basePlay.option;
+  $('optBtn').hidden = !opt || !!(state.play.draft || state.play.mine || state.play.shared);
+  if (opt) { $('optBtn').setAttribute('aria-pressed', !!state.basePlay.optionOn); $('optBtn').querySelector('span').textContent = opt.label; }
   const edited = n > 0 && !state.play.draft && !state.play.shared;
   $('saveDraftBtn').hidden = !(state.play.draft || state.play.shared || edited);
   $('saveDraftBtn').textContent = edited ? 'Save as My play' : 'Save to My plays';
@@ -823,7 +827,8 @@ function buildSelect() {
   $('playSel').innerHTML = h;
   $('playSel').value = state.basePlay.id;
 }
-function loadPlay(pl, cov) {
+function loadPlay(pl, cov, optionOn = false) {
+  if (optionOn && pl.option) pl = withOption(pl);
   state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {};
   if (!pl.draft) { try { localStorage.setItem('og-play', pl.id); } catch (err) {} }
   if (cov !== undefined) state.cov = cov;
@@ -847,6 +852,10 @@ $('read').addEventListener('click', e => {
     pl.route = clone(sg.route); pl.routeName = sg.to;
     stop(); recompute(); setT(0);
   }
+});
+$('optBtn').addEventListener('click', () => {
+  const pl = PLAYS.find(p => p.id === state.basePlay.id);
+  if (pl && pl.option) loadPlay(pl, undefined, !state.basePlay.optionOn);
 });
 $('playTags').addEventListener('click', e => {
   if (e.target.id === 'resetPlay') { state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }

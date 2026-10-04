@@ -104,7 +104,7 @@ function normalizePlay(raw, id) {
   if (handoff) play.handoff = handoff;
   return play;
 }
-const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; return c; };
+const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; delete c.option; delete c.optionOn; return c; };
 
 /* ---------- AI drafts (see ai.js) ---------- */
 function useDraft(play) {
@@ -272,11 +272,12 @@ $('favBtn').addEventListener('click', async () => {
 /* ---------- share links ---------- */
 // Only a plain #token reaches the page from a link, so the token is "<playId>.<coverage>" for a built-in play,
 // or "j-<packed play>.<coverage>" for a custom, edited or draft play (the whole play rides in the link).
+// A built-in play with its option toggled on uses "<playId>~opt".
 function openShare() {
   const custom = state.play.draft || state.play.mine || state.play.shared || Object.keys(state.changes).length > 0;
   const covTok = state.cov || 'none';
   let url = '', err = '';
-  try { url = `${SITE_URL}#${custom ? 'j-' + packPlay(stripFlags(state.play)) : state.basePlay.id}.${covTok}`; }
+  try { url = `${SITE_URL}#${custom ? 'j-' + packPlay(stripFlags(state.play)) : state.basePlay.id + (state.basePlay.optionOn ? '~opt' : '')}.${covTok}`; }
   catch (e) { err = 'Couldn’t create the link. Try again.'; }
   const note = custom
     ? 'This play is stored in the link itself, so anyone with it can open it. They can save it to their own My plays.'
@@ -470,8 +471,9 @@ function parseHash() {
 }
 const link = parseHash();
 if (link && !link.shared) {
-  const p = PLAYS.find(x => x.id === link.id);
-  if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov);
+  const opt = link.id.endsWith('~opt');
+  const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
+  if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
 }
 (async () => {
   try {
