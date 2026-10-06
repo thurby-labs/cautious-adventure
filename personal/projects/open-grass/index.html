@@ -180,6 +180,9 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .act[aria-pressed="true"] { background: var(--hole); color: #1d2208; border-color: var(--hole-edge); }
 .act.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .act.danger { color: var(--bad); }
+.acct { display: flex; align-items: center; min-height: 32px; }
+.acct #userBtn { display: flex; align-items: center; }
+.acct #userBtn[hidden] { display: none; }
 .act:disabled { opacity: .55; cursor: progress; }
 .act svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .scrim { position: fixed; inset: 0; z-index: 60; background: rgba(10, 16, 12, .55); display: grid; place-items: center; padding-inline: 16px; padding-block: 16px; }
@@ -220,6 +223,10 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
       </div>
       <button class="act primary" id="newPlayBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New play</button>
       <button class="act" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export favorites</button>
+      <div class="acct" id="acctBox" hidden>
+        <button class="act" id="acctBtn" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Sign in</button>
+        <div id="userBtn" hidden></div>
+      </div>
     </div>
   </header>
 
@@ -238,6 +245,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <button class="act" id="shareBtn"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share link</button>
         <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
         <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
+        <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
         <button class="act danger" id="deletePlayBtn" hidden>Delete play</button>
       </div>
 
@@ -1295,6 +1303,7 @@ function renderHead() {
   $('saveDraftBtn').hidden = !(state.play.draft || state.play.shared || edited);
   $('saveDraftBtn').textContent = edited ? 'Save as My play' : 'Save to My plays';
   $('deletePlayBtn').hidden = !state.play.mine;
+  $('photoBtn').hidden = !(state.play.photo && typeof account !== 'undefined' && account.user);
   document.querySelectorAll('.cov').forEach(c => c.setAttribute('aria-pressed', c.dataset.cov === state.cov));
 }
 
@@ -1464,7 +1473,8 @@ function ownerToken() { try { return localStorage.getItem('og-owner') || ''; } c
 function aiProvider() {
   if (!AI_ENDPOINT) return null;
   return {
-    // input: { description } or { image: File }. Resolves to the raw play object; throws { code }.
+    // input: { description } or { image: File }. Resolves to { play: raw play object, photo: stored photo id or undefined }; throws { code }.
+    // Signed in (account.js), the session token goes along so the Worker can keep the photo in the coach's account.
     async json(input, { signal } = {}) {
       let body;
       if (input.image) {
@@ -1476,12 +1486,12 @@ function aiProvider() {
       let res;
       try {
         res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + '/draft', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}) }, body: JSON.stringify(body), signal
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}), ...(await authHeaders()) }, body: JSON.stringify(body), signal
         });
       } catch (e) { throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' }; }
       const data = await res.json().catch(() => null);
       if (!res.ok || !data || !data.play) throw { code: (data && data.code) || 'upstream_error' };
-      return data.play;
+      return { play: data.play, photo: data.photo };
     },
     limits: async () => ({ images: { mediaTypes: AI_IMAGE_TYPES } })
   };
@@ -1503,8 +1513,10 @@ async function askAI(input, statusEl) {
   if (aiCtl) aiCtl.abort();
   aiCtl = new AbortController();
   statusEl.className = 'status'; statusEl.textContent = 'Drawing the play…';
-  const raw = await ai.json(input, { signal: aiCtl.signal });
-  return normalizePlay(raw, 'd' + rid());
+  const { play: raw, photo } = await ai.json(input, { signal: aiCtl.signal });
+  const play = normalizePlay(raw, 'd' + rid());
+  if (photo) play.photo = photo;
+  return play;
 }
 const AI_UNAVAILABLE = 'AI drafting needs the AI-enabled version of Open Grass. You can still import a play file.';
 const AI_ERRORS = {
@@ -1519,6 +1531,151 @@ const AI_ERRORS = {
 };
 const aiError = e => e && e.code ? (AI_ERRORS[e.code] || (e.code === 'cancelled' ? '' : 'Something went wrong reaching the AI. Try again.')) : (e && e.message) || 'That play couldn’t be built. Try again.';
 
+/* ---------- Accounts: Clerk sign-in, plays and favorites synced through the Worker ----------
+   Signing in is optional. Signed out, My plays and favorites stay in this browser (studio.js `store`).
+   Signed in, they live in the coach's account (the Worker's D1 database) and follow them to any device;
+   a copy is cached in this browser so the list still shows if the Worker can't be reached.
+   The first time a browser signs in, the plays already saved in it move into the account.
+   CLERK_PUBLISHABLE_KEY is public (it ships to every browser); keep it the same as in worker/wrangler.toml.
+   Empty = no sign-in button, and the app works exactly as before. */
+const CLERK_PUBLISHABLE_KEY = 'pk_test_YXB0LWdvcGhlci0zNDEzLmNsZXJrLmFjY291bnRzLmRldiQ';
+
+const account = {
+  user: null,          // { id, label } when signed in
+  data: null,          // { plays, favs } from the account
+  ready: false,        // Clerk has loaded (or there's no Clerk)
+  cacheKey() { return 'og-cloud:' + this.user.id; },
+  saveCache() { try { localStorage.setItem(this.cacheKey(), JSON.stringify(this.data)); } catch (e) {} },
+  upsert(play) {
+    const i = this.data.plays.findIndex(p => p.id === play.id);
+    if (i >= 0) this.data.plays[i] = play; else this.data.plays.push(play);
+    this.saveCache();
+  },
+  remove(id) {
+    this.data.plays = this.data.plays.filter(p => p.id !== id);
+    this.data.favs = this.data.favs.filter(f => f !== id);
+    this.saveCache();
+  },
+  setFavs(ids) { this.data.favs = ids.slice(); this.saveCache(); }
+};
+
+async function authToken() {
+  try { return account.user && window.Clerk && Clerk.session ? await Clerk.session.getToken() : null; } catch (e) { return null; }
+}
+async function authHeaders() {
+  const t = await authToken();
+  return t ? { Authorization: 'Bearer ' + t } : {};
+}
+
+// Call the Worker's account routes. Resolves to the JSON reply (or a Response for raw=true); throws { code }.
+async function accountApi(method, path, body, raw) {
+  if (!AI_ENDPOINT) throw { code: 'unavailable' };
+  let res;
+  try {
+    res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + path, {
+      method, headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(await authHeaders()) },
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (e) { throw { code: 'network' }; }
+  if (raw && res.ok) return res;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw { code: (data && data.code) || 'upstream_error' };
+  return data;
+}
+
+/* ---------- Clerk ---------- */
+const clerkHost = pk => atob(pk.split('_')[2] || '').replace(/\$$/, '');
+function loadScript(src, attrs = {}) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.async = true; s.crossOrigin = 'anonymous';
+    Object.entries(attrs).forEach(([k, v]) => s.setAttribute(k, v));
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// onChange(user) runs once Clerk has loaded and again whenever a coach signs in or out.
+async function startAccounts(onChange) {
+  if (!CLERK_PUBLISHABLE_KEY || !AI_ENDPOINT) { account.ready = true; return; }
+  $('acctBox').hidden = false;
+  try {
+    const host = clerkHost(CLERK_PUBLISHABLE_KEY);
+    await Promise.all([
+      loadScript(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`),
+      loadScript(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`, { 'data-clerk-publishable-key': CLERK_PUBLISHABLE_KEY })
+    ]);
+    await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
+  } catch (e) {
+    account.ready = true;
+    $('acctBox').hidden = true;
+    return;
+  }
+  account.ready = true;
+  let lastId = null;   // the page starts out showing this browser's plays, as if signed out
+  const sync = () => {
+    const u = Clerk.user;
+    const id = u ? u.id : null;
+    if (id === lastId) return;
+    lastId = id;
+    $('acctBtn').hidden = !!u;
+    const ub = $('userBtn');
+    ub.hidden = !u;
+    if (u) Clerk.mountUserButton(ub); else { try { Clerk.unmountUserButton(ub); } catch (e) {} }
+    onChange(u ? { id: u.id, label: (u.primaryEmailAddress && u.primaryEmailAddress.emailAddress) || u.fullName || 'your account' } : null);
+  };
+  $('acctBtn').hidden = false;
+  Clerk.addListener(sync);
+  sync();
+}
+$('acctBtn').addEventListener('click', () => {
+  if (window.Clerk && Clerk.loaded) Clerk.openSignIn();
+  else toast('Sign-in is still loading. Try again in a moment.');
+});
+
+/* Sign in: move this browser's plays into the account (first sign-in only), then load the account.
+   Sign out: back to this browser's own plays. Resolves to a toast message, or ''. */
+async function switchAccount(user) {
+  if (!user) {
+    account.user = null; account.data = null;
+    return '';
+  }
+  account.user = user;
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(account.cacheKey()) || 'null'); } catch (e) {}
+  const localPlays = store.local('og-mine') || [], localFavs = store.local('og-favs') || [];
+  try {
+    if (localPlays.length || localFavs.length) {
+      const r = await accountApi('POST', '/sync', { plays: localPlays, favs: localFavs });
+      account.data = { plays: r.plays, favs: r.favs };
+      // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
+      try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
+      account.saveCache();
+      return r.added ? `Moved ${r.added} play${r.added > 1 ? 's' : ''} from this browser into your account.` : 'Signed in. Your plays are synced.';
+    }
+    account.data = await accountApi('GET', '/me');
+    account.saveCache();
+    return '';
+  } catch (e) {
+    account.data = cached || { plays: [], favs: [] };
+    return cached ? 'Couldn’t reach your account. Showing the last synced copy.' : 'Couldn’t reach your account. Try reloading.';
+  }
+}
+
+/* The original play-card photo for an AI-drawn play (signed-in owner only). */
+async function showPhoto(id, name) {
+  let url;
+  try {
+    const res = await accountApi('GET', '/photos/' + id, null, true);
+    url = URL.createObjectURL(await res.blob());
+  } catch (e) {
+    toast(e && e.code === 'not_found' ? 'That photo isn’t in your account anymore.' : 'Couldn’t load the photo. Try again.');
+    return;
+  }
+  openDialog(`${dlgHead('Original diagram')}
+    <img class="gifout" src="${url}" alt="Play card photo for ${esc(name)}">`, () => URL.revokeObjectURL(url));
+}
+
 /* ---------- Studio: My plays, favorites, AI drafting, uploads, share links, GIFs, exports ---------- */
 const SITE_URL = 'https://open-grass.com/';
 const rid = () => Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
@@ -1529,7 +1686,7 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 2800);
 }
 
-/* Each coach's plays and favorites live in this browser's storage (no account or backend). */
+/* Each coach's plays and favorites live in this browser's storage, or in their account when signed in (account.js). */
 const store = {
   local(k, v) {
     try {
@@ -1537,16 +1694,23 @@ const store = {
       localStorage.setItem(k, JSON.stringify(v));
     } catch (e) { if (v !== undefined) throw e; return null; }
   },
-  async loadMine() { return this.local('og-mine') || []; },
+  async loadMine() { return account.user ? account.data.plays : this.local('og-mine') || []; },
   async saveMine(play) {
+    if (account.user) { await accountApi('PUT', '/plays/' + encodeURIComponent(play.id), { play }); account.upsert(play); return; }
     const list = (this.local('og-mine') || []).filter(p => p.id !== play.id);
     list.push(play); this.local('og-mine', list);
   },
   async deleteMine(id) {
+    if (account.user) { await accountApi('DELETE', '/plays/' + encodeURIComponent(id)); account.remove(id); return; }
     this.local('og-mine', (this.local('og-mine') || []).filter(p => p.id !== id));
   },
-  async loadFavs() { return this.local('og-favs') || []; },
+  async loadFavs() { return account.user ? account.data.favs : this.local('og-favs') || []; },
   async saveFavs(ids) {
+    if (account.user) {
+      account.setFavs(ids);
+      try { await accountApi('PUT', '/favs', { favs: ids }); } catch (e) { toast('Couldn’t save favorites to your account. Try again.'); }
+      return;
+    }
     try { this.local('og-favs', ids); } catch (e) { toast('Couldn’t save favorites. Try again.'); }
   }
 };
@@ -1623,6 +1787,7 @@ function normalizePlay(raw, id) {
     players
   };
   if (handoff) play.handoff = handoff;
+  if (typeof raw.photo === 'string' && /^[a-f0-9]{32}$/.test(raw.photo)) play.photo = raw.photo;
   return play;
 }
 const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; delete c.option; delete c.optionOn; return c; };
@@ -1754,10 +1919,11 @@ async function saveCurrentAsMine() {
     if (state.play.shared) library.shared = library.shared.filter(s => s.id !== state.basePlay.id);
     p.mine = true; library.mine.push(p); library.version++;
     loadPlay(p);
-    toast('Saved to My plays in this browser.');
+    toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
   } catch (e) { toast('Couldn’t save the play. Try again.'); }
 }
 $('saveDraftBtn').addEventListener('click', saveCurrentAsMine);
+$('photoBtn').addEventListener('click', () => { if (state.play.photo) showPhoto(state.play.photo, state.play.name); });
 
 let delArm = null;
 $('deletePlayBtn').addEventListener('click', async () => {
@@ -1996,12 +2162,32 @@ if (link && !link.shared) {
   const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
   if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
 }
-(async () => {
+async function loadLibrary() {
   try {
     const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
     library.favs = favs.filter(id => typeof id === 'string');
   } catch (e) { toast('Couldn’t load your saved plays.'); }
+}
+// Signing in or out swaps My plays and favorites. Stay on the current play if it's still there.
+startAccounts(async user => {
+  const msg = await switchAccount(user);
+  const was = state.play.mine ? state.basePlay.id : null;
+  await loadLibrary();
+  library.version++;
+  const p = was && library.mine.find(x => x.id === was);
+  if (p) loadPlay(p);
+  else if (was) loadPlay(PLAYS[0]);
+  else {
+    let saved = null;
+    try { saved = localStorage.getItem('og-play'); } catch (e) {}
+    const q = !link && !state.play.draft && !state.play.shared && saved && library.mine.find(x => x.id === saved);
+    if (q) loadPlay(q); else { buildSelect(); renderHead(); }
+  }
+  if (msg) toast(msg);
+});
+(async () => {
+  await loadLibrary();
   if (link && link.shared) {
     try {
       // "s-" links came from the old hosted version, whose shared plays lived in its database
