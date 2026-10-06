@@ -235,6 +235,11 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .status.err { color: var(--bad); }
 .preview-img { max-height: 160px; border-radius: 8px; border: 1px solid var(--line); justify-self: start; }
 .sharebox { display: grid; gap: 6px; }
+.details { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; }
+.details > div { display: grid; gap: 4px; min-width: 0; }
+.details .wide { grid-column: 1 / -1; }
+.details input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); font: inherit; color: inherit; }
+.details .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .sharebox input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); font-size: 13px; }
 .gifout { max-width: 100%; border-radius: 10px; border: 1px solid var(--line); }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
@@ -294,6 +299,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
         <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
         <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
+        <button class="act" id="detailsBtn" hidden><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Number &amp; group</button>
         <button class="act danger" id="deletePlayBtn" hidden>Delete play</button>
       </div>
 
@@ -346,21 +352,20 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
-/* Play library: the coach's 15-play catalog. 1-8 are the wristband plays, 9-15 the alternates (names are the coach's own).
+/* Play library: 15 sample plays (names are the coach's own). `num` and `series` are the coach's original numbering and
+   wristband/alternates split; they're kept for analytics but never shown. Coaches number and group their own plays (studio.js).
    Units: yards. x 0..30 sideline to sideline (ball usually at 15), y = yards past the line of scrimmage.
    Route points are [x, y] or [x, y, holdSeconds]. A star (shape: 'star') marks the player the diagram highlights.
    motion: pre-snap path ending at the alignment. dashed: fake or ball-carrier path.
    handoff: { to, at } ball is handed or pitched to `to` at route point index `at`; thenPass: that player throws.
    option: { label, name, concept, handoff, players } the play's called flip (e.g. the other back takes it the other way);
-   the app shows it as a toggle on the play, keeping the same number and id. */
+   the app shows it as a toggle on the play, keeping the same id. */
 const QB = (x, y, route, routeName, extra = {}) => ({ id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [x, y], route, routeName, delay: 0.15, speed: 3.4, qb: true, ...extra });
 const P = (id, color, name, start, route, routeName, extra = {}) => ({ id, label: id, name, color, start, route, routeName, delay: id === 'C' ? 0.35 : 0, speed: id === 'C' ? 5.0 : 5.6, eligible: true, ...extra });
 const X_ = (s, r, n, e) => P('X', 'orange', 'Orange', s, r, n, e);
 const Y_ = (s, r, n, e) => P('Y', 'purple', 'Purple', s, r, n, e);
 const Z_ = (s, r, n, e) => P('Z', 'green', 'Green', s, r, n, e);
 const C_ = (s, r, n, e) => P('C', 'ink', 'Center', s, r, n, e);
-
-const SERIES = { wristband: 'Wristband (1-8)', alternates: 'Alternates (9-15)' };
 
 const PLAYS = [
 { num: 1, series: 'wristband', id: 'p6', name: 'Split T, Z Left Hustle', type: 'pass', concept: 'Fake hustle left, Y under', players: [
@@ -480,7 +485,6 @@ const PLAYS = [
    but dies against man, and a counter run that beats man but not Cover 1. The first one is the default play. */
 const STARTERS = ['p51', 'p15', 'p35'];
 PLAYS.forEach(p => { if (STARTERS.includes(p.id)) p.starter = true; });
-PLAYS.forEach(p => { if (p.num) { p.name = `${p.num} · ${p.name}`; if (p.option) p.option.name = `${p.num} · ${p.option.name}`; } });
 // The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
 const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });
 
@@ -1356,7 +1360,7 @@ function bestPlaysFor(covId) {
   const key = covId + (state.blitz ? '+b' : '') + ':' + library.version;
   if (!bestCache[key]) bestCache[key] = allPlays().map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
-  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(p.name)}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
+  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(playLabel(p))}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
 function notesHtml(cov) {
   let h = '';
@@ -1372,12 +1376,12 @@ function notesHtml(cov) {
 }
 
 function renderHead() {
-  $('playName').textContent = state.play.name;
+  $('playName').textContent = playLabel(state.play);
   const n = Object.keys(state.changes).length;
   let t = `<span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
   if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
   if (state.play.draft) t = `<span class="tag mod">Draft · not saved</span>` + t;
-  else if (state.play.mine) t = `<span class="tag">My play</span>` + t;
+  else if (state.play.mine) t = `<span class="tag">${state.play.group ? esc(state.play.group) : 'My play'}</span>` + t;
   else if (state.play.shared) t = `<span class="tag">Shared with you</span>` + t;
   $('playTags').innerHTML = t;
   const fav = library.favs.includes(state.basePlay.id);
@@ -1391,6 +1395,7 @@ function renderHead() {
   $('saveDraftBtn').hidden = !(state.play.draft || state.play.shared || edited);
   $('saveDraftBtn').textContent = edited ? 'Save as My play' : 'Save to My plays';
   $('deletePlayBtn').hidden = !state.play.mine;
+  $('detailsBtn').hidden = !state.play.mine;
   $('photoBtn').hidden = !(state.play.photo && typeof account !== 'undefined' && account.user);
   document.querySelectorAll('.cov').forEach(c => c.setAttribute('aria-pressed', c.dataset.cov === state.cov));
 }
@@ -1478,25 +1483,36 @@ svg.addEventListener('pointerdown', e => {
 /* ---------- wiring ---------- */
 /* Play library: built-in plays plus the coach's own (My plays), shared plays opened from a link, and an unsaved AI draft. */
 const library = { mine: [], shared: [], favs: [], version: 0 };
+const groupKey = g => String(g || '').toLowerCase();
+// The coach's group names, A–Z, merging ones that differ only in case (the first spelling wins)
+function myGroups() {
+  const m = new Map();
+  library.mine.forEach(p => { if (p.group && !m.has(groupKey(p.group))) m.set(groupKey(p.group), p.group); });
+  return [...m.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true }));
+}
 const allPlays = () => [...library.mine, ...library.shared, ...PLAYS];
 const findPlay = id => allPlays().find(p => p.id === id) || (state.basePlay && state.basePlay.id === id ? state.basePlay : null);
+// A coach's own plays can carry a call number (shown before the name) and a group (studio.js: openDetails).
+const playLabel = p => (p.mine && p.num ? `${p.num} · ` : '') + p.name;
 const typeTag = p => p.type === 'pass' ? '' : p.type === 'run' ? ' (run)' : ' (trick)';
 const lockTag = p => isLocked(p) ? ' 🔒' : '';
 function buildSelect() {
-  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`;
+  const opt = p => `<option value="${esc(p.id)}">${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`;
   const gated = PLAYS.some(isLocked);
   let h = '';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
   // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
   if (gated) h += `<optgroup label="Sample plays (free)">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
   const favs = library.favs.map(findPlay).filter(Boolean);
-  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
+  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;
-  h += `<optgroup label="My plays">${library.mine.length ? library.mine.map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
-  h += Object.entries(SERIES).map(([k, label]) => {
-    const ps = PLAYS.filter(p => p.series === k && !(gated && !isLocked(p)));
-    return ps.length ? `<optgroup label="${label}">${ps.map(opt).join('')}</optgroup>` : '';
-  }).join('');
+  // My plays: one section per group (A–Z), numbered plays first in call-number order, then the ungrouped ones
+  const groups = myGroups(), byNum = ps => [...ps].sort((a, b) => (a.num || 1e3) - (b.num || 1e3));
+  groups.forEach(g => { h += `<optgroup label="${esc(g)}">${byNum(library.mine.filter(p => groupKey(p.group) === groupKey(g))).map(opt).join('')}</optgroup>`; });
+  const loose = library.mine.filter(p => !p.group);
+  if (loose.length || !groups.length) h += `<optgroup label="${groups.length ? 'My plays · no group' : 'My plays'}">${loose.length ? byNum(loose).map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
+  const samples = PLAYS.filter(p => !(gated && !isLocked(p)));
+  if (samples.length) h += `<optgroup label="${gated ? 'More sample plays · free account' : 'Sample plays'}">${samples.map(opt).join('')}</optgroup>`;
   $('playSel').innerHTML = h;
   $('playSel').value = state.basePlay.id;
 }
@@ -1906,6 +1922,9 @@ const toPt = (p, d) => {
   if (p[2]) q.push(num(p[2], 0, 2, 0));
   return q;
 };
+// A coach's own plays: an optional group ("Wristband", "Red zone") and call number (1-99), set in openDetails
+const cleanGroup = g => String(g ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+const cleanNum = n => { const v = Number(String(n ?? '').trim()); return Number.isInteger(v) && v >= 1 && v <= 99 ? v : null; };
 function normalizePlay(raw, id) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.players)) throw new Error('That doesn’t look like a play: no players found.');
   const players = [];
@@ -1946,6 +1965,9 @@ function normalizePlay(raw, id) {
     players
   };
   if (handoff) play.handoff = handoff;
+  const group = cleanGroup(raw.group), callNum = cleanNum(raw.num);
+  if (group) play.group = group;
+  if (callNum) play.num = callNum;
   if (typeof raw.photo === 'string' && /^[a-f0-9]{32}$/.test(raw.photo)) play.photo = raw.photo;
   return play;
 }
@@ -2171,6 +2193,7 @@ async function saveCurrentAsMine() {
   p.series = 'mine';
   p.name = (edited ? `${p.name.replace(/^\d+\s*·\s*/, '')} (edited)` : p.name).slice(0, 80);
   delete p.num;
+  if (!state.play.mine) delete p.group;
   try {
     await store.saveMine(p);
     if (state.play.shared) library.shared = library.shared.filter(s => s.id !== state.basePlay.id);
@@ -2183,6 +2206,58 @@ async function saveCurrentAsMine() {
 }
 $('saveDraftBtn').addEventListener('click', () => saveCurrentAsMine());
 $('photoBtn').addEventListener('click', () => { if (state.play.photo) { showPhoto(state.play.photo, state.play.name); track('view_original_photo'); } });
+
+/* ---------- call number and group for one of My plays ---------- */
+function openDetails() {
+  const id = state.basePlay.id, cur = library.mine.find(p => p.id === id);
+  if (!cur) return;
+  const groups = myGroups();
+  openDialog(`${dlgHead('Number &amp; group')}
+    <p class="muted">Number your plays to match your wristband or call sheet, and group them however you call them. Groups show up as sections in the play list.</p>
+    <div class="details">
+      <div><label class="eyebrow" for="dNum">Call #</label><input id="dNum" inputmode="numeric" maxlength="2" placeholder="—" value="${cur.num || ''}"></div>
+      <div><label class="eyebrow" for="dName">Name</label><input id="dName" maxlength="80" value="${esc(cur.name)}"></div>
+      <div class="wide"><label class="eyebrow" for="dGroup">Group</label><input id="dGroup" maxlength="40" list="dGroups" placeholder="e.g. Wristband, Red zone, Trick plays" value="${esc(cur.group || '')}">
+        <datalist id="dGroups">${groups.map(g => `<option value="${esc(g)}">`).join('')}</datalist>
+        ${groups.length ? `<div class="chips">${groups.map(g => `<button class="chipbtn" data-group="${esc(g)}">${esc(g)}</button>`).join('')}</div>` : ''}</div>
+    </div>
+    <div><button class="act primary" id="dSave">Save</button></div>
+    <p class="status" id="dStatus"></p>`);
+  const d = $('dialog');
+  d.querySelectorAll('[data-group]').forEach(b => b.addEventListener('click', () => { $('dGroup').value = b.dataset.group; }));
+  d.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('dSave').click(); }));
+  $('dSave').addEventListener('click', async () => {
+    const st = $('dStatus'), rawNum = $('dNum').value.trim(), callNum = cleanNum(rawNum);
+    if (rawNum && !callNum) { st.className = 'status err'; st.textContent = 'Use a call number from 1 to 99, or leave it blank.'; return; }
+    // Reuse an existing group's spelling so "wristband" lands in "Wristband"
+    let group = cleanGroup($('dGroup').value);
+    group = groups.find(g => g.toLowerCase() === group.toLowerCase()) || group;
+    const name = $('dName').value.trim().replace(/^\d+\s*·\s*/, '').slice(0, 80) || cur.name;
+    const next = stripFlags(cur);
+    Object.assign(next, { name });
+    if (group) next.group = group; else delete next.group;
+    if (callNum) next.num = callNum; else delete next.num;
+    $('dSave').disabled = true;
+    try {
+      await store.saveMine(next);
+    } catch (e) {
+      st.className = 'status err'; st.textContent = 'Couldn’t save. Try again.'; $('dSave').disabled = false;
+      track('app_error', { where: 'play_details' }); return;
+    }
+    // Same play, new label: update it everywhere without resetting route edits in progress
+    for (const p of [cur, state.basePlay, state.play]) {
+      p.name = name;
+      if (group) p.group = group; else delete p.group;
+      if (callNum) p.num = callNum; else delete p.num;
+    }
+    library.version++;
+    closeDialog(); buildSelect(); renderHead();
+    const twin = callNum && library.mine.find(p => p.id !== id && p.num === callNum && groupKey(p.group) === groupKey(group));
+    toast(twin ? `Saved. #${callNum} is also ${twin.name}${group ? ' in ' + group : ''}.` : 'Saved.');
+    track('edit_play_details', { storage: account.user ? 'account' : 'local' });
+  });
+}
+$('detailsBtn').addEventListener('click', openDetails);
 
 let delArm = null;
 $('deletePlayBtn').addEventListener('click', async () => {
@@ -2404,12 +2479,14 @@ $('gifBtn').addEventListener('click', async () => {
 });
 
 /* ---------- export favorites ---------- */
+// Sample plays drop their internal numbering so an import doesn't show it as the coach's call number
+const exportPlay = p => { const c = stripFlags(p); if (!p.mine) { delete c.num; delete c.series; delete c.starter; } return c; };
 $('exportBtn').addEventListener('click', () => {
   const favs = library.favs.map(findPlay).filter(Boolean);
   track('export_open', { fav_count: favs.length });
   if (!favs.length) { toast('Star a play with Favorite first.'); return; }
   openDialog(`${dlgHead('Export favorites')}
-    <p class="status">${favs.length} favorite play${favs.length > 1 ? 's' : ''}: ${favs.map(p => esc(p.name)).join(', ')}</p>
+    <p class="status">${favs.length} favorite play${favs.length > 1 ? 's' : ''}: ${favs.map(p => esc(playLabel(p))).join(', ')}</p>
     <div class="pane">
       <div><button class="act primary" id="expJson">Playbook file (.json)</button></div>
       <p class="muted">Every route and alignment. Import it on another device with New play → Import file, or share it with another coach.</p>
@@ -2417,13 +2494,13 @@ $('exportBtn').addEventListener('click', () => {
       <p class="muted">One row per play with its grade against Cover 1, 2, 3 and Man. Opens in Excel or Google Sheets.</p>
     </div>`);
   $('expJson').addEventListener('click', async () => {
-    const data = JSON.stringify({ app: 'Open Grass', format: 1, exportedAt: new Date().toISOString(), plays: favs.map(stripFlags) }, null, 1);
+    const data = JSON.stringify({ app: 'Open Grass', format: 1, exportedAt: new Date().toISOString(), plays: favs.map(exportPlay) }, null, 1);
     if (await saveFile('open-grass-favorites.json', data)) { toast('Playbook file saved.'); track('file_download', { file_extension: 'json', content_type: 'playbook', play_count: favs.length }); }
   });
   $('expCsv').addEventListener('click', async () => {
     const q = v => `"${String(v).replace(/"/g, '""')}"`;
-    const rows = [['Play', 'Type', 'Concept', ...COV_ORDER.map(c => COVERAGES[c].name), ...COV_ORDER.map(c => COVERAGES[c].name + ' + blitz')]];
-    favs.forEach(p => rows.push([p.name, p.type, p.concept,
+    const rows = [['#', 'Play', 'Group', 'Type', 'Concept', ...COV_ORDER.map(c => COVERAGES[c].name), ...COV_ORDER.map(c => COVERAGES[c].name + ' + blitz')]];
+    favs.forEach(p => rows.push([p.mine && p.num || '', p.name, p.mine && p.group || '', p.type, p.concept,
       ...COV_ORDER.map(c => runPlay(p, c, {}).ev.grade), ...COV_ORDER.map(c => runPlay(p, c, { blitz: true }).ev.grade)]));
     if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) { toast('Scouting sheet saved.'); track('file_download', { file_extension: 'csv', content_type: 'scouting_sheet', play_count: favs.length }); }
   });
