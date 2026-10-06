@@ -21,7 +21,8 @@ function ownerToken() { try { return localStorage.getItem('og-owner') || ''; } c
 function aiProvider() {
   if (!AI_ENDPOINT) return null;
   return {
-    // input: { description } or { image: File }. Resolves to the raw play object; throws { code }.
+    // input: { description } or { image: File }. Resolves to { play: raw play object, photo: stored photo id or undefined }; throws { code }.
+    // Signed in (account.js), the session token goes along so the Worker can keep the photo in the coach's account.
     async json(input, { signal } = {}) {
       let body;
       if (input.image) {
@@ -33,12 +34,12 @@ function aiProvider() {
       let res;
       try {
         res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + '/draft', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}) }, body: JSON.stringify(body), signal
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}), ...(await authHeaders()) }, body: JSON.stringify(body), signal
         });
       } catch (e) { throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' }; }
       const data = await res.json().catch(() => null);
       if (!res.ok || !data || !data.play) throw { code: (data && data.code) || 'upstream_error' };
-      return data.play;
+      return { play: data.play, photo: data.photo };
     },
     limits: async () => ({ images: { mediaTypes: AI_IMAGE_TYPES } })
   };
@@ -60,8 +61,10 @@ async function askAI(input, statusEl) {
   if (aiCtl) aiCtl.abort();
   aiCtl = new AbortController();
   statusEl.className = 'status'; statusEl.textContent = 'Drawing the play…';
-  const raw = await ai.json(input, { signal: aiCtl.signal });
-  return normalizePlay(raw, 'd' + rid());
+  const { play: raw, photo } = await ai.json(input, { signal: aiCtl.signal });
+  const play = normalizePlay(raw, 'd' + rid());
+  if (photo) play.photo = photo;
+  return play;
 }
 const AI_UNAVAILABLE = 'AI drafting needs the AI-enabled version of Open Grass. You can still import a play file.';
 const AI_ERRORS = {

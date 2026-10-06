@@ -8,7 +8,7 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 2800);
 }
 
-/* Each coach's plays and favorites live in this browser's storage (no account or backend). */
+/* Each coach's plays and favorites live in this browser's storage, or in their account when signed in (account.js). */
 const store = {
   local(k, v) {
     try {
@@ -16,16 +16,23 @@ const store = {
       localStorage.setItem(k, JSON.stringify(v));
     } catch (e) { if (v !== undefined) throw e; return null; }
   },
-  async loadMine() { return this.local('og-mine') || []; },
+  async loadMine() { return account.user ? account.data.plays : this.local('og-mine') || []; },
   async saveMine(play) {
+    if (account.user) { await accountApi('PUT', '/plays/' + encodeURIComponent(play.id), { play }); account.upsert(play); return; }
     const list = (this.local('og-mine') || []).filter(p => p.id !== play.id);
     list.push(play); this.local('og-mine', list);
   },
   async deleteMine(id) {
+    if (account.user) { await accountApi('DELETE', '/plays/' + encodeURIComponent(id)); account.remove(id); return; }
     this.local('og-mine', (this.local('og-mine') || []).filter(p => p.id !== id));
   },
-  async loadFavs() { return this.local('og-favs') || []; },
+  async loadFavs() { return account.user ? account.data.favs : this.local('og-favs') || []; },
   async saveFavs(ids) {
+    if (account.user) {
+      account.setFavs(ids);
+      try { await accountApi('PUT', '/favs', { favs: ids }); } catch (e) { toast('Couldn’t save favorites to your account. Try again.'); }
+      return;
+    }
     try { this.local('og-favs', ids); } catch (e) { toast('Couldn’t save favorites. Try again.'); }
   }
 };
@@ -102,6 +109,7 @@ function normalizePlay(raw, id) {
     players
   };
   if (handoff) play.handoff = handoff;
+  if (typeof raw.photo === 'string' && /^[a-f0-9]{32}$/.test(raw.photo)) play.photo = raw.photo;
   return play;
 }
 const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; delete c.option; delete c.optionOn; return c; };
@@ -233,10 +241,11 @@ async function saveCurrentAsMine() {
     if (state.play.shared) library.shared = library.shared.filter(s => s.id !== state.basePlay.id);
     p.mine = true; library.mine.push(p); library.version++;
     loadPlay(p);
-    toast('Saved to My plays in this browser.');
+    toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
   } catch (e) { toast('Couldn’t save the play. Try again.'); }
 }
 $('saveDraftBtn').addEventListener('click', saveCurrentAsMine);
+$('photoBtn').addEventListener('click', () => { if (state.play.photo) showPhoto(state.play.photo, state.play.name); });
 
 let delArm = null;
 $('deletePlayBtn').addEventListener('click', async () => {
@@ -475,12 +484,32 @@ if (link && !link.shared) {
   const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
   if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
 }
-(async () => {
+async function loadLibrary() {
   try {
     const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
     library.favs = favs.filter(id => typeof id === 'string');
   } catch (e) { toast('Couldn’t load your saved plays.'); }
+}
+// Signing in or out swaps My plays and favorites. Stay on the current play if it's still there.
+startAccounts(async user => {
+  const msg = await switchAccount(user);
+  const was = state.play.mine ? state.basePlay.id : null;
+  await loadLibrary();
+  library.version++;
+  const p = was && library.mine.find(x => x.id === was);
+  if (p) loadPlay(p);
+  else if (was) loadPlay(PLAYS[0]);
+  else {
+    let saved = null;
+    try { saved = localStorage.getItem('og-play'); } catch (e) {}
+    const q = !link && !state.play.draft && !state.play.shared && saved && library.mine.find(x => x.id === saved);
+    if (q) loadPlay(q); else { buildSelect(); renderHead(); }
+  }
+  if (msg) toast(msg);
+});
+(async () => {
+  await loadLibrary();
   if (link && link.shared) {
     try {
       // "s-" links came from the old hosted version, whose shared plays lived in its database
