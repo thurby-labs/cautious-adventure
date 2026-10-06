@@ -390,7 +390,11 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 
 /* ---------- analytics: GA4 events (tagging plan in ANALYTICS.md) ----------
    Never pass free text, a coach's own play or route names, file names or emails. Built-in play ids are fine. */
-function track(name, params = {}) { try { gtag('event', name, params); } catch (e) {} }
+function track(name, params = {}) {
+  // Tour steps are real clicks: mark them so they can be filtered out of core-loop numbers. `tour` is declared later (tour.js), so guard it.
+  try { if (tour.on) params = { ...params, in_tour: true }; } catch (e) {}
+  try { gtag('event', name, params); } catch (e) {}
+}
 const builtIn = p => !p.draft && !p.mine && !p.shared;
 const playInfo = (p = state.basePlay) => ({
   play_source: p.draft ? 'draft' : p.mine ? 'mine' : p.shared ? 'shared' : 'builtin', play_type: p.type,
