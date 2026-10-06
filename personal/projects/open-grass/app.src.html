@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Youth 5v5 flag football play tester: overlay a coverage, animate the play, find the open grass.">
+<meta name="author" content="Open Grass, LLC">
 <link rel="icon" type="image/png" href="logo/open-grass-icon.png">
 <link rel="apple-touch-icon" href="logo/open-grass-icon.png">
 <title>Open Grass</title>
@@ -205,6 +206,8 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .sharebox input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); font-size: 13px; }
 .gifout { max-width: 100%; border-radius: 10px; border: 1px solid var(--line); }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
+.foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
+.foot p { margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -285,6 +288,10 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 
     <aside class="read" id="read"></aside>
   </main>
+
+  <footer class="foot">
+    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved.</p>
+  </footer>
 </div>
 
 <div class="scrim" id="scrim" hidden>
@@ -877,6 +884,7 @@ document.querySelectorAll('.speed button').forEach(b => b.addEventListener('clic
   document.querySelectorAll('.speed button').forEach(x => x.setAttribute('aria-pressed', x === b));
 }));
 
+document.getElementById('year').textContent = new Date().getFullYear();
 buildCards();
 recompute();
 setT(0);
