@@ -718,7 +718,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
       } catch (e) {}
       location.replace(location.pathname);
     });

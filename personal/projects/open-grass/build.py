@@ -3,7 +3,7 @@ import re, sys
 
 src = open('app.src.html').read()
 engine = open('plays.js').read() + '\n' + open('engine.js').read()
-studio = '\n'.join(open(f).read() for f in ('ai.js', 'account.js', 'studio.js'))
+studio = '\n'.join(open(f).read() for f in ('ai.js', 'account.js', 'studio.js', 'tour.js'))
 out = src.replace('/*__ENGINE__*/', engine).replace('/*__STUDIO__*/', studio)
 
 # The site must run with no Claude Artifact runtime: fail the build if anything depends on it again.
