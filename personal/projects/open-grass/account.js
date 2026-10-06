@@ -143,7 +143,7 @@ async function switchAccount(user) {
   try {
     if (localPlays.length || localFavs.length) {
       const r = await accountApi('POST', '/sync', { plays: localPlays, favs: localFavs });
-      account.data = { plays: r.plays, favs: r.favs, founding: !!r.founding };
+      account.data = { plays: r.plays, favs: r.favs, founding: !!r.founding, admin: !!r.admin };
       // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
       try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
       account.saveCache();

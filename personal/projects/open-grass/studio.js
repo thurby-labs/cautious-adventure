@@ -203,6 +203,7 @@ function showBeta() {
     <p>Everything is free while we’re in beta. ${account.user ? 'Your account can test your own playbook against every defense.' : `Without an account you can try ${STARTERS.length} sample plays against every coverage${freeDraftUsed() ? '' : ', plus one free AI draft of your own play'}. A free account lets you test your whole playbook:`}</p>
     ${account.user ? '' : perksHtml()}
     <p>${founding ? '<b>You’re a founding coach.</b> Thanks for being early: you’ll get perks when paid plans arrive.' : 'Coaches who join during the beta become founding coaches, with perks when paid plans arrive.'}</p>
+    ${account.user && account.data && account.data.admin ? '<p><b>Admin account:</b> no daily AI limits.</p>' : ''}
     <p class="muted">Things may change or break while we build. Tell us what’s working and what isn’t: <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">opengrassllc@gmail.com</a></p>
     ${account.user || gate.open ? '' : `<div class="gate-actions"><button class="act primary" id="gateUp">Create free account</button><button class="linkbtn" id="gateIn">I already have an account</button></div>`}`);
   if ($('gateUp')) {
