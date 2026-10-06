@@ -235,6 +235,11 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .status.err { color: var(--bad); }
 .preview-img { max-height: 160px; border-radius: 8px; border: 1px solid var(--line); justify-self: start; }
 .sharebox { display: grid; gap: 6px; }
+.details { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; }
+.details > div { display: grid; gap: 4px; min-width: 0; }
+.details .wide { grid-column: 1 / -1; }
+.details input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); font: inherit; color: inherit; }
+.details .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .sharebox input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); font-size: 13px; }
 .gifout { max-width: 100%; border-radius: 10px; border: 1px solid var(--line); }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
@@ -294,6 +299,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
         <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
         <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
+        <button class="act" id="detailsBtn" hidden><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Number &amp; group</button>
         <button class="act danger" id="deletePlayBtn" hidden>Delete play</button>
       </div>
 
@@ -783,7 +789,7 @@ function bestPlaysFor(covId) {
   const key = covId + (state.blitz ? '+b' : '') + ':' + library.version;
   if (!bestCache[key]) bestCache[key] = allPlays().map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
-  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(p.name)}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
+  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(playLabel(p))}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
 function notesHtml(cov) {
   let h = '';
@@ -799,12 +805,12 @@ function notesHtml(cov) {
 }
 
 function renderHead() {
-  $('playName').textContent = state.play.name;
+  $('playName').textContent = playLabel(state.play);
   const n = Object.keys(state.changes).length;
   let t = `<span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
   if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
   if (state.play.draft) t = `<span class="tag mod">Draft · not saved</span>` + t;
-  else if (state.play.mine) t = `<span class="tag">My play</span>` + t;
+  else if (state.play.mine) t = `<span class="tag">${state.play.group ? esc(state.play.group) : 'My play'}</span>` + t;
   else if (state.play.shared) t = `<span class="tag">Shared with you</span>` + t;
   $('playTags').innerHTML = t;
   const fav = library.favs.includes(state.basePlay.id);
@@ -818,6 +824,7 @@ function renderHead() {
   $('saveDraftBtn').hidden = !(state.play.draft || state.play.shared || edited);
   $('saveDraftBtn').textContent = edited ? 'Save as My play' : 'Save to My plays';
   $('deletePlayBtn').hidden = !state.play.mine;
+  $('detailsBtn').hidden = !state.play.mine;
   $('photoBtn').hidden = !(state.play.photo && typeof account !== 'undefined' && account.user);
   document.querySelectorAll('.cov').forEach(c => c.setAttribute('aria-pressed', c.dataset.cov === state.cov));
 }
@@ -905,25 +912,36 @@ svg.addEventListener('pointerdown', e => {
 /* ---------- wiring ---------- */
 /* Play library: built-in plays plus the coach's own (My plays), shared plays opened from a link, and an unsaved AI draft. */
 const library = { mine: [], shared: [], favs: [], version: 0 };
+const groupKey = g => String(g || '').toLowerCase();
+// The coach's group names, A–Z, merging ones that differ only in case (the first spelling wins)
+function myGroups() {
+  const m = new Map();
+  library.mine.forEach(p => { if (p.group && !m.has(groupKey(p.group))) m.set(groupKey(p.group), p.group); });
+  return [...m.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true }));
+}
 const allPlays = () => [...library.mine, ...library.shared, ...PLAYS];
 const findPlay = id => allPlays().find(p => p.id === id) || (state.basePlay && state.basePlay.id === id ? state.basePlay : null);
+// A coach's own plays can carry a call number (shown before the name) and a group (studio.js: openDetails).
+const playLabel = p => (p.mine && p.num ? `${p.num} · ` : '') + p.name;
 const typeTag = p => p.type === 'pass' ? '' : p.type === 'run' ? ' (run)' : ' (trick)';
 const lockTag = p => isLocked(p) ? ' 🔒' : '';
 function buildSelect() {
-  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`;
+  const opt = p => `<option value="${esc(p.id)}">${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`;
   const gated = PLAYS.some(isLocked);
   let h = '';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
   // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
   if (gated) h += `<optgroup label="Sample plays (free)">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
   const favs = library.favs.map(findPlay).filter(Boolean);
-  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
+  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;
-  h += `<optgroup label="My plays">${library.mine.length ? library.mine.map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
-  h += Object.entries(SERIES).map(([k, label]) => {
-    const ps = PLAYS.filter(p => p.series === k && !(gated && !isLocked(p)));
-    return ps.length ? `<optgroup label="${label}">${ps.map(opt).join('')}</optgroup>` : '';
-  }).join('');
+  // My plays: one section per group (A–Z), numbered plays first in call-number order, then the ungrouped ones
+  const groups = myGroups(), byNum = ps => [...ps].sort((a, b) => (a.num || 1e3) - (b.num || 1e3));
+  groups.forEach(g => { h += `<optgroup label="${esc(g)}">${byNum(library.mine.filter(p => groupKey(p.group) === groupKey(g))).map(opt).join('')}</optgroup>`; });
+  const loose = library.mine.filter(p => !p.group);
+  if (loose.length || !groups.length) h += `<optgroup label="${groups.length ? 'My plays · no group' : 'My plays'}">${loose.length ? byNum(loose).map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
+  const samples = PLAYS.filter(p => !(gated && !isLocked(p)));
+  if (samples.length) h += `<optgroup label="${gated ? 'More sample plays · free account' : 'Sample plays'}">${samples.map(opt).join('')}</optgroup>`;
   $('playSel').innerHTML = h;
   $('playSel').value = state.basePlay.id;
 }

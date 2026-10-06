@@ -69,6 +69,9 @@ const toPt = (p, d) => {
   if (p[2]) q.push(num(p[2], 0, 2, 0));
   return q;
 };
+// A coach's own plays: an optional group ("Wristband", "Red zone") and call number (1-99), set in openDetails
+const cleanGroup = g => String(g ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+const cleanNum = n => { const v = Number(String(n ?? '').trim()); return Number.isInteger(v) && v >= 1 && v <= 99 ? v : null; };
 function normalizePlay(raw, id) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.players)) throw new Error('That doesn’t look like a play: no players found.');
   const players = [];
@@ -109,6 +112,9 @@ function normalizePlay(raw, id) {
     players
   };
   if (handoff) play.handoff = handoff;
+  const group = cleanGroup(raw.group), callNum = cleanNum(raw.num);
+  if (group) play.group = group;
+  if (callNum) play.num = callNum;
   if (typeof raw.photo === 'string' && /^[a-f0-9]{32}$/.test(raw.photo)) play.photo = raw.photo;
   return play;
 }
@@ -334,6 +340,7 @@ async function saveCurrentAsMine() {
   p.series = 'mine';
   p.name = (edited ? `${p.name.replace(/^\d+\s*·\s*/, '')} (edited)` : p.name).slice(0, 80);
   delete p.num;
+  if (!state.play.mine) delete p.group;
   try {
     await store.saveMine(p);
     if (state.play.shared) library.shared = library.shared.filter(s => s.id !== state.basePlay.id);
@@ -346,6 +353,58 @@ async function saveCurrentAsMine() {
 }
 $('saveDraftBtn').addEventListener('click', () => saveCurrentAsMine());
 $('photoBtn').addEventListener('click', () => { if (state.play.photo) { showPhoto(state.play.photo, state.play.name); track('view_original_photo'); } });
+
+/* ---------- call number and group for one of My plays ---------- */
+function openDetails() {
+  const id = state.basePlay.id, cur = library.mine.find(p => p.id === id);
+  if (!cur) return;
+  const groups = myGroups();
+  openDialog(`${dlgHead('Number &amp; group')}
+    <p class="muted">Number your plays to match your wristband or call sheet, and group them however you call them. Groups show up as sections in the play list.</p>
+    <div class="details">
+      <div><label class="eyebrow" for="dNum">Call #</label><input id="dNum" inputmode="numeric" maxlength="2" placeholder="—" value="${cur.num || ''}"></div>
+      <div><label class="eyebrow" for="dName">Name</label><input id="dName" maxlength="80" value="${esc(cur.name)}"></div>
+      <div class="wide"><label class="eyebrow" for="dGroup">Group</label><input id="dGroup" maxlength="40" list="dGroups" placeholder="e.g. Wristband, Red zone, Trick plays" value="${esc(cur.group || '')}">
+        <datalist id="dGroups">${groups.map(g => `<option value="${esc(g)}">`).join('')}</datalist>
+        ${groups.length ? `<div class="chips">${groups.map(g => `<button class="chipbtn" data-group="${esc(g)}">${esc(g)}</button>`).join('')}</div>` : ''}</div>
+    </div>
+    <div><button class="act primary" id="dSave">Save</button></div>
+    <p class="status" id="dStatus"></p>`);
+  const d = $('dialog');
+  d.querySelectorAll('[data-group]').forEach(b => b.addEventListener('click', () => { $('dGroup').value = b.dataset.group; }));
+  d.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) $('dSave').click(); }));
+  $('dSave').addEventListener('click', async () => {
+    const st = $('dStatus'), rawNum = $('dNum').value.trim(), callNum = cleanNum(rawNum);
+    if (rawNum && !callNum) { st.className = 'status err'; st.textContent = 'Use a call number from 1 to 99, or leave it blank.'; return; }
+    // Reuse an existing group's spelling so "wristband" lands in "Wristband"
+    let group = cleanGroup($('dGroup').value);
+    group = groups.find(g => g.toLowerCase() === group.toLowerCase()) || group;
+    const name = $('dName').value.trim().replace(/^\d+\s*·\s*/, '').slice(0, 80) || cur.name;
+    const next = stripFlags(cur);
+    Object.assign(next, { name });
+    if (group) next.group = group; else delete next.group;
+    if (callNum) next.num = callNum; else delete next.num;
+    $('dSave').disabled = true;
+    try {
+      await store.saveMine(next);
+    } catch (e) {
+      st.className = 'status err'; st.textContent = 'Couldn’t save. Try again.'; $('dSave').disabled = false;
+      track('app_error', { where: 'play_details' }); return;
+    }
+    // Same play, new label: update it everywhere without resetting route edits in progress
+    for (const p of [cur, state.basePlay, state.play]) {
+      p.name = name;
+      if (group) p.group = group; else delete p.group;
+      if (callNum) p.num = callNum; else delete p.num;
+    }
+    library.version++;
+    closeDialog(); buildSelect(); renderHead();
+    const twin = callNum && library.mine.find(p => p.id !== id && p.num === callNum && groupKey(p.group) === groupKey(group));
+    toast(twin ? `Saved. #${callNum} is also ${twin.name}${group ? ' in ' + group : ''}.` : 'Saved.');
+    track('edit_play_details', { storage: account.user ? 'account' : 'local' });
+  });
+}
+$('detailsBtn').addEventListener('click', openDetails);
 
 let delArm = null;
 $('deletePlayBtn').addEventListener('click', async () => {
@@ -567,12 +626,14 @@ $('gifBtn').addEventListener('click', async () => {
 });
 
 /* ---------- export favorites ---------- */
+// Sample plays drop their internal numbering so an import doesn't show it as the coach's call number
+const exportPlay = p => { const c = stripFlags(p); if (!p.mine) { delete c.num; delete c.series; delete c.starter; } return c; };
 $('exportBtn').addEventListener('click', () => {
   const favs = library.favs.map(findPlay).filter(Boolean);
   track('export_open', { fav_count: favs.length });
   if (!favs.length) { toast('Star a play with Favorite first.'); return; }
   openDialog(`${dlgHead('Export favorites')}
-    <p class="status">${favs.length} favorite play${favs.length > 1 ? 's' : ''}: ${favs.map(p => esc(p.name)).join(', ')}</p>
+    <p class="status">${favs.length} favorite play${favs.length > 1 ? 's' : ''}: ${favs.map(p => esc(playLabel(p))).join(', ')}</p>
     <div class="pane">
       <div><button class="act primary" id="expJson">Playbook file (.json)</button></div>
       <p class="muted">Every route and alignment. Import it on another device with New play → Import file, or share it with another coach.</p>
@@ -580,13 +641,13 @@ $('exportBtn').addEventListener('click', () => {
       <p class="muted">One row per play with its grade against Cover 1, 2, 3 and Man. Opens in Excel or Google Sheets.</p>
     </div>`);
   $('expJson').addEventListener('click', async () => {
-    const data = JSON.stringify({ app: 'Open Grass', format: 1, exportedAt: new Date().toISOString(), plays: favs.map(stripFlags) }, null, 1);
+    const data = JSON.stringify({ app: 'Open Grass', format: 1, exportedAt: new Date().toISOString(), plays: favs.map(exportPlay) }, null, 1);
     if (await saveFile('open-grass-favorites.json', data)) { toast('Playbook file saved.'); track('file_download', { file_extension: 'json', content_type: 'playbook', play_count: favs.length }); }
   });
   $('expCsv').addEventListener('click', async () => {
     const q = v => `"${String(v).replace(/"/g, '""')}"`;
-    const rows = [['Play', 'Type', 'Concept', ...COV_ORDER.map(c => COVERAGES[c].name), ...COV_ORDER.map(c => COVERAGES[c].name + ' + blitz')]];
-    favs.forEach(p => rows.push([p.name, p.type, p.concept,
+    const rows = [['#', 'Play', 'Group', 'Type', 'Concept', ...COV_ORDER.map(c => COVERAGES[c].name), ...COV_ORDER.map(c => COVERAGES[c].name + ' + blitz')]];
+    favs.forEach(p => rows.push([p.mine && p.num || '', p.name, p.mine && p.group || '', p.type, p.concept,
       ...COV_ORDER.map(c => runPlay(p, c, {}).ev.grade), ...COV_ORDER.map(c => runPlay(p, c, { blitz: true }).ev.grade)]));
     if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) { toast('Scouting sheet saved.'); track('file_download', { file_extension: 'csv', content_type: 'scouting_sheet', play_count: favs.length }); }
   });

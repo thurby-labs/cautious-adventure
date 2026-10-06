@@ -1,18 +1,17 @@
-/* Play library: the coach's 15-play catalog. 1-8 are the wristband plays, 9-15 the alternates (names are the coach's own).
+/* Play library: 15 sample plays (names are the coach's own). `num` and `series` are the coach's original numbering and
+   wristband/alternates split; they're kept for analytics but never shown. Coaches number and group their own plays (studio.js).
    Units: yards. x 0..30 sideline to sideline (ball usually at 15), y = yards past the line of scrimmage.
    Route points are [x, y] or [x, y, holdSeconds]. A star (shape: 'star') marks the player the diagram highlights.
    motion: pre-snap path ending at the alignment. dashed: fake or ball-carrier path.
    handoff: { to, at } ball is handed or pitched to `to` at route point index `at`; thenPass: that player throws.
    option: { label, name, concept, handoff, players } the play's called flip (e.g. the other back takes it the other way);
-   the app shows it as a toggle on the play, keeping the same number and id. */
+   the app shows it as a toggle on the play, keeping the same id. */
 const QB = (x, y, route, routeName, extra = {}) => ({ id: 'Q', label: 'Q', name: 'Quarterback', color: 'red', start: [x, y], route, routeName, delay: 0.15, speed: 3.4, qb: true, ...extra });
 const P = (id, color, name, start, route, routeName, extra = {}) => ({ id, label: id, name, color, start, route, routeName, delay: id === 'C' ? 0.35 : 0, speed: id === 'C' ? 5.0 : 5.6, eligible: true, ...extra });
 const X_ = (s, r, n, e) => P('X', 'orange', 'Orange', s, r, n, e);
 const Y_ = (s, r, n, e) => P('Y', 'purple', 'Purple', s, r, n, e);
 const Z_ = (s, r, n, e) => P('Z', 'green', 'Green', s, r, n, e);
 const C_ = (s, r, n, e) => P('C', 'ink', 'Center', s, r, n, e);
-
-const SERIES = { wristband: 'Wristband (1-8)', alternates: 'Alternates (9-15)' };
 
 const PLAYS = [
 { num: 1, series: 'wristband', id: 'p6', name: 'Split T, Z Left Hustle', type: 'pass', concept: 'Fake hustle left, Y under', players: [
@@ -132,6 +131,5 @@ const PLAYS = [
    but dies against man, and a counter run that beats man but not Cover 1. The first one is the default play. */
 const STARTERS = ['p51', 'p15', 'p35'];
 PLAYS.forEach(p => { if (STARTERS.includes(p.id)) p.starter = true; });
-PLAYS.forEach(p => { if (p.num) { p.name = `${p.num} · ${p.name}`; if (p.option) p.option.name = `${p.num} · ${p.option.name}`; } });
 // The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
 const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });
