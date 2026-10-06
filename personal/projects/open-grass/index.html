@@ -8,7 +8,7 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  /* page_location drops the #fragment: it can hold the owner token (#owner=...) or a whole custom play
+  /* page_location drops Clerk's __clerk* query params and the #fragment: it can hold the owner token (#owner=...) or a whole custom play
      packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
      On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
      A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
@@ -19,10 +19,14 @@
     try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
     if (off) window['ga-disable-G-1T9DMC15V7'] = true;
     const h = location.hash.slice(1);
+    // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
+    const q = new URLSearchParams(location.search);
+    [...q.keys()].filter(k => k.startsWith('__clerk')).forEach(k => q.delete(k));
+    const qs = q.toString();
     let owner = h.startsWith('owner=') && h !== 'owner=off';
     try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
     gtag('config', 'G-1T9DMC15V7', {
-      page_location: location.origin + location.pathname + location.search,
+      page_location: location.origin + location.pathname + (qs ? '?' + qs : ''),
       link_type: !h ? 'none' : h.startsWith('owner=') ? 'owner' : h.startsWith('j-') ? 'custom_play' : h.startsWith('s-') ? 'legacy_share' : 'builtin_play',
       ...(owner ? { traffic_type: 'internal' } : {}),
       ...(/(^|\.)open-grass\.com$/.test(location.hostname) ? {} : { debug_mode: true })
