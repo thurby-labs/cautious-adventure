@@ -11,8 +11,13 @@
   /* page_location drops the #fragment: it can hold the owner token (#owner=...) or a whole custom play
      packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
      On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
-     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter. */
+     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
+     Analytics is off (Google's documented ga-disable flag) when the visitor turned it off under "Your data" (og-no-analytics)
+     or their browser sends Global Privacy Control. */
   (() => {
+    let off = !!navigator.globalPrivacyControl;
+    try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
     const h = location.hash.slice(1);
     let owner = h.startsWith('owner=') && h !== 'owner=off';
     try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
@@ -231,6 +236,8 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
 .foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
 .foot p { margin: 0; }
+.foot a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.foot .linkbtn { padding: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -313,7 +320,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
   </main>
 
   <footer class="foot">
-    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved.</p>
+    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="privacy.html">Privacy</a> · <button class="linkbtn" id="dataBtn">Your data</button></p>
   </footer>
 </div>
 
@@ -1737,6 +1744,18 @@ async function switchAccount(user) {
   }
 }
 
+/* Privacy (see privacy.html): everything stored for the account, and deleting it.
+   The Worker deletes the plays, favorites and photos, and the Clerk user too when it has CLERK_SECRET_KEY;
+   otherwise (clerk: false) the Clerk user is deleted here through Clerk's own API. */
+const exportAccountData = () => accountApi('GET', '/me/export');
+async function deleteAccountData() {
+  const key = account.cacheKey();
+  const r = await accountApi('DELETE', '/me');
+  if (!r.clerk) await Clerk.user.delete();
+  try { localStorage.removeItem(key); } catch (e) {}
+  try { await Clerk.signOut(); } catch (e) {}
+}
+
 /* The original play-card photo for an AI-drawn play (signed-in owner only). */
 async function showPhoto(id, name) {
   let url;
@@ -2252,6 +2271,78 @@ $('exportBtn').addEventListener('click', () => {
   });
 });
 $('newPlayBtn').addEventListener('click', () => openStudio());
+
+/* ---------- Your data: analytics opt-out, download, delete (privacy.html describes all of this) ---------- */
+const GA_OFF_KEY = 'ga-disable-G-1T9DMC15V7';
+function openYourData() {
+  const gpc = !!navigator.globalPrivacyControl;
+  let off = gpc;
+  try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+  const signedIn = !!account.user;
+  openDialog(`${dlgHead('Your data')}
+    <div class="pane">
+      <label class="tog"><input type="checkbox" id="gaOn" ${off ? '' : 'checked'} ${gpc ? 'disabled' : ''}> Share usage statistics (Google Analytics)</label>
+      <p class="muted">${gpc ? 'Your browser sends Global Privacy Control, so Open Grass doesn’t load analytics here.' : 'Anonymous counts of which features coaches use. Never your plays, play names, descriptions or email. Applies to this browser.'}</p>
+    </div>
+    ${signedIn ? `<div class="pane">
+      <div><button class="act" id="acctExport">Download my account data (.json)</button></div>
+      <p class="muted">Your plays, favorites, photo list and AI draft history.</p>
+      <div><button class="act danger" id="acctDelete">Delete my account</button></div>
+      <p class="muted">Permanently deletes your account, plays, favorites and play-card photos. This can’t be undone.</p>
+      <p class="status" id="dataStatus"></p>
+    </div>` : `<div class="pane">
+      <p class="muted">You’re not signed in, so your plays and favorites are only in this browser. We don’t store them.</p>
+      <div><button class="act danger" id="localClear">Clear Open Grass data from this browser</button></div>
+      <p class="status" id="dataStatus"></p>
+    </div>`}
+    <p class="muted"><a href="privacy.html">Privacy policy</a></p>`);
+  $('gaOn').addEventListener('change', e => {
+    const on = e.target.checked;
+    try { on ? localStorage.removeItem('og-no-analytics') : localStorage.setItem('og-no-analytics', '1'); } catch (err) {}
+    window[GA_OFF_KEY] = !on;
+    toast(on ? 'Usage statistics on.' : 'Usage statistics off in this browser.');
+  });
+  const st = $('dataStatus');
+  let armed = null;
+  const arm = (b, label, run) => b.addEventListener('click', async () => {
+    if (armed !== b) {
+      armed = b; b.textContent = 'Tap again to confirm';
+      setTimeout(() => { if (armed === b) { armed = null; b.textContent = label; } }, 5000);
+      return;
+    }
+    armed = null; b.disabled = true;
+    try { await run(); } finally { if ($(b.id)) { b.disabled = false; b.textContent = label; } }
+  });
+  if (signedIn) {
+    $('acctExport').addEventListener('click', async () => {
+      st.className = 'status'; st.textContent = 'Getting your data…';
+      try {
+        const data = await exportAccountData();
+        if (await saveFile('open-grass-account.json', JSON.stringify(data, null, 1))) { st.textContent = 'Saved.'; track('data_export'); }
+      } catch (e) { st.className = 'status err'; st.textContent = 'Couldn’t get your data. Try again.'; }
+    });
+    arm($('acctDelete'), 'Delete my account', async () => {
+      st.className = 'status'; st.textContent = 'Deleting your account…';
+      try {
+        track('account_delete');
+        await deleteAccountData();
+        closeDialog();
+        toast('Your account and its data are deleted.');
+      } catch (e) {
+        st.className = 'status err';
+        st.textContent = 'Couldn’t finish deleting your account. Try again, or email us (see the privacy policy) and we’ll do it for you.';
+      }
+    });
+  } else {
+    arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
+      try {
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
+      location.replace(location.pathname);
+    });
+  }
+}
+$('dataBtn').addEventListener('click', openYourData);
 
 /* ---------- startup: links, then the coach's saved plays and favorites ---------- */
 function parseHash() {
