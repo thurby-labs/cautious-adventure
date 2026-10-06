@@ -1450,6 +1450,17 @@ const AI_ENDPOINT = 'https://open-grass-ai.thurby-labs.workers.dev';
 const AI_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const AI_MAX_IMAGE = 5 * 1024 * 1024;
 
+/* Owner override: open the site once with #owner=<OWNER_TOKEN> to save the token in this browser
+   (#owner=off forgets it). It's sent as X-OG-Owner and skips the Worker's daily limits.
+   The token is removed from the address bar right away and never lives in this file. */
+(() => {
+  const m = /^#owner=(.+)$/.exec(location.hash || '');
+  if (!m) return;
+  try { m[1] === 'off' ? localStorage.removeItem('og-owner') : localStorage.setItem('og-owner', decodeURIComponent(m[1])); } catch (e) {}
+  history.replaceState(null, '', location.pathname + location.search);
+})();
+function ownerToken() { try { return localStorage.getItem('og-owner') || ''; } catch (e) { return ''; } }
+
 function aiProvider() {
   if (!AI_ENDPOINT) return null;
   return {
@@ -1465,7 +1476,7 @@ function aiProvider() {
       let res;
       try {
         res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + '/draft', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}) }, body: JSON.stringify(body), signal
         });
       } catch (e) { throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' }; }
       const data = await res.json().catch(() => null);
@@ -1499,6 +1510,8 @@ const AI_UNAVAILABLE = 'AI drafting needs the AI-enabled version of Open Grass. 
 const AI_ERRORS = {
   unavailable: AI_UNAVAILABLE,
   rate_limited: 'Too many requests right now. Wait a minute and try again.',
+  daily_limit_ip: 'You’ve used today’s AI drafts. They reset at midnight UTC. You can still build or import plays by hand.',
+  daily_limit: 'AI drafting has hit its limit for today. Try again tomorrow, or build or import the play by hand.',
   image_rejected: 'That image couldn’t be read. Try a PNG or JPG screenshot.', images_unavailable: 'Reading images isn’t available here. Describe the play instead.',
   refused: 'The AI couldn’t draw that one. Try describing it differently.', invalid_json: 'The answer didn’t come back as a play. Try again or add more detail.',
   empty_completion: 'No answer came back. Add more detail and try again.', prompt_too_large: 'That’s too long. Shorten the description.',
