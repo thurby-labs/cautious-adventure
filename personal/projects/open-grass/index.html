@@ -2738,6 +2738,9 @@ function tourShow(i) {
   tour.i = i;
   const s = TOUR_STEPS[i];
   clearInterval(tour.poll);
+  // Steps 2–4 need Cover 2 on the field (the coach may have pressed Next on step 1 instead of tapping it).
+  // Set directly, not through setCoverage, so it isn't tracked as the coach's own pick.
+  if (i >= 1 && i <= 3 && state.cov !== TOUR_COV) { state.cov = TOUR_COV; state.nudges = {}; stop(); recompute(); setT(0); }
   tour.el.hidden = false;
   const n = TOUR_STEPS.length - 1, num = s.count || i + 1;
   const body = typeof s.body === 'function' ? s.body() : s.body;
