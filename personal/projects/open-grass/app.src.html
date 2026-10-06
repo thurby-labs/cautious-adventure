@@ -346,6 +346,16 @@ const fmtY = n => Math.max(0, n).toFixed(1);
 const playerById = id => state.play.players.find(p => p.id === id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* ---------- analytics: GA4 events (tagging plan in ANALYTICS.md) ----------
+   Never pass free text, a coach's own play or route names, file names or emails. Built-in play ids are fine. */
+function track(name, params = {}) { try { gtag('event', name, params); } catch (e) {} }
+const builtIn = p => !p.draft && !p.mine && !p.shared;
+const playInfo = (p = state.basePlay) => ({
+  play_source: p.draft ? 'draft' : p.mine ? 'mine' : p.shared ? 'shared' : 'builtin', play_type: p.type,
+  ...(builtIn(p) ? { play_id: p.id, series: p.series } : {})
+});
+const covInfo = () => ({ coverage: state.cov || 'none', blitz: state.blitz, ...(state.run ? { grade: state.run.ev.grade } : {}) });
+
 /* ---------- compute ---------- */
 function recompute(full = true) {
   state.run = state.cov ? runPlay(state.play, state.cov, opts()) : null;
@@ -630,7 +640,7 @@ function tick(ts) {
   if (!state.playing) return;
   const dt = last ? (ts - last) / 1000 : 0; last = ts;
   const nt = state.t + dt * state.speed;
-  if (nt >= tEnd()) { setT(tEnd()); stop(); return; }
+  if (nt >= tEnd()) { setT(tEnd()); stop(); track('play_complete', { ...covInfo(), ...playInfo() }); return; }
   setT(nt);
   raf = requestAnimationFrame(tick);
 }
@@ -786,10 +796,11 @@ function buildCards() {
   $('cards').innerHTML = COV_ORDER.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id)}<span><b>${COVERAGES[id].name}</b><small>${COV_SUB[id]}</small></span></button>`).join('');
   document.querySelectorAll('.cov').forEach(card => card.addEventListener('pointerdown', startCardDrag));
 }
-function setCoverage(id) {
+function setCoverage(id, method) {
   if (state.cov !== id) state.nudges = {};
   state.cov = id; stop(); state.t = 0;
   recompute(); setT(0);
+  track('select_coverage', { ...covInfo(), method, ...playInfo() });
 }
 function startCardDrag(e) {
   const card = e.currentTarget, id = card.dataset.cov, wrap = $('fieldWrap');
@@ -810,14 +821,14 @@ function startCardDrag(e) {
   const up = ev => {
     card.removeEventListener('pointermove', move); card.removeEventListener('pointerup', up); card.removeEventListener('pointercancel', up);
     wrap.classList.remove('drop-ready', 'drop-over');
-    if (ghost) { ghost.remove(); if (ev.type === 'pointerup' && over(ev)) setCoverage(id); }
-    else if (ev.type === 'pointerup') setCoverage(id);
+    if (ghost) { ghost.remove(); if (ev.type === 'pointerup' && over(ev)) setCoverage(id, 'drag'); }
+    else if (ev.type === 'pointerup') setCoverage(id, 'tap');
   };
   card.addEventListener('pointermove', move); card.addEventListener('pointerup', up); card.addEventListener('pointercancel', up);
 }
 document.addEventListener('keydown', e => {
   const c = e.target.closest && e.target.closest('.cov');
-  if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setCoverage(c.dataset.cov); }
+  if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setCoverage(c.dataset.cov, 'keyboard'); }
 });
 
 /* ---------- dragging defenders pre-snap ---------- */
@@ -840,7 +851,11 @@ svg.addEventListener('pointerdown', e => {
     state.nudges[id] = [nx - orig[0], ny - orig[1]];
     recompute(false);
   };
-  const up = () => { svg.removeEventListener('pointermove', move); svg.removeEventListener('pointerup', up); svg.removeEventListener('pointercancel', up); recompute(); };
+  const up = () => {
+    svg.removeEventListener('pointermove', move); svg.removeEventListener('pointerup', up); svg.removeEventListener('pointercancel', up); recompute();
+    const n1 = state.nudges[id] || [0, 0];
+    if (n1[0] !== n0[0] || n1[1] !== n0[1]) track('move_defender', { ...covInfo(), defender_role: id });
+  };
   svg.addEventListener('pointermove', move); svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
 });
 
@@ -873,18 +888,23 @@ function loadPlay(pl, cov, optionOn = false) {
   stop(); buildSelect(); recompute(); setT(0);
 }
 buildSelect();
-$('playSel').addEventListener('change', e => {
-  const pl = findPlay(e.target.value);
-  if (pl) loadPlay(pl);
-});
+function pickPlay(id, method) {
+  const pl = findPlay(id);
+  if (!pl) return;
+  loadPlay(pl);
+  track('select_play', { ...playInfo(pl), favorite: library.favs.includes(pl.id), method });
+}
+$('playSel').addEventListener('change', e => pickPlay(e.target.value, 'dropdown'));
 $('read').addEventListener('click', e => {
-  const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov); return; }
-  const pb = e.target.closest('[data-play]'); if (pb) { $('playSel').value = pb.dataset.play; $('playSel').dispatchEvent(new Event('change')); return; }
-  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); return; }
+  const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
+  const pb = e.target.closest('[data-play]'); if (pb) { pickPlay(pb.dataset.play, 'read_panel'); return; }
+  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', covInfo()); return; }
   const sb = e.target.closest('[data-sug]');
   if (sb) {
     const sg = state.sugs[+sb.dataset.sug];
     const pl = playerById(sg.id);
+    // route_from only for built-in plays: a coach's or the AI's route names are free text
+    track('apply_suggestion', { ...covInfo(), ...playInfo(), route_to: sg.to, grade_after: sg.ev.grade, ...(builtIn(state.basePlay) ? { route_from: sg.from } : {}) });
     if (!state.changes[sg.id]) state.changes[sg.id] = { from: state.basePlay.players.find(p => p.id === sg.id).routeName };
     state.changes[sg.id].to = sg.to;
     pl.route = clone(sg.route); pl.routeName = sg.to;
@@ -893,17 +913,27 @@ $('read').addEventListener('click', e => {
 });
 $('optBtn').addEventListener('click', () => {
   const pl = PLAYS.find(p => p.id === state.basePlay.id);
-  if (pl && pl.option) loadPlay(pl, undefined, !state.basePlay.optionOn);
+  if (pl && pl.option) { loadPlay(pl, undefined, !state.basePlay.optionOn); track('toggle_option', { value: !!state.basePlay.optionOn, play_id: pl.id }); }
 });
 $('playTags').addEventListener('click', e => {
-  if (e.target.id === 'resetPlay') { state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
+  if (e.target.id === 'resetPlay') { track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
 });
-$('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); });
-$('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); });
-$('scrub').addEventListener('input', e => { stop(); setT(e.target.value); });
-$('playBtn').addEventListener('click', () => state.playing ? stop() : play());
+$('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); track('toggle_setting', { setting: 'blitz', value: state.blitz, ...covInfo() }); });
+$('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); track('toggle_setting', { setting: 'holes', value: state.holes }); });
+let scrubbed = '';   // scrub_timeline once per play and coverage, not on every input event
+$('scrub').addEventListener('input', e => {
+  stop(); setT(e.target.value);
+  const k = state.basePlay.id + ':' + state.cov;
+  if (k !== scrubbed) { scrubbed = k; track('scrub_timeline', covInfo()); }
+});
+$('playBtn').addEventListener('click', () => {
+  if (state.playing) { stop(); return; }
+  play();
+  track('run_play', { ...covInfo(), speed: state.speed, ...playInfo() });
+});
 document.querySelectorAll('.speed button').forEach(b => b.addEventListener('click', () => {
   state.speed = +b.dataset.sp;
+  track('change_speed', { speed: state.speed });
   document.querySelectorAll('.speed button').forEach(x => x.setAttribute('aria-pressed', x === b));
 }));
 

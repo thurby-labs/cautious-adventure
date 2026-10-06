@@ -914,6 +914,16 @@ const fmtY = n => Math.max(0, n).toFixed(1);
 const playerById = id => state.play.players.find(p => p.id === id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* ---------- analytics: GA4 events (tagging plan in ANALYTICS.md) ----------
+   Never pass free text, a coach's own play or route names, file names or emails. Built-in play ids are fine. */
+function track(name, params = {}) { try { gtag('event', name, params); } catch (e) {} }
+const builtIn = p => !p.draft && !p.mine && !p.shared;
+const playInfo = (p = state.basePlay) => ({
+  play_source: p.draft ? 'draft' : p.mine ? 'mine' : p.shared ? 'shared' : 'builtin', play_type: p.type,
+  ...(builtIn(p) ? { play_id: p.id, series: p.series } : {})
+});
+const covInfo = () => ({ coverage: state.cov || 'none', blitz: state.blitz, ...(state.run ? { grade: state.run.ev.grade } : {}) });
+
 /* ---------- compute ---------- */
 function recompute(full = true) {
   state.run = state.cov ? runPlay(state.play, state.cov, opts()) : null;
@@ -1198,7 +1208,7 @@ function tick(ts) {
   if (!state.playing) return;
   const dt = last ? (ts - last) / 1000 : 0; last = ts;
   const nt = state.t + dt * state.speed;
-  if (nt >= tEnd()) { setT(tEnd()); stop(); return; }
+  if (nt >= tEnd()) { setT(tEnd()); stop(); track('play_complete', { ...covInfo(), ...playInfo() }); return; }
   setT(nt);
   raf = requestAnimationFrame(tick);
 }
@@ -1354,10 +1364,11 @@ function buildCards() {
   $('cards').innerHTML = COV_ORDER.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id)}<span><b>${COVERAGES[id].name}</b><small>${COV_SUB[id]}</small></span></button>`).join('');
   document.querySelectorAll('.cov').forEach(card => card.addEventListener('pointerdown', startCardDrag));
 }
-function setCoverage(id) {
+function setCoverage(id, method) {
   if (state.cov !== id) state.nudges = {};
   state.cov = id; stop(); state.t = 0;
   recompute(); setT(0);
+  track('select_coverage', { ...covInfo(), method, ...playInfo() });
 }
 function startCardDrag(e) {
   const card = e.currentTarget, id = card.dataset.cov, wrap = $('fieldWrap');
@@ -1378,14 +1389,14 @@ function startCardDrag(e) {
   const up = ev => {
     card.removeEventListener('pointermove', move); card.removeEventListener('pointerup', up); card.removeEventListener('pointercancel', up);
     wrap.classList.remove('drop-ready', 'drop-over');
-    if (ghost) { ghost.remove(); if (ev.type === 'pointerup' && over(ev)) setCoverage(id); }
-    else if (ev.type === 'pointerup') setCoverage(id);
+    if (ghost) { ghost.remove(); if (ev.type === 'pointerup' && over(ev)) setCoverage(id, 'drag'); }
+    else if (ev.type === 'pointerup') setCoverage(id, 'tap');
   };
   card.addEventListener('pointermove', move); card.addEventListener('pointerup', up); card.addEventListener('pointercancel', up);
 }
 document.addEventListener('keydown', e => {
   const c = e.target.closest && e.target.closest('.cov');
-  if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setCoverage(c.dataset.cov); }
+  if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setCoverage(c.dataset.cov, 'keyboard'); }
 });
 
 /* ---------- dragging defenders pre-snap ---------- */
@@ -1408,7 +1419,11 @@ svg.addEventListener('pointerdown', e => {
     state.nudges[id] = [nx - orig[0], ny - orig[1]];
     recompute(false);
   };
-  const up = () => { svg.removeEventListener('pointermove', move); svg.removeEventListener('pointerup', up); svg.removeEventListener('pointercancel', up); recompute(); };
+  const up = () => {
+    svg.removeEventListener('pointermove', move); svg.removeEventListener('pointerup', up); svg.removeEventListener('pointercancel', up); recompute();
+    const n1 = state.nudges[id] || [0, 0];
+    if (n1[0] !== n0[0] || n1[1] !== n0[1]) track('move_defender', { ...covInfo(), defender_role: id });
+  };
   svg.addEventListener('pointermove', move); svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
 });
 
@@ -1441,18 +1456,23 @@ function loadPlay(pl, cov, optionOn = false) {
   stop(); buildSelect(); recompute(); setT(0);
 }
 buildSelect();
-$('playSel').addEventListener('change', e => {
-  const pl = findPlay(e.target.value);
-  if (pl) loadPlay(pl);
-});
+function pickPlay(id, method) {
+  const pl = findPlay(id);
+  if (!pl) return;
+  loadPlay(pl);
+  track('select_play', { ...playInfo(pl), favorite: library.favs.includes(pl.id), method });
+}
+$('playSel').addEventListener('change', e => pickPlay(e.target.value, 'dropdown'));
 $('read').addEventListener('click', e => {
-  const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov); return; }
-  const pb = e.target.closest('[data-play]'); if (pb) { $('playSel').value = pb.dataset.play; $('playSel').dispatchEvent(new Event('change')); return; }
-  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); return; }
+  const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
+  const pb = e.target.closest('[data-play]'); if (pb) { pickPlay(pb.dataset.play, 'read_panel'); return; }
+  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', covInfo()); return; }
   const sb = e.target.closest('[data-sug]');
   if (sb) {
     const sg = state.sugs[+sb.dataset.sug];
     const pl = playerById(sg.id);
+    // route_from only for built-in plays: a coach's or the AI's route names are free text
+    track('apply_suggestion', { ...covInfo(), ...playInfo(), route_to: sg.to, grade_after: sg.ev.grade, ...(builtIn(state.basePlay) ? { route_from: sg.from } : {}) });
     if (!state.changes[sg.id]) state.changes[sg.id] = { from: state.basePlay.players.find(p => p.id === sg.id).routeName };
     state.changes[sg.id].to = sg.to;
     pl.route = clone(sg.route); pl.routeName = sg.to;
@@ -1461,17 +1481,27 @@ $('read').addEventListener('click', e => {
 });
 $('optBtn').addEventListener('click', () => {
   const pl = PLAYS.find(p => p.id === state.basePlay.id);
-  if (pl && pl.option) loadPlay(pl, undefined, !state.basePlay.optionOn);
+  if (pl && pl.option) { loadPlay(pl, undefined, !state.basePlay.optionOn); track('toggle_option', { value: !!state.basePlay.optionOn, play_id: pl.id }); }
 });
 $('playTags').addEventListener('click', e => {
-  if (e.target.id === 'resetPlay') { state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
+  if (e.target.id === 'resetPlay') { track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
 });
-$('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); });
-$('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); });
-$('scrub').addEventListener('input', e => { stop(); setT(e.target.value); });
-$('playBtn').addEventListener('click', () => state.playing ? stop() : play());
+$('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); track('toggle_setting', { setting: 'blitz', value: state.blitz, ...covInfo() }); });
+$('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); track('toggle_setting', { setting: 'holes', value: state.holes }); });
+let scrubbed = '';   // scrub_timeline once per play and coverage, not on every input event
+$('scrub').addEventListener('input', e => {
+  stop(); setT(e.target.value);
+  const k = state.basePlay.id + ':' + state.cov;
+  if (k !== scrubbed) { scrubbed = k; track('scrub_timeline', covInfo()); }
+});
+$('playBtn').addEventListener('click', () => {
+  if (state.playing) { stop(); return; }
+  play();
+  track('run_play', { ...covInfo(), speed: state.speed, ...playInfo() });
+});
 document.querySelectorAll('.speed button').forEach(b => b.addEventListener('click', () => {
   state.speed = +b.dataset.sp;
+  track('change_speed', { speed: state.speed });
   document.querySelectorAll('.speed button').forEach(x => x.setAttribute('aria-pressed', x === b));
 }));
 
@@ -1640,14 +1670,24 @@ async function startAccounts(onChange) {
   } catch (e) {
     account.ready = true;
     $('acctBox').hidden = true;
+    track('account_error', { stage: 'clerk_load' });
     return;
   }
   account.ready = true;
   let lastId = null;   // the page starts out showing this browser's plays, as if signed out
+  let first = true;    // the first sync is a session restored on page load, not a sign-in
   const sync = () => {
     const u = Clerk.user;
     const id = u ? u.id : null;
-    if (id === lastId) return;
+    if (id === lastId) { first = false; return; }
+    // Analytics: the Clerk user id (never the email) ties a coach's devices together
+    try {
+      gtag('set', { user_id: id });
+      gtag('set', 'user_properties', { signed_in: u ? 'yes' : 'no' });
+    } catch (e) {}
+    if (u && !first) track(Date.now() - new Date(u.createdAt).getTime() < 10 * 60 * 1000 ? 'sign_up' : 'login', { method: 'clerk' });
+    else if (!u && lastId) track('logout');
+    first = false;
     lastId = id;
     $('acctBtn').hidden = !!u;
     const ub = $('userBtn');
@@ -1660,7 +1700,9 @@ async function startAccounts(onChange) {
   sync();
 }
 $('acctBtn').addEventListener('click', () => {
-  if (window.Clerk && Clerk.loaded) Clerk.openSignIn();
+  const ready = !!(window.Clerk && Clerk.loaded);
+  track('sign_in_start', { ready });
+  if (ready) Clerk.openSignIn();
   else toast('Sign-in is still loading. Try again in a moment.');
 });
 
@@ -1682,12 +1724,14 @@ async function switchAccount(user) {
       // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
       try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
       account.saveCache();
+      track('account_sync', { plays_moved: r.added || 0, favs_moved: localFavs.length });
       return r.added ? `Moved ${r.added} play${r.added > 1 ? 's' : ''} from this browser into your account.` : 'Signed in. Your plays are synced.';
     }
     account.data = await accountApi('GET', '/me');
     account.saveCache();
     return '';
   } catch (e) {
+    track('account_error', { stage: localPlays.length || localFavs.length ? 'sync' : 'me' });
     account.data = cached || { plays: [], favs: [] };
     return cached ? 'Couldn’t reach your account. Showing the last synced copy.' : 'Couldn’t reach your account. Try reloading.';
   }
@@ -1824,8 +1868,9 @@ function normalizePlay(raw, id) {
 const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; delete c.option; delete c.optionOn; return c; };
 
 /* ---------- AI drafts (see ai.js) ---------- */
-function useDraft(play) {
-  play.draft = true;
+let draftInput = '';   // 'text' or 'image': where the current draft came from, for analytics
+function useDraft(play, input) {
+  play.draft = true; draftInput = input;
   closeDialog();
   loadPlay(play);
   toast('Draft ready. Save it to keep it.');
@@ -1890,16 +1935,29 @@ async function openStudio(tab) {
     d.querySelectorAll('.pane').forEach(p => { p.hidden = p.dataset.pane !== name; });
   };
   show(tab);
-  d.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
-  d.querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => { $('aiText').value = b.textContent; $('aiText').focus(); }));
+  track('studio_open', { tab, ai_available: !!sample });
+  d.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { show(b.dataset.tab); track('studio_tab', { tab: b.dataset.tab }); }));
+  d.querySelectorAll('[data-ex]').forEach((b, i) => b.addEventListener('click', () => { $('aiText').value = b.textContent; $('aiText').focus(); track('use_example', { example_index: i }); }));
 
+  // AI draft events never include the description or the image, only how it went
+  const draft = async (input, payload, st) => {
+    const t0 = performance.now();
+    track('ai_draft_start', { input, signed_in: !!account.user });
+    try {
+      const play = await askAI(payload, st);
+      track('ai_draft_success', { input, latency_ms: Math.round(performance.now() - t0), play_type: play.type, player_count: play.players.length });
+      useDraft(play, input);
+    } catch (e) {
+      track('ai_draft_error', { input, error_code: (e && e.code) || 'invalid_play', latency_ms: Math.round(performance.now() - t0) });
+      if ($(st.id)) { st.className = 'status err'; st.textContent = aiError(e); }
+    }
+  };
   $('aiGo').addEventListener('click', async () => {
     const text = $('aiText').value.trim(), st = $('aiStatus');
     if (!text) { st.className = 'status err'; st.textContent = 'Describe the play first.'; return; }
     $('aiGo').disabled = true;
-    try { useDraft(await askAI({ description: text }, st)); }
-    catch (e) { if ($('aiStatus')) { st.className = 'status err'; st.textContent = aiError(e); } }
-    finally { if ($('aiGo')) $('aiGo').disabled = false; }
+    await draft('text', { description: text }, st);
+    if ($('aiGo')) $('aiGo').disabled = false;
   });
 
   let file = null;
@@ -1912,9 +1970,8 @@ async function openStudio(tab) {
   $('imgGo').addEventListener('click', async () => {
     const st = $('imgStatus');
     $('imgGo').disabled = true;
-    try { useDraft(await askAI({ image: file }, st)); }
-    catch (e) { if ($('imgStatus')) { st.className = 'status err'; st.textContent = aiError(e); } }
-    finally { if ($('imgGo')) $('imgGo').disabled = false; }
+    await draft('image', { image: file }, st);
+    if ($('imgGo')) $('imgGo').disabled = false;
   });
 
   $('jsonFile').addEventListener('change', async e => {
@@ -1930,7 +1987,9 @@ async function openStudio(tab) {
       closeDialog();
       loadPlay(plays[0]);
       toast(`Imported ${plays.length} play${plays.length > 1 ? 's' : ''} into My plays.`);
+      track('import_plays', { play_count: plays.length, storage: account.user ? 'account' : 'local' });
     } catch (err) {
+      track('import_error', { reason: err instanceof SyntaxError ? 'invalid_json' : 'invalid_play' });
       st.className = 'status err';
       st.textContent = err instanceof SyntaxError ? 'That file isn’t valid JSON.' : (err.message || 'Those plays couldn’t be imported.');
     }
@@ -1940,6 +1999,7 @@ async function openStudio(tab) {
 /* ---------- save, delete, favorite ---------- */
 async function saveCurrentAsMine() {
   const edited = Object.keys(state.changes).length > 0 && !state.play.draft && !state.play.shared;
+  const source = state.play.draft ? 'draft_' + (draftInput || 'text') : state.play.shared ? 'shared' : edited ? 'edited' : 'copy';
   const p = stripFlags(state.play);
   p.id = state.play.draft ? state.basePlay.id.replace(/^d/, 'u') : 'u' + rid();
   p.series = 'mine';
@@ -1951,10 +2011,11 @@ async function saveCurrentAsMine() {
     p.mine = true; library.mine.push(p); library.version++;
     loadPlay(p);
     toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
-  } catch (e) { toast('Couldn’t save the play. Try again.'); }
+    track('save_play', { source, storage: account.user ? 'account' : 'local', play_type: p.type, my_plays: library.mine.length });
+  } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); }
 }
 $('saveDraftBtn').addEventListener('click', saveCurrentAsMine);
-$('photoBtn').addEventListener('click', () => { if (state.play.photo) showPhoto(state.play.photo, state.play.name); });
+$('photoBtn').addEventListener('click', () => { if (state.play.photo) { showPhoto(state.play.photo, state.play.name); track('view_original_photo'); } });
 
 let delArm = null;
 $('deletePlayBtn').addEventListener('click', async () => {
@@ -1973,7 +2034,8 @@ $('deletePlayBtn').addEventListener('click', async () => {
     library.version++;
     loadPlay(PLAYS[0]);
     toast('Play deleted.');
-  } catch (e) { toast('Couldn’t delete the play. Try again.'); }
+    track('delete_play', { storage: account.user ? 'account' : 'local', my_plays: library.mine.length });
+  } catch (e) { toast('Couldn’t delete the play. Try again.'); track('app_error', { where: 'delete' }); }
 });
 
 $('favBtn').addEventListener('click', async () => {
@@ -1985,6 +2047,7 @@ $('favBtn').addEventListener('click', async () => {
   store.saveFavs(library.favs);
   buildSelect(); renderHead();
   toast(on ? 'Added to favorites.' : 'Removed from favorites.');
+  track('favorite', { action: on ? 'add' : 'remove', fav_count: library.favs.length, ...playInfo() });
 });
 
 /* ---------- share links ---------- */
@@ -1996,7 +2059,9 @@ function openShare() {
   const covTok = state.cov || 'none';
   let url = '', err = '';
   try { url = `${SITE_URL}#${custom ? 'j-' + packPlay(stripFlags(state.play)) : state.basePlay.id + (state.basePlay.optionOn ? '~opt' : '')}.${covTok}`; }
-  catch (e) { err = 'Couldn’t create the link. Try again.'; }
+  catch (e) { err = 'Couldn’t create the link. Try again.'; track('app_error', { where: 'share_link' }); }
+  const shareInfo = { content_type: custom ? 'custom_play' : 'builtin_play', coverage: covTok, ...(custom ? {} : { item_id: state.basePlay.id }) };
+  track('share_open', shareInfo);
   const note = custom
     ? 'This play is stored in the link itself, so anyone with it can open it. They can save it to their own My plays.'
     : 'Anyone with the link can open it.';
@@ -2009,8 +2074,8 @@ function openShare() {
     </div>`);
   $('copyLink').addEventListener('click', async () => {
     const inp = $('shareUrl');
-    try { await navigator.clipboard.writeText(inp.value); toast('Link copied.'); }
-    catch (e) { inp.focus(); inp.select(); toast('Press Ctrl+C or ⌘C to copy.'); }
+    try { await navigator.clipboard.writeText(inp.value); toast('Link copied.'); track('share', { method: 'clipboard', ...shareInfo }); }
+    catch (e) { inp.focus(); inp.select(); toast('Press Ctrl+C or ⌘C to copy.'); track('share', { method: 'manual_copy', ...shareInfo }); }
   });
 }
 $('shareBtn').addEventListener('click', openShare);
@@ -2134,31 +2199,37 @@ function saveFile(filename, data) {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
     return true;
-  } catch (e) { toast('Couldn’t save the file. Try again.'); return false; }
+  } catch (e) { toast('Couldn’t save the file. Try again.'); track('app_error', { where: 'file_save' }); return false; }
 }
 $('gifBtn').addEventListener('click', async () => {
   const b = $('gifBtn'), label = b.lastChild;
-  if (!state.run) { toast('Drop a coverage on the field first.'); return; }
+  if (!state.run) { toast('Drop a coverage on the field first.'); track('gif_blocked'); return; }
   stop();
   const keepT = state.t;
   b.disabled = true;
   let blob;
+  const t0 = performance.now();
   try { blob = await renderGif(p => { label.textContent = `Rendering ${Math.round(p * 100)}%`; }); }
-  catch (e) { toast('Couldn’t make the GIF. Try again.'); }
+  catch (e) { toast('Couldn’t make the GIF. Try again.'); track('app_error', { where: 'gif' }); }
   finally { b.disabled = false; label.textContent = 'Save GIF'; setT(keepT); }
   if (!blob) return;
+  const gifInfo = covInfo();
+  track('gif_render', { ...gifInfo, ...playInfo(), render_ms: Math.round(performance.now() - t0), size_kb: Math.round(blob.size / 1024) });
   const url = URL.createObjectURL(blob);
   const name = `${slug(state.play.name)}-vs-${state.cov}.gif`;
   openDialog(`${dlgHead('Animated play')}
     <img class="gifout" src="${url}" alt="Animated GIF of ${esc(state.play.name)}">
     <p class="status">${(blob.size / 1024 / 1024).toFixed(1)} MB · ${esc(name)}</p>
     <div><button class="act primary" id="gifSave">Save GIF</button></div>`, () => URL.revokeObjectURL(url));
-  $('gifSave').addEventListener('click', async () => { if (await saveFile(name, blob)) toast('GIF saved.'); });
+  $('gifSave').addEventListener('click', async () => {
+    if (await saveFile(name, blob)) { toast('GIF saved.'); track('file_download', { file_extension: 'gif', content_type: 'animation', play_count: 1, coverage: gifInfo.coverage }); }
+  });
 });
 
 /* ---------- export favorites ---------- */
 $('exportBtn').addEventListener('click', () => {
   const favs = library.favs.map(findPlay).filter(Boolean);
+  track('export_open', { fav_count: favs.length });
   if (!favs.length) { toast('Star a play with Favorite first.'); return; }
   openDialog(`${dlgHead('Export favorites')}
     <p class="status">${favs.length} favorite play${favs.length > 1 ? 's' : ''}: ${favs.map(p => esc(p.name)).join(', ')}</p>
@@ -2170,14 +2241,14 @@ $('exportBtn').addEventListener('click', () => {
     </div>`);
   $('expJson').addEventListener('click', async () => {
     const data = JSON.stringify({ app: 'Open Grass', format: 1, exportedAt: new Date().toISOString(), plays: favs.map(stripFlags) }, null, 1);
-    if (await saveFile('open-grass-favorites.json', data)) toast('Playbook file saved.');
+    if (await saveFile('open-grass-favorites.json', data)) { toast('Playbook file saved.'); track('file_download', { file_extension: 'json', content_type: 'playbook', play_count: favs.length }); }
   });
   $('expCsv').addEventListener('click', async () => {
     const q = v => `"${String(v).replace(/"/g, '""')}"`;
     const rows = [['Play', 'Type', 'Concept', ...COV_ORDER.map(c => COVERAGES[c].name), ...COV_ORDER.map(c => COVERAGES[c].name + ' + blitz')]];
     favs.forEach(p => rows.push([p.name, p.type, p.concept,
       ...COV_ORDER.map(c => runPlay(p, c, {}).ev.grade), ...COV_ORDER.map(c => runPlay(p, c, { blitz: true }).ev.grade)]));
-    if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) toast('Scouting sheet saved.');
+    if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) { toast('Scouting sheet saved.'); track('file_download', { file_extension: 'csv', content_type: 'scouting_sheet', play_count: favs.length }); }
   });
 });
 $('newPlayBtn').addEventListener('click', () => openStudio());
@@ -2192,13 +2263,16 @@ if (link && !link.shared) {
   const opt = link.id.endsWith('~opt');
   const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
   if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
+  track('shared_play_open', { content_type: 'builtin_play', result: p ? 'loaded' : 'not_found', ...(p ? { item_id: p.id, coverage: link.cov || 'none' } : {}) });
 }
 async function loadLibrary() {
   try {
     const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
     library.favs = favs.filter(id => typeof id === 'string');
-  } catch (e) { toast('Couldn’t load your saved plays.'); }
+    const n = library.mine.length;
+    try { gtag('set', 'user_properties', { my_plays_bucket: n === 0 ? '0' : n <= 5 ? '1-5' : n <= 20 ? '6-20' : '21+' }); } catch (e) {}
+  } catch (e) { toast('Couldn’t load your saved plays.'); track('app_error', { where: 'load_library' }); }
 }
 // Signing in or out swaps My plays and favorites. Stay on the current play if it's still there.
 startAccounts(async user => {
@@ -2228,10 +2302,12 @@ startAccounts(async user => {
         library.shared.push(p);
         library.version++;
         loadPlay(p, link.cov === undefined ? state.cov : link.cov);
+        track('shared_play_open', { content_type: 'custom_play', result: 'loaded', coverage: link.cov || 'none' });
         return;
       }
       toast('That shared play link is from an older version of Open Grass and can’t be opened here.');
-    } catch (e) { toast('Couldn’t open the shared play.'); }
+      track('shared_play_open', { content_type: 'legacy_share', result: 'legacy' });
+    } catch (e) { toast('Couldn’t open the shared play.'); track('shared_play_open', { content_type: 'custom_play', result: 'error' }); }
   } else if (!link) {
     let saved = null;
     try { saved = localStorage.getItem('og-play'); } catch (e) {}

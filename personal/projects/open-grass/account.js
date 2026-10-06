@@ -76,14 +76,24 @@ async function startAccounts(onChange) {
   } catch (e) {
     account.ready = true;
     $('acctBox').hidden = true;
+    track('account_error', { stage: 'clerk_load' });
     return;
   }
   account.ready = true;
   let lastId = null;   // the page starts out showing this browser's plays, as if signed out
+  let first = true;    // the first sync is a session restored on page load, not a sign-in
   const sync = () => {
     const u = Clerk.user;
     const id = u ? u.id : null;
-    if (id === lastId) return;
+    if (id === lastId) { first = false; return; }
+    // Analytics: the Clerk user id (never the email) ties a coach's devices together
+    try {
+      gtag('set', { user_id: id });
+      gtag('set', 'user_properties', { signed_in: u ? 'yes' : 'no' });
+    } catch (e) {}
+    if (u && !first) track(Date.now() - new Date(u.createdAt).getTime() < 10 * 60 * 1000 ? 'sign_up' : 'login', { method: 'clerk' });
+    else if (!u && lastId) track('logout');
+    first = false;
     lastId = id;
     $('acctBtn').hidden = !!u;
     const ub = $('userBtn');
@@ -96,7 +106,9 @@ async function startAccounts(onChange) {
   sync();
 }
 $('acctBtn').addEventListener('click', () => {
-  if (window.Clerk && Clerk.loaded) Clerk.openSignIn();
+  const ready = !!(window.Clerk && Clerk.loaded);
+  track('sign_in_start', { ready });
+  if (ready) Clerk.openSignIn();
   else toast('Sign-in is still loading. Try again in a moment.');
 });
 
@@ -118,12 +130,14 @@ async function switchAccount(user) {
       // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
       try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
       account.saveCache();
+      track('account_sync', { plays_moved: r.added || 0, favs_moved: localFavs.length });
       return r.added ? `Moved ${r.added} play${r.added > 1 ? 's' : ''} from this browser into your account.` : 'Signed in. Your plays are synced.';
     }
     account.data = await accountApi('GET', '/me');
     account.saveCache();
     return '';
   } catch (e) {
+    track('account_error', { stage: localPlays.length || localFavs.length ? 'sync' : 'me' });
     account.data = cached || { plays: [], favs: [] };
     return cached ? 'Couldn’t reach your account. Showing the last synced copy.' : 'Couldn’t reach your account. Try reloading.';
   }
