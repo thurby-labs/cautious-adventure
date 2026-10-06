@@ -127,6 +127,11 @@ const PLAYS = [
   Z_([15, -5.9], [[15.5, -2], [16.9, 3.5]], 'Fake dive', { speed: 5.4 }),
   X_([25.1, 0], [[20, -2.5], [15, -3.8], [10, -2.5], [7.3, -0.4]], 'Fake reverse left', { fake: true }) ] }
 ];
+/* Free beta: signed out, coaches can open these three; the rest of the library needs a free account (gate in app.src.html).
+   Picked to show the engine's range: a stack that grades well against everything, a motion flat that beats zone
+   but dies against man, and a counter run that beats man but not Cover 1. The first one is the default play. */
+const STARTERS = ['p51', 'p15', 'p35'];
+PLAYS.forEach(p => { if (STARTERS.includes(p.id)) p.starter = true; });
 PLAYS.forEach(p => { if (p.num) { p.name = `${p.num} · ${p.name}`; if (p.option) p.option.name = `${p.num} · ${p.option.name}`; } });
 // The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
 const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });

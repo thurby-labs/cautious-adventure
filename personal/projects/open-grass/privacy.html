@@ -62,7 +62,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <div class="summary">
       <p><b>The short version</b></p>
       <ul>
-        <li>You can use Open Grass without an account. Your plays then stay in your own browser.</li>
+        <li>You can use Open Grass without an account. Your plays then stay in your own browser. AI drafting needs a free account.</li>
         <li>If you sign in, we store your email (through our sign-in provider), your plays, favorites, and any play-card photos you upload, so they follow you across devices.</li>
         <li>We use Google Analytics to see which features coaches use. It never receives your plays, play names, descriptions, or email. You can turn it off.</li>
         <li>We don't sell your information or use it for advertising.</li>
@@ -83,7 +83,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     </ul>
 
     <h3>When you use AI drafting</h3>
-    <p>When you describe a play in words or upload a diagram, that text or image is sent to our server and on to Anthropic, which provides the AI model that draws the play. For each request we also record the time, whether it was text or an image, whether it worked, how much AI processing it used, your account ID if you're signed in, and a <b>salted, one-way hash</b> of your IP address. We use these to enforce daily limits, prevent abuse, and manage costs. We do not store your IP address itself. After 90 days we remove the hashed IP and account ID from these records. Daily usage counters are deleted after 30 days.</p>
+    <p>AI drafting needs a free account. When you describe a play in words or upload a diagram, that text or image is sent to our server and on to Anthropic, which provides the AI model that draws the play. For each request we also record the time, whether it was text or an image, whether it worked, how much AI processing it used, your account ID, and a <b>salted, one-way hash</b> of your IP address. We use these to enforce daily limits, prevent abuse, and manage costs. We do not store your IP address itself. After 90 days we remove the hashed IP and account ID from these records. Daily usage counters are deleted after 30 days.</p>
 
     <h3>Analytics</h3>
     <p>We use Google Analytics to understand how the app is used, for example which coverages coaches test, whether AI drafting succeeds, and whether share links get opened. Google Analytics uses cookies (<code>_ga</code>, <code>_ga_*</code>) and collects information such as pages visited, the features you use, your browser and device type, and approximate location (city level, derived from your IP address by Google).</p>
@@ -136,6 +136,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <div class="tbl"><table>
       <tr><th>Name</th><th>Set by</th><th>Purpose</th></tr>
       <tr><td><code>og-mine</code>, <code>og-favs</code>, <code>og-play</code></td><td>Open Grass (local storage)</td><td>Plays, favorites and last play when you're not signed in</td></tr>
+      <tr><td><code>og-signed</code></td><td>Open Grass (local storage)</td><td>Remembers that this browser was signed in, so the full library shows while sign-in loads</td></tr>
       <tr><td><code>og-cloud:&lt;id&gt;</code></td><td>Open Grass (local storage)</td><td>A copy of your account's plays, so they show if our server can't be reached</td></tr>
       <tr><td><code>og-no-analytics</code></td><td>Open Grass (local storage)</td><td>Remembers that you turned analytics off</td></tr>
       <tr><td><code>__session</code>, <code>__client_uat</code> and similar</td><td>Clerk (cookies)</td><td>Keep you signed in. Required for accounts.</td></tr>

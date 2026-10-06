@@ -140,6 +140,68 @@ $('scrim').addEventListener('click', e => { if (e.target === $('scrim') || e.tar
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('scrim').hidden) closeDialog(); });
 const dlgHead = title => `<div class="dialog-head"><h3 id="dlgTitle">${title}</h3><button class="act" data-close>Close</button></div>`;
 
+/* ---------- free beta: what needs a free account ----------
+   Signed out: the STARTERS (plays.js), coverages, grading, GIFs (watermarked), opening any share link, and up to
+   LOCAL_PLAY_LIMIT plays of their own in this browser. A free account adds the full library, AI drafting (the Worker
+   also refuses signed-out drafts), favorites, share links, and plays synced across devices.
+   Nothing a coach already has gets taken away: plays and favorites saved before the gate stay. */
+const LOCAL_PLAY_LIMIT = 2;
+const GATE_COPY = {
+  play: 'The full playbook is free with an account during the beta.',
+  ai: 'Describe a play in your own words and the AI draws it, ready to test against every coverage.',
+  photo: 'Upload a photo or screenshot of a play card and the AI draws it for you.',
+  favorite: 'Star your go-to plays and they follow you to every device.',
+  share: 'Send a link so assistant coaches and players can open the play and run it themselves.',
+  save: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, save as many as you want, on any device.`,
+  import: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, import your whole playbook.`
+};
+const perksHtml = () => `<ul class="perks">
+    <li>All ${PLAYS.length} plays in the library</li>
+    <li>AI drafting from a description or a play-card photo</li>
+    <li>Unlimited saved plays, synced across your devices</li>
+    <li>Favorites and share links</li>
+  </ul>`;
+function showGate(reason, play) {
+  track('gate_prompt', { reason, ...(play && builtIn(play) ? { play_id: play.id } : {}) });
+  const locked = reason === 'play' && play;
+  openDialog(`${dlgHead(locked ? 'Unlock the full playbook' : 'Create a free account')}
+    ${locked ? `<div class="sketch">${playSketch(play)}<div class="lockmsg"><span>🔒 ${esc(play.name)}</span></div></div>` : ''}
+    <p>${GATE_COPY[reason] || GATE_COPY.play}</p>
+    <div class="pane">
+      <div class="eyebrow">Free during the beta</div>
+      ${perksHtml()}
+      <p class="muted">Coaches who join during the beta become founding coaches, with perks when paid plans arrive.</p>
+    </div>
+    <div class="gate-actions">
+      <button class="act primary" id="gateUp">Create free account</button>
+      <button class="linkbtn" id="gateIn">I already have an account</button>
+    </div>`);
+  $('gateUp').addEventListener('click', () => openClerk('sign_up', reason));
+  $('gateIn').addEventListener('click', () => openClerk('sign_in', reason));
+}
+// True when the action has to stop: shows the free-account prompt (or a wait note while a signed-in coach's session loads).
+function needsAccount(reason, play) {
+  if (account.user || gate.open) return false;
+  if (gate.signedIn) { toast('Still signing you in. Try again in a moment.'); return true; }
+  showGate(reason, play);
+  return true;
+}
+function showBeta() {
+  track('beta_info_open', { signed_in: !!account.user });
+  const founding = account.user && account.data && account.data.founding;
+  openDialog(`${dlgHead('Open Grass is in beta')}
+    <p>Everything is free while we’re in beta. ${account.user ? 'Your account has the full library and AI drafting.' : `Without an account you can try ${STARTERS.length} plays against every coverage. A free account opens the rest:`}</p>
+    ${account.user ? '' : perksHtml()}
+    <p>${founding ? '<b>You’re a founding coach.</b> Thanks for being early: you’ll get perks when paid plans arrive.' : 'Coaches who join during the beta become founding coaches, with perks when paid plans arrive.'}</p>
+    <p class="muted">Things may change or break while we build. Tell us what’s working and what isn’t: <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">opengrassllc@gmail.com</a></p>
+    ${account.user || gate.open ? '' : `<div class="gate-actions"><button class="act primary" id="gateUp">Create free account</button><button class="linkbtn" id="gateIn">I already have an account</button></div>`}`);
+  if ($('gateUp')) {
+    $('gateUp').addEventListener('click', () => openClerk('sign_up', 'beta'));
+    $('gateIn').addEventListener('click', () => openClerk('sign_in', 'beta'));
+  }
+}
+$('betaBtn').addEventListener('click', showBeta);
+
 /* ---------- New play studio ---------- */
 const EXAMPLES = [
   'Trips right. X runs a flat to the left, Z a short corner, Y a go, C an out to the right. QB drops back.',
@@ -162,6 +224,7 @@ async function openStudio(tab) {
       <textarea id="aiText" placeholder="Formation, each player's route, and who gets the ball."></textarea>
       <div class="examples">${EXAMPLES.map(x => `<button class="chipbtn" data-ex>${esc(x)}</button>`).join('')}</div>
       <div><button class="act primary" id="aiGo" ${sample ? '' : 'disabled'}>Draw this play</button></div>
+      ${sample && !account.user ? '<p class="muted">AI drafting needs a free account (free during the beta).</p>' : ''}
       <p class="status${sample ? '' : ' err'}" id="aiStatus">${sample ? '' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="image" hidden>
@@ -169,6 +232,7 @@ async function openStudio(tab) {
       <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'}>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
+      ${img && !account.user ? '<p class="muted">Reading diagrams needs a free account (free during the beta).</p>' : ''}
       <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : sample ? 'Reading images isn’t available here. Describe the play instead.' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="file" hidden>
@@ -202,6 +266,7 @@ async function openStudio(tab) {
   $('aiGo').addEventListener('click', async () => {
     const text = $('aiText').value.trim(), st = $('aiStatus');
     if (!text) { st.className = 'status err'; st.textContent = 'Describe the play first.'; return; }
+    if (!account.user && needsAccount('ai')) return;
     $('aiGo').disabled = true;
     await draft('text', { description: text }, st);
     if ($('aiGo')) $('aiGo').disabled = false;
@@ -216,6 +281,7 @@ async function openStudio(tab) {
   });
   $('imgGo').addEventListener('click', async () => {
     const st = $('imgStatus');
+    if (!account.user && needsAccount('photo')) return;
     $('imgGo').disabled = true;
     await draft('image', { image: file }, st);
     if ($('imgGo')) $('imgGo').disabled = false;
@@ -228,6 +294,7 @@ async function openStudio(tab) {
       const data = JSON.parse(await f.text());
       const list = Array.isArray(data) ? data : Array.isArray(data.plays) ? data.plays : [data];
       const plays = list.map(p => normalizePlay(p));
+      if (!account.user && !gate.open && library.mine.length + plays.length > LOCAL_PLAY_LIMIT && needsAccount('import')) return;
       for (const p of plays) await store.saveMine(p);
       plays.forEach(p => { p.mine = true; library.mine.push(p); });
       library.version++;
@@ -245,6 +312,7 @@ async function openStudio(tab) {
 
 /* ---------- save, delete, favorite ---------- */
 async function saveCurrentAsMine() {
+  if (!account.user && !gate.open && library.mine.length >= LOCAL_PLAY_LIMIT && needsAccount('save')) return false;
   const edited = Object.keys(state.changes).length > 0 && !state.play.draft && !state.play.shared;
   const source = state.play.draft ? 'draft_' + (draftInput || 'text') : state.play.shared ? 'shared' : edited ? 'edited' : 'copy';
   const p = stripFlags(state.play);
@@ -259,9 +327,10 @@ async function saveCurrentAsMine() {
     loadPlay(p);
     toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
     track('save_play', { source, storage: account.user ? 'account' : 'local', play_type: p.type, my_plays: library.mine.length });
-  } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); }
+    return true;
+  } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); return false; }
 }
-$('saveDraftBtn').addEventListener('click', saveCurrentAsMine);
+$('saveDraftBtn').addEventListener('click', () => saveCurrentAsMine());
 $('photoBtn').addEventListener('click', () => { if (state.play.photo) { showPhoto(state.play.photo, state.play.name); track('view_original_photo'); } });
 
 let delArm = null;
@@ -279,7 +348,7 @@ $('deletePlayBtn').addEventListener('click', async () => {
     library.mine = library.mine.filter(p => p.id !== id);
     if (library.favs.includes(id)) { library.favs = library.favs.filter(f => f !== id); store.saveFavs(library.favs); }
     library.version++;
-    loadPlay(PLAYS[0]);
+    loadPlay(firstOpenPlay());
     toast('Play deleted.');
     track('delete_play', { storage: account.user ? 'account' : 'local', my_plays: library.mine.length });
   } catch (e) { toast('Couldn’t delete the play. Try again.'); track('app_error', { where: 'delete' }); }
@@ -287,9 +356,10 @@ $('deletePlayBtn').addEventListener('click', async () => {
 
 $('favBtn').addEventListener('click', async () => {
   if (state.play.draft) return;
-  if (state.play.shared) { await saveCurrentAsMine(); }
+  const on = !library.favs.includes(state.basePlay.id);
+  if (on && needsAccount('favorite')) return;
+  if (state.play.shared && !(await saveCurrentAsMine())) return;
   const id = state.basePlay.id;
-  const on = !library.favs.includes(id);
   library.favs = on ? [...library.favs, id] : library.favs.filter(f => f !== id);
   store.saveFavs(library.favs);
   buildSelect(); renderHead();
@@ -325,7 +395,7 @@ function openShare() {
     catch (e) { inp.focus(); inp.select(); toast('Press Ctrl+C or ⌘C to copy.'); track('share', { method: 'manual_copy', ...shareInfo }); }
   });
 }
-$('shareBtn').addEventListener('click', openShare);
+$('shareBtn').addEventListener('click', () => { if (!needsAccount('share')) openShare(); });
 
 /* ---------- GIF: render each frame of the field and encode an animated GIF ---------- */
 function lzwEncode(px, out) {
@@ -409,6 +479,7 @@ async function renderGif(progress) {
   const resolve = s => s.replace(/var\((--[\w-]+)\)/g, (m, v) => tok(v))
     .replace(/class="lbl"/g, 'font-family="Barlow, Arial, sans-serif" font-weight="700"')
     .replace(/class="def[^"]*"/g, '');
+  const mark = !account.user;   // signed out, the GIF carries the site address over the field
   const title = `${state.play.name}  ·  vs ${state.cov ? COVERAGES[state.cov].name : 'no defense'}${state.blitz ? ' + blitz' : ''}`;
   const draw = async t => {
     const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 336" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
@@ -420,6 +491,14 @@ async function renderGif(progress) {
     ctx.fillStyle = tok('--muted'); ctx.font = '600 13px Barlow, Arial, sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(`${t.toFixed(1)}s · Open Grass`, W - 14, CAP / 2); ctx.textAlign = 'left';
     ctx.drawImage(img, 0, CAP, W, FH);
+    if (mark) {
+      ctx.font = '700 15px Barlow, Arial, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      const wm = 'open-grass.com', ww = ctx.measureText(wm).width;
+      ctx.globalAlpha = 0.8; ctx.fillStyle = tok('--panel');
+      ctx.fillRect(W - ww - 26, H - 34, ww + 16, 24);
+      ctx.globalAlpha = 1; ctx.fillStyle = tok('--ink');
+      ctx.fillText(wm, W - 18, H - 14); ctx.textAlign = 'left';
+    }
     return ctx.getImageData(0, 0, W, H).data;
   };
   const times = [];
@@ -564,7 +643,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
       } catch (e) {}
       location.replace(location.pathname);
     });
@@ -581,6 +660,7 @@ const link = parseHash();
 if (link && !link.shared) {
   const opt = link.id.endsWith('~opt');
   const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
+  if (p) gate.extra.add(p.id);   // a share link opens its play even when it's locked
   if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
   track('shared_play_open', { content_type: 'builtin_play', result: p ? 'loaded' : 'not_found', ...(p ? { item_id: p.id, coverage: link.cov || 'none' } : {}) });
 }
@@ -589,6 +669,8 @@ async function loadLibrary() {
     const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
     library.favs = favs.filter(id => typeof id === 'string');
+    // Built-in plays favorited in this browser before the beta gate stay open
+    if (!account.user) library.favs.forEach(id => gate.extra.add(id));
     const n = library.mine.length;
     try { gtag('set', 'user_properties', { my_plays_bucket: n === 0 ? '0' : n <= 5 ? '1-5' : n <= 20 ? '6-20' : '21+' }); } catch (e) {}
   } catch (e) { toast('Couldn’t load your saved plays.'); track('app_error', { where: 'load_library' }); }
@@ -601,13 +683,14 @@ startAccounts(async user => {
   library.version++;
   const p = was && library.mine.find(x => x.id === was);
   if (p) loadPlay(p);
-  else if (was) loadPlay(PLAYS[0]);
+  else if (was || isLocked(state.basePlay)) loadPlay(firstOpenPlay());   // signed out on a locked play: back to a free one
   else {
     let saved = null;
     try { saved = localStorage.getItem('og-play'); } catch (e) {}
     const q = !link && !state.play.draft && !state.play.shared && saved && library.mine.find(x => x.id === saved);
     if (q) loadPlay(q); else { buildSelect(); renderHead(); }
   }
+  recompute();   // the read panel's play list shows locks only while signed out
   if (msg) toast(msg);
 });
 (async () => {

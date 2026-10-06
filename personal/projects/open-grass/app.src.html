@@ -240,8 +240,19 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
 .foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
 .foot p { margin: 0; }
+.foot p + p { margin-top: 4px; }
 .foot a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
 .foot .linkbtn { padding: 0; }
+/* Beta pill and the free-account prompt (gate) */
+.beta { font-family: var(--f-body); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--hole-edge); background: var(--hole); color: #1d2208; cursor: pointer; vertical-align: middle; }
+.beta:hover { filter: brightness(1.05); }
+.brand .tagline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sketch { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--turf); }
+.sketch svg { display: block; width: 100%; height: auto; max-height: 220px; filter: blur(5px); transform: scale(1.06); }
+.sketch .lockmsg { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 22px; text-transform: uppercase; color: var(--ink); }
+.sketch .lockmsg span { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; }
+.perks { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14px; }
+.gate-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -251,7 +262,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
   <header class="top">
     <div class="brand">
       <img class="mark" src="logo/open-grass-logo-header.png" width="101" height="72" alt="">
-      <div><h1 class="sr-only">Open Grass</h1><p>Find the hole. Beat the coverage.</p></div>
+      <div><h1 class="sr-only">Open Grass</h1><p class="tagline">Find the hole. Beat the coverage. <button class="beta" id="betaBtn" title="Free while in beta">Beta</button></p></div>
     </div>
     <div class="head-actions">
       <div class="play-pick">
@@ -325,6 +336,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 
   <footer class="foot">
     <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="privacy.html">Privacy</a> · <button class="linkbtn" id="dataBtn">Your data</button></p>
+    <p>Free while in beta. Early coaches get founding-coach perks. · <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">Send feedback</a></p>
   </footer>
 </div>
 
@@ -342,8 +354,20 @@ const X = x => x * S, Y = y => (YTOP - y) * S;
 const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)' };
 const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
 
-let savedPlay = 0;
-try { savedPlay = Math.max(0, PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'))); } catch (e) {}
+/* Free beta gate: signed out, only the STARTERS (plays.js) are open; the rest of the built-in library needs a free account.
+   gate.signedIn starts from a hint account.js leaves in this browser (og-signed), so a signed-in coach doesn't see locks
+   flash while Clerk loads; account.js corrects it once Clerk answers. gate.open unlocks everything (accounts off, or Clerk
+   failed to load, so nobody could sign in). gate.extra: built-in plays open this visit anyway (opened from a share link,
+   or favorited in this browser before the gate existed). */
+const gate = { signedIn: false, open: false, extra: new Set() };
+try { gate.signedIn = localStorage.getItem('og-signed') === '1'; } catch (e) {}
+function isLocked(p) { return !!p && builtIn(p) && !p.starter && !gate.signedIn && !gate.open && !gate.extra.has(p.id); }
+const firstOpenPlay = () => PLAYS.find(p => !isLocked(p));
+let savedPlay = PLAYS.findIndex(p => p.id === STARTERS[0]);
+try {
+  const i = PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'));
+  if (i >= 0 && (PLAYS[i].starter || gate.signedIn)) savedPlay = i;
+} catch (e) {}
 const state = {
   basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
   cov: 'c2', blitz: false, holes: true, t: 0, playing: false, speed: 0.5, nudges: {},
@@ -621,6 +645,14 @@ function fieldMarkup(t) {
   return s;
 }
 
+/* A still drawing of a play: routes and players, no defense. The locked-play prompt shows it blurred. */
+function playSketch(p) {
+  let s = STATIC.replace(/<defs>[\s\S]*?<\/defs>/, '');
+  p.players.forEach(pl => { s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
+  p.players.forEach(pl => { s += `<circle cx="${X(pl.start[0])}" cy="${Y(pl.start[1])}" r="10" style="fill:${COLOR[pl.color]};stroke:var(--chalk)" stroke-width="1.5"/>`; });
+  return `<svg viewBox="0 0 360 336" aria-hidden="true">${s}</svg>`;
+}
+
 /* ---------- timeline ---------- */
 function setT(t) {
   state.t = clamp(+t, 0, tEnd());
@@ -751,7 +783,7 @@ function bestPlaysFor(covId) {
   const key = covId + (state.blitz ? '+b' : '') + ':' + library.version;
   if (!bestCache[key]) bestCache[key] = allPlays().map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
-  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(p.name)}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
+  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(p.name)}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
 function notesHtml(cov) {
   let h = '';
@@ -876,16 +908,20 @@ const library = { mine: [], shared: [], favs: [], version: 0 };
 const allPlays = () => [...library.mine, ...library.shared, ...PLAYS];
 const findPlay = id => allPlays().find(p => p.id === id) || (state.basePlay && state.basePlay.id === id ? state.basePlay : null);
 const typeTag = p => p.type === 'pass' ? '' : p.type === 'run' ? ' (run)' : ' (trick)';
+const lockTag = p => isLocked(p) ? ' 🔒' : '';
 function buildSelect() {
-  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${typeTag(p)}</option>`;
+  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`;
+  const gated = PLAYS.some(isLocked);
   let h = '';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
+  // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
+  if (gated) h += `<optgroup label="Free plays">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
   const favs = library.favs.map(findPlay).filter(Boolean);
-  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}</option>`).join('')}</optgroup>`;
+  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;
   h += `<optgroup label="My plays">${library.mine.length ? library.mine.map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
   h += Object.entries(SERIES).map(([k, label]) => {
-    const ps = PLAYS.filter(p => p.series === k);
+    const ps = PLAYS.filter(p => p.series === k && !(gated && !isLocked(p)));
     return ps.length ? `<optgroup label="${label}">${ps.map(opt).join('')}</optgroup>` : '';
   }).join('');
   $('playSel').innerHTML = h;
@@ -902,6 +938,7 @@ buildSelect();
 function pickPlay(id, method) {
   const pl = findPlay(id);
   if (!pl) return;
+  if (isLocked(pl)) { $('playSel').value = state.basePlay.id; showGate('play', pl); return; }
   loadPlay(pl);
   track('select_play', { ...playInfo(pl), favorite: library.favs.includes(pl.id), method });
 }

@@ -70,6 +70,7 @@ const AI_UNAVAILABLE = 'AI drafting needs the AI-enabled version of Open Grass. 
 const AI_ERRORS = {
   unavailable: AI_UNAVAILABLE,
   rate_limited: 'Too many requests right now. Wait a minute and try again.',
+  signed_out: 'AI drafting needs a free account. Sign in and try again.',
   daily_limit_ip: 'You’ve used today’s AI drafts. They reset at midnight UTC. You can still build or import plays by hand.',
   daily_limit: 'AI drafting has hit its limit for today. Try again tomorrow, or build or import the play by hand.',
   image_rejected: 'That image couldn’t be read. Try a PNG or JPG screenshot.', images_unavailable: 'Reading images isn’t available here. Describe the play instead.',

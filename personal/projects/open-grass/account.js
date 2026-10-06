@@ -63,8 +63,13 @@ function loadScript(src, attrs = {}) {
 }
 
 // onChange(user) runs once Clerk has loaded and again whenever a coach signs in or out.
+// No way to sign in (accounts off, or Clerk didn't load): open the whole library rather than lock coaches out.
+function openGate() {
+  gate.open = true; library.version++;
+  buildSelect(); renderHead(); recompute();
+}
 async function startAccounts(onChange) {
-  if (!CLERK_PUBLISHABLE_KEY || !AI_ENDPOINT) { account.ready = true; return; }
+  if (!CLERK_PUBLISHABLE_KEY || !AI_ENDPOINT) { account.ready = true; openGate(); return; }
   $('acctBox').hidden = false;
   try {
     const host = clerkHost(CLERK_PUBLISHABLE_KEY);
@@ -77,6 +82,7 @@ async function startAccounts(onChange) {
     account.ready = true;
     $('acctBox').hidden = true;
     track('account_error', { stage: 'clerk_load' });
+    openGate();
     return;
   }
   account.ready = true;
@@ -85,7 +91,15 @@ async function startAccounts(onChange) {
   const sync = () => {
     const u = Clerk.user;
     const id = u ? u.id : null;
-    if (id === lastId) { first = false; return; }
+    // The gate (app.src.html) follows the real sign-in state; og-signed is only a hint for the next page load.
+    const wasSignedIn = gate.signedIn;
+    gate.signedIn = !!u;
+    try { u ? localStorage.setItem('og-signed', '1') : localStorage.removeItem('og-signed'); } catch (e) {}
+    if (id === lastId) {
+      first = false;
+      if (wasSignedIn && !u) onChange(null);   // the hint said signed in, but the session is gone: lock again
+      return;
+    }
     // Analytics: the Clerk user id (never the email) ties a coach's devices together
     try {
       gtag('set', { user_id: id });
@@ -105,12 +119,15 @@ async function startAccounts(onChange) {
   Clerk.addListener(sync);
   sync();
 }
-$('acctBtn').addEventListener('click', () => {
+// mode: 'sign_in' or 'sign_up'. from: what the coach clicked (header button, beta dialog, or a gate reason).
+function openClerk(mode, from) {
   const ready = !!(window.Clerk && Clerk.loaded);
-  track('sign_in_start', { ready });
-  if (ready) Clerk.openSignIn();
-  else toast('Sign-in is still loading. Try again in a moment.');
-});
+  track('sign_in_start', { ready, mode, from });
+  if (!ready) { toast('Sign-in is still loading. Try again in a moment.'); return; }
+  if (typeof closeDialog === 'function' && !$('scrim').hidden) closeDialog();
+  mode === 'sign_up' ? Clerk.openSignUp() : Clerk.openSignIn();
+}
+$('acctBtn').addEventListener('click', () => openClerk('sign_in', 'header'));
 
 /* Sign in: move this browser's plays into the account (first sign-in only), then load the account.
    Sign out: back to this browser's own plays. Resolves to a toast message, or ''. */
@@ -126,7 +143,7 @@ async function switchAccount(user) {
   try {
     if (localPlays.length || localFavs.length) {
       const r = await accountApi('POST', '/sync', { plays: localPlays, favs: localFavs });
-      account.data = { plays: r.plays, favs: r.favs };
+      account.data = { plays: r.plays, favs: r.favs, founding: !!r.founding };
       // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
       try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
       account.saveCache();
