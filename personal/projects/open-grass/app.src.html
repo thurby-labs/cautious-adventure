@@ -11,8 +11,13 @@
   /* page_location drops the #fragment: it can hold the owner token (#owner=...) or a whole custom play
      packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
      On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
-     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter. */
+     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
+     Analytics is off (Google's documented ga-disable flag) when the visitor turned it off under "Your data" (og-no-analytics)
+     or their browser sends Global Privacy Control. */
   (() => {
+    let off = !!navigator.globalPrivacyControl;
+    try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
     const h = location.hash.slice(1);
     let owner = h.startsWith('owner=') && h !== 'owner=off';
     try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
@@ -231,6 +236,8 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
 .foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
 .foot p { margin: 0; }
+.foot a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.foot .linkbtn { padding: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -313,7 +320,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
   </main>
 
   <footer class="foot">
-    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved.</p>
+    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="privacy.html">Privacy</a> · <button class="linkbtn" id="dataBtn">Your data</button></p>
   </footer>
 </div>
 

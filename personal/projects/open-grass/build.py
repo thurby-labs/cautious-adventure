@@ -11,5 +11,9 @@ bad = re.findall(r'window\.claude|claude\.ai/artifact|\bcap\([\'"]', out)
 if bad:
     sys.exit('build failed: Claude Artifact runtime reference(s) found: ' + ', '.join(sorted(set(bad))))
 
+# privacy.html ships as is; don't let an unfilled placeholder go live.
+if '{{' in open('privacy.html').read():
+    sys.exit('build failed: privacy.html still has a {{placeholder}}')
+
 open('index.html', 'w').write(out)
 print('built', len(out), 'bytes')

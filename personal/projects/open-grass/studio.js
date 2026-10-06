@@ -500,6 +500,78 @@ $('exportBtn').addEventListener('click', () => {
 });
 $('newPlayBtn').addEventListener('click', () => openStudio());
 
+/* ---------- Your data: analytics opt-out, download, delete (privacy.html describes all of this) ---------- */
+const GA_OFF_KEY = 'ga-disable-G-1T9DMC15V7';
+function openYourData() {
+  const gpc = !!navigator.globalPrivacyControl;
+  let off = gpc;
+  try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+  const signedIn = !!account.user;
+  openDialog(`${dlgHead('Your data')}
+    <div class="pane">
+      <label class="tog"><input type="checkbox" id="gaOn" ${off ? '' : 'checked'} ${gpc ? 'disabled' : ''}> Share usage statistics (Google Analytics)</label>
+      <p class="muted">${gpc ? 'Your browser sends Global Privacy Control, so Open Grass doesn’t load analytics here.' : 'Anonymous counts of which features coaches use. Never your plays, play names, descriptions or email. Applies to this browser.'}</p>
+    </div>
+    ${signedIn ? `<div class="pane">
+      <div><button class="act" id="acctExport">Download my account data (.json)</button></div>
+      <p class="muted">Your plays, favorites, photo list and AI draft history.</p>
+      <div><button class="act danger" id="acctDelete">Delete my account</button></div>
+      <p class="muted">Permanently deletes your account, plays, favorites and play-card photos. This can’t be undone.</p>
+      <p class="status" id="dataStatus"></p>
+    </div>` : `<div class="pane">
+      <p class="muted">You’re not signed in, so your plays and favorites are only in this browser. We don’t store them.</p>
+      <div><button class="act danger" id="localClear">Clear Open Grass data from this browser</button></div>
+      <p class="status" id="dataStatus"></p>
+    </div>`}
+    <p class="muted"><a href="privacy.html">Privacy policy</a></p>`);
+  $('gaOn').addEventListener('change', e => {
+    const on = e.target.checked;
+    try { on ? localStorage.removeItem('og-no-analytics') : localStorage.setItem('og-no-analytics', '1'); } catch (err) {}
+    window[GA_OFF_KEY] = !on;
+    toast(on ? 'Usage statistics on.' : 'Usage statistics off in this browser.');
+  });
+  const st = $('dataStatus');
+  let armed = null;
+  const arm = (b, label, run) => b.addEventListener('click', async () => {
+    if (armed !== b) {
+      armed = b; b.textContent = 'Tap again to confirm';
+      setTimeout(() => { if (armed === b) { armed = null; b.textContent = label; } }, 5000);
+      return;
+    }
+    armed = null; b.disabled = true;
+    try { await run(); } finally { if ($(b.id)) { b.disabled = false; b.textContent = label; } }
+  });
+  if (signedIn) {
+    $('acctExport').addEventListener('click', async () => {
+      st.className = 'status'; st.textContent = 'Getting your data…';
+      try {
+        const data = await exportAccountData();
+        if (await saveFile('open-grass-account.json', JSON.stringify(data, null, 1))) { st.textContent = 'Saved.'; track('data_export'); }
+      } catch (e) { st.className = 'status err'; st.textContent = 'Couldn’t get your data. Try again.'; }
+    });
+    arm($('acctDelete'), 'Delete my account', async () => {
+      st.className = 'status'; st.textContent = 'Deleting your account…';
+      try {
+        track('account_delete');
+        await deleteAccountData();
+        closeDialog();
+        toast('Your account and its data are deleted.');
+      } catch (e) {
+        st.className = 'status err';
+        st.textContent = 'Couldn’t finish deleting your account. Try again, or email us (see the privacy policy) and we’ll do it for you.';
+      }
+    });
+  } else {
+    arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
+      try {
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
+      location.replace(location.pathname);
+    });
+  }
+}
+$('dataBtn').addEventListener('click', openYourData);
+
 /* ---------- startup: links, then the coach's saved plays and favorites ---------- */
 function parseHash() {
   const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|man|none))?$/.exec((location.hash || '').slice(1));

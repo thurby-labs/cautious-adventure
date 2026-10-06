@@ -143,6 +143,18 @@ async function switchAccount(user) {
   }
 }
 
+/* Privacy (see privacy.html): everything stored for the account, and deleting it.
+   The Worker deletes the plays, favorites and photos, and the Clerk user too when it has CLERK_SECRET_KEY;
+   otherwise (clerk: false) the Clerk user is deleted here through Clerk's own API. */
+const exportAccountData = () => accountApi('GET', '/me/export');
+async function deleteAccountData() {
+  const key = account.cacheKey();
+  const r = await accountApi('DELETE', '/me');
+  if (!r.clerk) await Clerk.user.delete();
+  try { localStorage.removeItem(key); } catch (e) {}
+  try { await Clerk.signOut(); } catch (e) {}
+}
+
 /* The original play-card photo for an AI-drawn play (signed-in owner only). */
 async function showPhoto(id, name) {
   let url;
