@@ -915,7 +915,7 @@ function buildSelect() {
   let h = '';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
   // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
-  if (gated) h += `<optgroup label="Free plays">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
+  if (gated) h += `<optgroup label="Sample plays (free)">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
   const favs = library.favs.map(findPlay).filter(Boolean);
   if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;

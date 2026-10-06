@@ -120,7 +120,7 @@ function useDraft(play, input) {
   play.draft = true; draftInput = input;
   closeDialog();
   loadPlay(play);
-  toast('Draft ready. Save it to keep it.');
+  toast(account.user ? 'Draft ready. Save it to keep it.' : 'Your free draft is ready. Test it against each coverage, then save it.');
 }
 
 /* ---------- dialog shell ---------- */
@@ -146,25 +146,35 @@ const dlgHead = title => `<div class="dialog-head"><h3 id="dlgTitle">${title}</h
    also refuses signed-out drafts), favorites, share links, and plays synced across devices.
    Nothing a coach already has gets taken away: plays and favorites saved before the gate stay. */
 const LOCAL_PLAY_LIMIT = 2;
+/* One free AI draft per browser without an account (og-free-draft), so a coach can see their own play graded before signing up.
+   The Worker allows FREE_DRAFTS_PER_IP a day and answers free_draft_used past that. */
+const freeDraftUsed = () => { try { return localStorage.getItem('og-free-draft') === '1'; } catch (e) { return false; } };
+const markFreeDraftUsed = () => { try { localStorage.setItem('og-free-draft', '1'); } catch (e) {} };
+// Signed out, AI drafting can go ahead only on the free draft. While a signed-in coach's session loads, needsAccount says wait.
+const aiBlocked = reason => !account.user && (gate.signedIn || freeDraftUsed()) && needsAccount(reason);
+const FREE_NOTE = () => freeDraftUsed()
+  ? 'You’ve used your free AI draft. Drafting is free with an account during the beta.'
+  : '<b>Try it free:</b> one AI draft without an account. After that, drafting is free with an account during the beta.';
 const GATE_COPY = {
-  play: 'The full playbook is free with an account during the beta.',
-  ai: 'Describe a play in your own words and the AI draws it, ready to test against every coverage.',
-  photo: 'Upload a photo or screenshot of a play card and the AI draws it for you.',
+  play: 'It’s one of the sample plays that come with a free account. The real payoff: put your own plays in and see how each one holds up against every defense.',
+  ai: 'You’ve used your free AI draft. With a free account, describe the rest of your playbook and test every play against every defense.',
+  photo: 'You’ve used your free AI draft. With a free account, photograph the rest of your playbook and test every play against every defense.',
   favorite: 'Star your go-to plays and they follow you to every device.',
   share: 'Send a link so assistant coaches and players can open the play and run it themselves.',
   save: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, save as many as you want, on any device.`,
   import: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, import your whole playbook.`
 };
+// The pitch is the coach's own playbook tested live against each defense; the sample library is a bonus.
 const perksHtml = () => `<ul class="perks">
-    <li>All ${PLAYS.length} plays in the library</li>
-    <li>AI drafting from a description or a play-card photo</li>
-    <li>Unlimited saved plays, synced across your devices</li>
-    <li>Favorites and share links</li>
+    <li><b>Bring your playbook:</b> snap a photo of a play card or describe the play, and it’s drawn for you</li>
+    <li><b>See how it holds up</b> against Cover 1, 2, 3 and Man: grades, open receivers and route fixes in real time</li>
+    <li>Save every play, synced across your devices</li>
+    <li>Share plays with your staff and players, plus all ${PLAYS.length} sample plays</li>
   </ul>`;
 function showGate(reason, play) {
   track('gate_prompt', { reason, ...(play && builtIn(play) ? { play_id: play.id } : {}) });
   const locked = reason === 'play' && play;
-  openDialog(`${dlgHead(locked ? 'Unlock the full playbook' : 'Create a free account')}
+  openDialog(`${dlgHead(locked ? 'Test your own playbook' : 'Create a free account')}
     ${locked ? `<div class="sketch">${playSketch(play)}<div class="lockmsg"><span>🔒 ${esc(play.name)}</span></div></div>` : ''}
     <p>${GATE_COPY[reason] || GATE_COPY.play}</p>
     <div class="pane">
@@ -190,7 +200,7 @@ function showBeta() {
   track('beta_info_open', { signed_in: !!account.user });
   const founding = account.user && account.data && account.data.founding;
   openDialog(`${dlgHead('Open Grass is in beta')}
-    <p>Everything is free while we’re in beta. ${account.user ? 'Your account has the full library and AI drafting.' : `Without an account you can try ${STARTERS.length} plays against every coverage. A free account opens the rest:`}</p>
+    <p>Everything is free while we’re in beta. ${account.user ? 'Your account can test your own playbook against every defense.' : `Without an account you can try ${STARTERS.length} sample plays against every coverage${freeDraftUsed() ? '' : ', plus one free AI draft of your own play'}. A free account lets you test your whole playbook:`}</p>
     ${account.user ? '' : perksHtml()}
     <p>${founding ? '<b>You’re a founding coach.</b> Thanks for being early: you’ll get perks when paid plans arrive.' : 'Coaches who join during the beta become founding coaches, with perks when paid plans arrive.'}</p>
     <p class="muted">Things may change or break while we build. Tell us what’s working and what isn’t: <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">opengrassllc@gmail.com</a></p>
@@ -224,7 +234,7 @@ async function openStudio(tab) {
       <textarea id="aiText" placeholder="Formation, each player's route, and who gets the ball."></textarea>
       <div class="examples">${EXAMPLES.map(x => `<button class="chipbtn" data-ex>${esc(x)}</button>`).join('')}</div>
       <div><button class="act primary" id="aiGo" ${sample ? '' : 'disabled'}>Draw this play</button></div>
-      ${sample && !account.user ? '<p class="muted">AI drafting needs a free account (free during the beta).</p>' : ''}
+      ${sample && !account.user ? `<p class="muted">${FREE_NOTE()}</p>` : ''}
       <p class="status${sample ? '' : ' err'}" id="aiStatus">${sample ? '' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="image" hidden>
@@ -232,7 +242,7 @@ async function openStudio(tab) {
       <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'}>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
-      ${img && !account.user ? '<p class="muted">Reading diagrams needs a free account (free during the beta).</p>' : ''}
+      ${img && !account.user ? `<p class="muted">${FREE_NOTE()}</p>` : ''}
       <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : sample ? 'Reading images isn’t available here. Describe the play instead.' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="file" hidden>
@@ -253,20 +263,23 @@ async function openStudio(tab) {
   // AI draft events never include the description or the image, only how it went
   const draft = async (input, payload, st) => {
     const t0 = performance.now();
-    track('ai_draft_start', { input, signed_in: !!account.user });
+    const free = !account.user;
+    track('ai_draft_start', { input, signed_in: !free, free_draft: free });
     try {
       const play = await askAI(payload, st);
-      track('ai_draft_success', { input, latency_ms: Math.round(performance.now() - t0), play_type: play.type, player_count: play.players.length });
+      track('ai_draft_success', { input, latency_ms: Math.round(performance.now() - t0), play_type: play.type, player_count: play.players.length, free_draft: free });
+      if (free) markFreeDraftUsed();
       useDraft(play, input);
     } catch (e) {
-      track('ai_draft_error', { input, error_code: (e && e.code) || 'invalid_play', latency_ms: Math.round(performance.now() - t0) });
+      track('ai_draft_error', { input, error_code: (e && e.code) || 'invalid_play', latency_ms: Math.round(performance.now() - t0), free_draft: free });
+      if (free && e && e.code === 'free_draft_used') { markFreeDraftUsed(); showGate(input === 'image' ? 'photo' : 'ai'); return; }
       if ($(st.id)) { st.className = 'status err'; st.textContent = aiError(e); }
     }
   };
   $('aiGo').addEventListener('click', async () => {
     const text = $('aiText').value.trim(), st = $('aiStatus');
     if (!text) { st.className = 'status err'; st.textContent = 'Describe the play first.'; return; }
-    if (!account.user && needsAccount('ai')) return;
+    if (aiBlocked('ai')) return;
     $('aiGo').disabled = true;
     await draft('text', { description: text }, st);
     if ($('aiGo')) $('aiGo').disabled = false;
@@ -281,7 +294,7 @@ async function openStudio(tab) {
   });
   $('imgGo').addEventListener('click', async () => {
     const st = $('imgStatus');
-    if (!account.user && needsAccount('photo')) return;
+    if (aiBlocked('photo')) return;
     $('imgGo').disabled = true;
     await draft('image', { image: file }, st);
     if ($('imgGo')) $('imgGo').disabled = false;
@@ -643,7 +656,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
       } catch (e) {}
       location.replace(location.pathname);
     });
