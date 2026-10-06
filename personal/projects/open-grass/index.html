@@ -240,8 +240,19 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 70; background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; max-width: calc(100vw - 32px); }
 .foot { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 13px; text-align: center; }
 .foot p { margin: 0; }
+.foot p + p { margin-top: 4px; }
 .foot a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
 .foot .linkbtn { padding: 0; }
+/* Beta pill and the free-account prompt (gate) */
+.beta { font-family: var(--f-body); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--hole-edge); background: var(--hole); color: #1d2208; cursor: pointer; vertical-align: middle; }
+.beta:hover { filter: brightness(1.05); }
+.brand .tagline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sketch { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--turf); }
+.sketch svg { display: block; width: 100%; height: auto; max-height: 220px; filter: blur(5px); transform: scale(1.06); }
+.sketch .lockmsg { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 22px; text-transform: uppercase; color: var(--ink); }
+.sketch .lockmsg span { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; }
+.perks { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14px; }
+.gate-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -251,7 +262,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
   <header class="top">
     <div class="brand">
       <img class="mark" src="logo/open-grass-logo-header.png" width="101" height="72" alt="">
-      <div><h1 class="sr-only">Open Grass</h1><p>Find the hole. Beat the coverage.</p></div>
+      <div><h1 class="sr-only">Open Grass</h1><p class="tagline">Find the hole. Beat the coverage. <button class="beta" id="betaBtn" title="Free while in beta">Beta</button></p></div>
     </div>
     <div class="head-actions">
       <div class="play-pick">
@@ -325,6 +336,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 
   <footer class="foot">
     <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="privacy.html">Privacy</a> · <button class="linkbtn" id="dataBtn">Your data</button></p>
+    <p>Free while in beta. Early coaches get founding-coach perks. · <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">Send feedback</a></p>
   </footer>
 </div>
 
@@ -463,6 +475,11 @@ const PLAYS = [
   Z_([15, -5.9], [[15.5, -2], [16.9, 3.5]], 'Fake dive', { speed: 5.4 }),
   X_([25.1, 0], [[20, -2.5], [15, -3.8], [10, -2.5], [7.3, -0.4]], 'Fake reverse left', { fake: true }) ] }
 ];
+/* Free beta: signed out, coaches can open these three; the rest of the library needs a free account (gate in app.src.html).
+   Picked to show the engine's range: a stack that grades well against everything, a motion flat that beats zone
+   but dies against man, and a counter run that beats man but not Cover 1. The first one is the default play. */
+const STARTERS = ['p51', 'p15', 'p35'];
+PLAYS.forEach(p => { if (STARTERS.includes(p.id)) p.starter = true; });
 PLAYS.forEach(p => { if (p.num) { p.name = `${p.num} · ${p.name}`; if (p.option) p.option.name = `${p.num} · ${p.option.name}`; } });
 // The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
 const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });
@@ -910,8 +927,20 @@ const X = x => x * S, Y = y => (YTOP - y) * S;
 const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)' };
 const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
 
-let savedPlay = 0;
-try { savedPlay = Math.max(0, PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'))); } catch (e) {}
+/* Free beta gate: signed out, only the STARTERS (plays.js) are open; the rest of the built-in library needs a free account.
+   gate.signedIn starts from a hint account.js leaves in this browser (og-signed), so a signed-in coach doesn't see locks
+   flash while Clerk loads; account.js corrects it once Clerk answers. gate.open unlocks everything (accounts off, or Clerk
+   failed to load, so nobody could sign in). gate.extra: built-in plays open this visit anyway (opened from a share link,
+   or favorited in this browser before the gate existed). */
+const gate = { signedIn: false, open: false, extra: new Set() };
+try { gate.signedIn = localStorage.getItem('og-signed') === '1'; } catch (e) {}
+function isLocked(p) { return !!p && builtIn(p) && !p.starter && !gate.signedIn && !gate.open && !gate.extra.has(p.id); }
+const firstOpenPlay = () => PLAYS.find(p => !isLocked(p));
+let savedPlay = PLAYS.findIndex(p => p.id === STARTERS[0]);
+try {
+  const i = PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'));
+  if (i >= 0 && (PLAYS[i].starter || gate.signedIn)) savedPlay = i;
+} catch (e) {}
 const state = {
   basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
   cov: 'c2', blitz: false, holes: true, t: 0, playing: false, speed: 0.5, nudges: {},
@@ -1189,6 +1218,14 @@ function fieldMarkup(t) {
   return s;
 }
 
+/* A still drawing of a play: routes and players, no defense. The locked-play prompt shows it blurred. */
+function playSketch(p) {
+  let s = STATIC.replace(/<defs>[\s\S]*?<\/defs>/, '');
+  p.players.forEach(pl => { s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
+  p.players.forEach(pl => { s += `<circle cx="${X(pl.start[0])}" cy="${Y(pl.start[1])}" r="10" style="fill:${COLOR[pl.color]};stroke:var(--chalk)" stroke-width="1.5"/>`; });
+  return `<svg viewBox="0 0 360 336" aria-hidden="true">${s}</svg>`;
+}
+
 /* ---------- timeline ---------- */
 function setT(t) {
   state.t = clamp(+t, 0, tEnd());
@@ -1319,7 +1356,7 @@ function bestPlaysFor(covId) {
   const key = covId + (state.blitz ? '+b' : '') + ':' + library.version;
   if (!bestCache[key]) bestCache[key] = allPlays().map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
-  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(p.name)}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
+  return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(p.name)}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
 function notesHtml(cov) {
   let h = '';
@@ -1444,16 +1481,20 @@ const library = { mine: [], shared: [], favs: [], version: 0 };
 const allPlays = () => [...library.mine, ...library.shared, ...PLAYS];
 const findPlay = id => allPlays().find(p => p.id === id) || (state.basePlay && state.basePlay.id === id ? state.basePlay : null);
 const typeTag = p => p.type === 'pass' ? '' : p.type === 'run' ? ' (run)' : ' (trick)';
+const lockTag = p => isLocked(p) ? ' 🔒' : '';
 function buildSelect() {
-  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${typeTag(p)}</option>`;
+  const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`;
+  const gated = PLAYS.some(isLocked);
   let h = '';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
+  // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
+  if (gated) h += `<optgroup label="Free plays">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
   const favs = library.favs.map(findPlay).filter(Boolean);
-  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}</option>`).join('')}</optgroup>`;
+  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(p.name)}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;
   h += `<optgroup label="My plays">${library.mine.length ? library.mine.map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
   h += Object.entries(SERIES).map(([k, label]) => {
-    const ps = PLAYS.filter(p => p.series === k);
+    const ps = PLAYS.filter(p => p.series === k && !(gated && !isLocked(p)));
     return ps.length ? `<optgroup label="${label}">${ps.map(opt).join('')}</optgroup>` : '';
   }).join('');
   $('playSel').innerHTML = h;
@@ -1470,6 +1511,7 @@ buildSelect();
 function pickPlay(id, method) {
   const pl = findPlay(id);
   if (!pl) return;
+  if (isLocked(pl)) { $('playSel').value = state.basePlay.id; showGate('play', pl); return; }
   loadPlay(pl);
   track('select_play', { ...playInfo(pl), favorite: library.favs.includes(pl.id), method });
 }
@@ -1594,6 +1636,7 @@ const AI_UNAVAILABLE = 'AI drafting needs the AI-enabled version of Open Grass. 
 const AI_ERRORS = {
   unavailable: AI_UNAVAILABLE,
   rate_limited: 'Too many requests right now. Wait a minute and try again.',
+  signed_out: 'AI drafting needs a free account. Sign in and try again.',
   daily_limit_ip: 'You’ve used today’s AI drafts. They reset at midnight UTC. You can still build or import plays by hand.',
   daily_limit: 'AI drafting has hit its limit for today. Try again tomorrow, or build or import the play by hand.',
   image_rejected: 'That image couldn’t be read. Try a PNG or JPG screenshot.', images_unavailable: 'Reading images isn’t available here. Describe the play instead.',
@@ -1668,8 +1711,13 @@ function loadScript(src, attrs = {}) {
 }
 
 // onChange(user) runs once Clerk has loaded and again whenever a coach signs in or out.
+// No way to sign in (accounts off, or Clerk didn't load): open the whole library rather than lock coaches out.
+function openGate() {
+  gate.open = true; library.version++;
+  buildSelect(); renderHead(); recompute();
+}
 async function startAccounts(onChange) {
-  if (!CLERK_PUBLISHABLE_KEY || !AI_ENDPOINT) { account.ready = true; return; }
+  if (!CLERK_PUBLISHABLE_KEY || !AI_ENDPOINT) { account.ready = true; openGate(); return; }
   $('acctBox').hidden = false;
   try {
     const host = clerkHost(CLERK_PUBLISHABLE_KEY);
@@ -1682,6 +1730,7 @@ async function startAccounts(onChange) {
     account.ready = true;
     $('acctBox').hidden = true;
     track('account_error', { stage: 'clerk_load' });
+    openGate();
     return;
   }
   account.ready = true;
@@ -1690,7 +1739,15 @@ async function startAccounts(onChange) {
   const sync = () => {
     const u = Clerk.user;
     const id = u ? u.id : null;
-    if (id === lastId) { first = false; return; }
+    // The gate (app.src.html) follows the real sign-in state; og-signed is only a hint for the next page load.
+    const wasSignedIn = gate.signedIn;
+    gate.signedIn = !!u;
+    try { u ? localStorage.setItem('og-signed', '1') : localStorage.removeItem('og-signed'); } catch (e) {}
+    if (id === lastId) {
+      first = false;
+      if (wasSignedIn && !u) onChange(null);   // the hint said signed in, but the session is gone: lock again
+      return;
+    }
     // Analytics: the Clerk user id (never the email) ties a coach's devices together
     try {
       gtag('set', { user_id: id });
@@ -1710,12 +1767,15 @@ async function startAccounts(onChange) {
   Clerk.addListener(sync);
   sync();
 }
-$('acctBtn').addEventListener('click', () => {
+// mode: 'sign_in' or 'sign_up'. from: what the coach clicked (header button, beta dialog, or a gate reason).
+function openClerk(mode, from) {
   const ready = !!(window.Clerk && Clerk.loaded);
-  track('sign_in_start', { ready });
-  if (ready) Clerk.openSignIn();
-  else toast('Sign-in is still loading. Try again in a moment.');
-});
+  track('sign_in_start', { ready, mode, from });
+  if (!ready) { toast('Sign-in is still loading. Try again in a moment.'); return; }
+  if (typeof closeDialog === 'function' && !$('scrim').hidden) closeDialog();
+  mode === 'sign_up' ? Clerk.openSignUp() : Clerk.openSignIn();
+}
+$('acctBtn').addEventListener('click', () => openClerk('sign_in', 'header'));
 
 /* Sign in: move this browser's plays into the account (first sign-in only), then load the account.
    Sign out: back to this browser's own plays. Resolves to a toast message, or ''. */
@@ -1731,7 +1791,7 @@ async function switchAccount(user) {
   try {
     if (localPlays.length || localFavs.length) {
       const r = await accountApi('POST', '/sync', { plays: localPlays, favs: localFavs });
-      account.data = { plays: r.plays, favs: r.favs };
+      account.data = { plays: r.plays, favs: r.favs, founding: !!r.founding };
       // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
       try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
       account.saveCache();
@@ -1916,6 +1976,68 @@ $('scrim').addEventListener('click', e => { if (e.target === $('scrim') || e.tar
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('scrim').hidden) closeDialog(); });
 const dlgHead = title => `<div class="dialog-head"><h3 id="dlgTitle">${title}</h3><button class="act" data-close>Close</button></div>`;
 
+/* ---------- free beta: what needs a free account ----------
+   Signed out: the STARTERS (plays.js), coverages, grading, GIFs (watermarked), opening any share link, and up to
+   LOCAL_PLAY_LIMIT plays of their own in this browser. A free account adds the full library, AI drafting (the Worker
+   also refuses signed-out drafts), favorites, share links, and plays synced across devices.
+   Nothing a coach already has gets taken away: plays and favorites saved before the gate stay. */
+const LOCAL_PLAY_LIMIT = 2;
+const GATE_COPY = {
+  play: 'The full playbook is free with an account during the beta.',
+  ai: 'Describe a play in your own words and the AI draws it, ready to test against every coverage.',
+  photo: 'Upload a photo or screenshot of a play card and the AI draws it for you.',
+  favorite: 'Star your go-to plays and they follow you to every device.',
+  share: 'Send a link so assistant coaches and players can open the play and run it themselves.',
+  save: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, save as many as you want, on any device.`,
+  import: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, import your whole playbook.`
+};
+const perksHtml = () => `<ul class="perks">
+    <li>All ${PLAYS.length} plays in the library</li>
+    <li>AI drafting from a description or a play-card photo</li>
+    <li>Unlimited saved plays, synced across your devices</li>
+    <li>Favorites and share links</li>
+  </ul>`;
+function showGate(reason, play) {
+  track('gate_prompt', { reason, ...(play && builtIn(play) ? { play_id: play.id } : {}) });
+  const locked = reason === 'play' && play;
+  openDialog(`${dlgHead(locked ? 'Unlock the full playbook' : 'Create a free account')}
+    ${locked ? `<div class="sketch">${playSketch(play)}<div class="lockmsg"><span>🔒 ${esc(play.name)}</span></div></div>` : ''}
+    <p>${GATE_COPY[reason] || GATE_COPY.play}</p>
+    <div class="pane">
+      <div class="eyebrow">Free during the beta</div>
+      ${perksHtml()}
+      <p class="muted">Coaches who join during the beta become founding coaches, with perks when paid plans arrive.</p>
+    </div>
+    <div class="gate-actions">
+      <button class="act primary" id="gateUp">Create free account</button>
+      <button class="linkbtn" id="gateIn">I already have an account</button>
+    </div>`);
+  $('gateUp').addEventListener('click', () => openClerk('sign_up', reason));
+  $('gateIn').addEventListener('click', () => openClerk('sign_in', reason));
+}
+// True when the action has to stop: shows the free-account prompt (or a wait note while a signed-in coach's session loads).
+function needsAccount(reason, play) {
+  if (account.user || gate.open) return false;
+  if (gate.signedIn) { toast('Still signing you in. Try again in a moment.'); return true; }
+  showGate(reason, play);
+  return true;
+}
+function showBeta() {
+  track('beta_info_open', { signed_in: !!account.user });
+  const founding = account.user && account.data && account.data.founding;
+  openDialog(`${dlgHead('Open Grass is in beta')}
+    <p>Everything is free while we’re in beta. ${account.user ? 'Your account has the full library and AI drafting.' : `Without an account you can try ${STARTERS.length} plays against every coverage. A free account opens the rest:`}</p>
+    ${account.user ? '' : perksHtml()}
+    <p>${founding ? '<b>You’re a founding coach.</b> Thanks for being early: you’ll get perks when paid plans arrive.' : 'Coaches who join during the beta become founding coaches, with perks when paid plans arrive.'}</p>
+    <p class="muted">Things may change or break while we build. Tell us what’s working and what isn’t: <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">opengrassllc@gmail.com</a></p>
+    ${account.user || gate.open ? '' : `<div class="gate-actions"><button class="act primary" id="gateUp">Create free account</button><button class="linkbtn" id="gateIn">I already have an account</button></div>`}`);
+  if ($('gateUp')) {
+    $('gateUp').addEventListener('click', () => openClerk('sign_up', 'beta'));
+    $('gateIn').addEventListener('click', () => openClerk('sign_in', 'beta'));
+  }
+}
+$('betaBtn').addEventListener('click', showBeta);
+
 /* ---------- New play studio ---------- */
 const EXAMPLES = [
   'Trips right. X runs a flat to the left, Z a short corner, Y a go, C an out to the right. QB drops back.',
@@ -1938,6 +2060,7 @@ async function openStudio(tab) {
       <textarea id="aiText" placeholder="Formation, each player's route, and who gets the ball."></textarea>
       <div class="examples">${EXAMPLES.map(x => `<button class="chipbtn" data-ex>${esc(x)}</button>`).join('')}</div>
       <div><button class="act primary" id="aiGo" ${sample ? '' : 'disabled'}>Draw this play</button></div>
+      ${sample && !account.user ? '<p class="muted">AI drafting needs a free account (free during the beta).</p>' : ''}
       <p class="status${sample ? '' : ' err'}" id="aiStatus">${sample ? '' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="image" hidden>
@@ -1945,6 +2068,7 @@ async function openStudio(tab) {
       <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'}>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
+      ${img && !account.user ? '<p class="muted">Reading diagrams needs a free account (free during the beta).</p>' : ''}
       <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : sample ? 'Reading images isn’t available here. Describe the play instead.' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="file" hidden>
@@ -1978,6 +2102,7 @@ async function openStudio(tab) {
   $('aiGo').addEventListener('click', async () => {
     const text = $('aiText').value.trim(), st = $('aiStatus');
     if (!text) { st.className = 'status err'; st.textContent = 'Describe the play first.'; return; }
+    if (!account.user && needsAccount('ai')) return;
     $('aiGo').disabled = true;
     await draft('text', { description: text }, st);
     if ($('aiGo')) $('aiGo').disabled = false;
@@ -1992,6 +2117,7 @@ async function openStudio(tab) {
   });
   $('imgGo').addEventListener('click', async () => {
     const st = $('imgStatus');
+    if (!account.user && needsAccount('photo')) return;
     $('imgGo').disabled = true;
     await draft('image', { image: file }, st);
     if ($('imgGo')) $('imgGo').disabled = false;
@@ -2004,6 +2130,7 @@ async function openStudio(tab) {
       const data = JSON.parse(await f.text());
       const list = Array.isArray(data) ? data : Array.isArray(data.plays) ? data.plays : [data];
       const plays = list.map(p => normalizePlay(p));
+      if (!account.user && !gate.open && library.mine.length + plays.length > LOCAL_PLAY_LIMIT && needsAccount('import')) return;
       for (const p of plays) await store.saveMine(p);
       plays.forEach(p => { p.mine = true; library.mine.push(p); });
       library.version++;
@@ -2021,6 +2148,7 @@ async function openStudio(tab) {
 
 /* ---------- save, delete, favorite ---------- */
 async function saveCurrentAsMine() {
+  if (!account.user && !gate.open && library.mine.length >= LOCAL_PLAY_LIMIT && needsAccount('save')) return false;
   const edited = Object.keys(state.changes).length > 0 && !state.play.draft && !state.play.shared;
   const source = state.play.draft ? 'draft_' + (draftInput || 'text') : state.play.shared ? 'shared' : edited ? 'edited' : 'copy';
   const p = stripFlags(state.play);
@@ -2035,9 +2163,10 @@ async function saveCurrentAsMine() {
     loadPlay(p);
     toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
     track('save_play', { source, storage: account.user ? 'account' : 'local', play_type: p.type, my_plays: library.mine.length });
-  } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); }
+    return true;
+  } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); return false; }
 }
-$('saveDraftBtn').addEventListener('click', saveCurrentAsMine);
+$('saveDraftBtn').addEventListener('click', () => saveCurrentAsMine());
 $('photoBtn').addEventListener('click', () => { if (state.play.photo) { showPhoto(state.play.photo, state.play.name); track('view_original_photo'); } });
 
 let delArm = null;
@@ -2055,7 +2184,7 @@ $('deletePlayBtn').addEventListener('click', async () => {
     library.mine = library.mine.filter(p => p.id !== id);
     if (library.favs.includes(id)) { library.favs = library.favs.filter(f => f !== id); store.saveFavs(library.favs); }
     library.version++;
-    loadPlay(PLAYS[0]);
+    loadPlay(firstOpenPlay());
     toast('Play deleted.');
     track('delete_play', { storage: account.user ? 'account' : 'local', my_plays: library.mine.length });
   } catch (e) { toast('Couldn’t delete the play. Try again.'); track('app_error', { where: 'delete' }); }
@@ -2063,9 +2192,10 @@ $('deletePlayBtn').addEventListener('click', async () => {
 
 $('favBtn').addEventListener('click', async () => {
   if (state.play.draft) return;
-  if (state.play.shared) { await saveCurrentAsMine(); }
+  const on = !library.favs.includes(state.basePlay.id);
+  if (on && needsAccount('favorite')) return;
+  if (state.play.shared && !(await saveCurrentAsMine())) return;
   const id = state.basePlay.id;
-  const on = !library.favs.includes(id);
   library.favs = on ? [...library.favs, id] : library.favs.filter(f => f !== id);
   store.saveFavs(library.favs);
   buildSelect(); renderHead();
@@ -2101,7 +2231,7 @@ function openShare() {
     catch (e) { inp.focus(); inp.select(); toast('Press Ctrl+C or ⌘C to copy.'); track('share', { method: 'manual_copy', ...shareInfo }); }
   });
 }
-$('shareBtn').addEventListener('click', openShare);
+$('shareBtn').addEventListener('click', () => { if (!needsAccount('share')) openShare(); });
 
 /* ---------- GIF: render each frame of the field and encode an animated GIF ---------- */
 function lzwEncode(px, out) {
@@ -2185,6 +2315,7 @@ async function renderGif(progress) {
   const resolve = s => s.replace(/var\((--[\w-]+)\)/g, (m, v) => tok(v))
     .replace(/class="lbl"/g, 'font-family="Barlow, Arial, sans-serif" font-weight="700"')
     .replace(/class="def[^"]*"/g, '');
+  const mark = !account.user;   // signed out, the GIF carries the site address over the field
   const title = `${state.play.name}  ·  vs ${state.cov ? COVERAGES[state.cov].name : 'no defense'}${state.blitz ? ' + blitz' : ''}`;
   const draw = async t => {
     const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 336" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
@@ -2196,6 +2327,14 @@ async function renderGif(progress) {
     ctx.fillStyle = tok('--muted'); ctx.font = '600 13px Barlow, Arial, sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(`${t.toFixed(1)}s · Open Grass`, W - 14, CAP / 2); ctx.textAlign = 'left';
     ctx.drawImage(img, 0, CAP, W, FH);
+    if (mark) {
+      ctx.font = '700 15px Barlow, Arial, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      const wm = 'open-grass.com', ww = ctx.measureText(wm).width;
+      ctx.globalAlpha = 0.8; ctx.fillStyle = tok('--panel');
+      ctx.fillRect(W - ww - 26, H - 34, ww + 16, 24);
+      ctx.globalAlpha = 1; ctx.fillStyle = tok('--ink');
+      ctx.fillText(wm, W - 18, H - 14); ctx.textAlign = 'left';
+    }
     return ctx.getImageData(0, 0, W, H).data;
   };
   const times = [];
@@ -2340,7 +2479,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
       } catch (e) {}
       location.replace(location.pathname);
     });
@@ -2357,6 +2496,7 @@ const link = parseHash();
 if (link && !link.shared) {
   const opt = link.id.endsWith('~opt');
   const p = PLAYS.find(x => x.id === link.id.replace(/~opt$/, ''));
+  if (p) gate.extra.add(p.id);   // a share link opens its play even when it's locked
   if (p) loadPlay(p, link.cov === undefined ? state.cov : link.cov, opt);
   track('shared_play_open', { content_type: 'builtin_play', result: p ? 'loaded' : 'not_found', ...(p ? { item_id: p.id, coverage: link.cov || 'none' } : {}) });
 }
@@ -2365,6 +2505,8 @@ async function loadLibrary() {
     const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
     library.favs = favs.filter(id => typeof id === 'string');
+    // Built-in plays favorited in this browser before the beta gate stay open
+    if (!account.user) library.favs.forEach(id => gate.extra.add(id));
     const n = library.mine.length;
     try { gtag('set', 'user_properties', { my_plays_bucket: n === 0 ? '0' : n <= 5 ? '1-5' : n <= 20 ? '6-20' : '21+' }); } catch (e) {}
   } catch (e) { toast('Couldn’t load your saved plays.'); track('app_error', { where: 'load_library' }); }
@@ -2377,13 +2519,14 @@ startAccounts(async user => {
   library.version++;
   const p = was && library.mine.find(x => x.id === was);
   if (p) loadPlay(p);
-  else if (was) loadPlay(PLAYS[0]);
+  else if (was || isLocked(state.basePlay)) loadPlay(firstOpenPlay());   // signed out on a locked play: back to a free one
   else {
     let saved = null;
     try { saved = localStorage.getItem('og-play'); } catch (e) {}
     const q = !link && !state.play.draft && !state.play.shared && saved && library.mine.find(x => x.id === saved);
     if (q) loadPlay(q); else { buildSelect(); renderHead(); }
   }
+  recompute();   // the read panel's play list shows locks only while signed out
   if (msg) toast(msg);
 });
 (async () => {
