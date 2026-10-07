@@ -1738,7 +1738,10 @@ async function askAI(input, statusEl) {
   if (aiCtl) aiCtl.abort();
   aiCtl = new AbortController();
   statusEl.className = 'status'; statusEl.textContent = 'Drawing the play…';
-  const { play: raw, photo } = await ai.json(input, { signal: aiCtl.signal });
+  let res;
+  try { res = await ai.json(input, { signal: aiCtl.signal }); }
+  catch (e) { throw input.image && e && e.code === 'refused' ? { code: 'refused_image' } : e; }
+  const { play: raw, photo } = res;
   const play = normalizePlay(raw, 'd' + rid());
   if (photo) play.photo = photo;
   return play;
@@ -1749,10 +1752,12 @@ const AI_ERRORS = {
   rate_limited: 'Too many requests right now. Wait a minute and try again.',
   signed_out: 'AI drafting needs a free account. Sign in and try again.',
   free_draft_used: 'You’ve used your free AI draft. Create a free account to keep drafting.',
-  daily_limit_ip: 'You’ve used today’s AI drafts. They reset at midnight UTC. You can still build or import plays by hand.',
-  daily_limit: 'AI drafting has hit its limit for today. Try again tomorrow, or build or import the play by hand.',
+  anon_limit: 'Free AI drafts are busy today. Create a free account to keep drafting.',
+  daily_limit_ip: 'You’ve used today’s AI drafts. They reset at midnight UTC: describe it again tomorrow, or import a play file.',
+  daily_limit: 'AI drafting has hit its limit for today. Describe it again tomorrow, or import a play file.',
   image_rejected: 'That image couldn’t be read. Try a PNG or JPG screenshot.', images_unavailable: 'Reading images isn’t available here. Describe the play instead.',
-  refused: 'The AI couldn’t draw that one. Try describing it differently.', invalid_json: 'The answer didn’t come back as a play. Try again or add more detail.',
+  refused: 'The AI couldn’t draw that one. Try describing it differently.', refused_image: 'That doesn’t look like a play diagram. Try a clear photo of just the play.',
+  invalid_json: 'The answer didn’t come back as a play. Try again or add more detail.',
   empty_completion: 'No answer came back. Add more detail and try again.', prompt_too_large: 'That’s too long. Shorten the description.',
   image_too_large: 'That image is over 5 MB. Try a smaller screenshot.', network: 'Couldn’t reach the AI. Check your connection and try again.'
 };
@@ -2101,7 +2106,8 @@ const dlgHead = title => `<div class="dialog-head"><h3 id="dlgTitle">${title}</h
    Nothing a coach already has gets taken away: plays and favorites saved before the gate stay. */
 const LOCAL_PLAY_LIMIT = 2;
 /* One free AI draft per browser without an account (og-free-draft), so a coach can see their own play graded before signing up.
-   The Worker allows FREE_DRAFTS_PER_IP a day and answers free_draft_used past that. */
+   The Worker allows FREE_DRAFTS_PER_IP a day and answers free_draft_used past that, or anon_limit when the shared
+   signed-out pool (ANON_DAILY_LIMIT) is empty: then this browser never got its draft, so it isn't marked used. */
 const freeDraftUsed = () => { try { return localStorage.getItem('og-free-draft') === '1'; } catch (e) { return false; } };
 const markFreeDraftUsed = () => { try { localStorage.setItem('og-free-draft', '1'); } catch (e) {} };
 // Signed out, AI drafting can go ahead only on the free draft. While a signed-in coach's session loads, needsAccount says wait.
@@ -2113,6 +2119,7 @@ const GATE_COPY = {
   play: 'It’s one of the sample plays that come with a free account. The real payoff: put your own plays in and see how each one holds up against every defense.',
   ai: 'You’ve used your free AI draft. With a free account, describe the rest of your playbook and test every play against every defense.',
   photo: 'You’ve used your free AI draft. With a free account, photograph the rest of your playbook and test every play against every defense.',
+  anon_limit: 'Free AI drafts are busy today. With a free account, describe or photograph your playbook and test every play against every defense.',
   favorite: 'Star your go-to plays and they follow you to every device.',
   share: 'Send a link so assistant coaches and players can open the play and run it themselves.',
   save: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, save as many as you want, on any device.`,
@@ -2228,6 +2235,7 @@ async function openStudio(tab) {
     } catch (e) {
       track('ai_draft_error', { input, error_code: (e && e.code) || 'invalid_play', latency_ms: Math.round(performance.now() - t0), free_draft: free });
       if (free && e && e.code === 'free_draft_used') { markFreeDraftUsed(); showGate(input === 'image' ? 'photo' : 'ai'); return; }
+      if (free && e && e.code === 'anon_limit') { showGate('anon_limit'); return; }
       if ($(st.id)) { st.className = 'status err'; st.textContent = aiError(e); }
     }
   };
