@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- ga:begin (build.py copies this block into every content page) -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html promises no advertising use,
+     so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
+     only as GA4 key events imported in Google Ads. Change this only together with privacy.html. */
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
+  gtag('set', { allow_google_signals: false, allow_ad_personalization_signals: false });
+  gtag('js', new Date());
+
+  /* page_location drops Clerk's __clerk* query params and the #fragment: it can hold the owner token (#owner=...) or a whole custom play
+     packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
+     On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
+     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
+     Analytics is off (Google's documented ga-disable flag) when the visitor turned it off under "Your data" (og-no-analytics)
+     or their browser sends Global Privacy Control. */
+  (() => {
+    let off = !!navigator.globalPrivacyControl;
+    try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
+    const h = location.hash.slice(1);
+    // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
+    const q = new URLSearchParams(location.search);
+    [...q.keys()].filter(k => k.startsWith('__clerk')).forEach(k => q.delete(k));
+    const qs = q.toString();
+    let owner = h.startsWith('owner=') && h !== 'owner=off';
+    try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
+    gtag('config', 'G-1T9DMC15V7', {
+      page_location: location.origin + location.pathname + (qs ? '?' + qs : ''),
+      link_type: !h ? 'none' : h.startsWith('owner=') ? 'owner' : h.startsWith('j-') ? 'custom_play' : h.startsWith('s-') ? 'legacy_share' : 'builtin_play',
+      ...(owner ? { traffic_type: 'internal' } : {}),
+      ...(/(^|\.)open-grass\.com$/.test(location.hostname) ? {} : { debug_mode: true })
+    });
+  })();
+</script>
+<!-- ga:end -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flag Football Routes: The Route Tree Explained | Open Grass</title>
+<meta name="description" content="Every flag football route on one route tree: flat, hitch, out, slant, in, crosser, corner, post, go and wheel, with depths and which coverages each one beats.">
+<meta name="author" content="Open Grass, LLC">
+<link rel="canonical" href="https://open-grass.com/flag-football-routes">
+<meta name="theme-color" content="#1C5A37">
+<link rel="icon" type="image/png" sizes="48x48" href="/logo/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/logo/favicon-96.png">
+<link rel="apple-touch-icon" href="/logo/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Open Grass">
+<meta property="og:url" content="https://open-grass.com/flag-football-routes">
+<meta property="og:title" content="Flag football routes: the route tree and what each route beats">
+<meta property="og:description" content="Every flag football route on one route tree: flat, hitch, out, slant, in, crosser, corner, post, go and wheel, with depths and which coverages each one beats.">
+<meta property="og:image" content="https://open-grass.com/logo/og-image.jpg?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [
+  {"@type": "WebPage", "@id": "https://open-grass.com/flag-football-routes#page", "url": "https://open-grass.com/flag-football-routes", "name": "Flag football routes: the route tree and what each route beats", "description": "Every flag football route on one route tree: flat, hitch, out, slant, in, crosser, corner, post, go and wheel, with depths and which coverages each one beats.",
+   "isPartOf": {"@type": "WebSite", "name": "Open Grass", "url": "https://open-grass.com/"}, "about": {"@id": "https://open-grass.com/#app"},
+   "publisher": {"@type": "Organization", "@id": "https://open-grass.com/#org", "name": "Open Grass", "legalName": "Open Grass, LLC"}},
+  {"@type": "BreadcrumbList", "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Open Grass", "item": "https://open-grass.com/"},
+    {"@type": "ListItem", "position": 2, "name": "Flag Football Routes", "item": "https://open-grass.com/flag-football-routes"}]}
+]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Content pages (pages/*.html, built by build.py). Same tokens as the app and privacy.html. */
+:root {
+  --paper: #EEF2EA; --panel: #FFFFFF; --ink: #15201A; --muted: #5B6A60; --line: #D5DECF; --chip: #E3EADD;
+  --accent: #1C5A37; --accent-ink: #FFFFFF; --good: #1D8A4B; --warn: #B87D05; --bad: #C1362B;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+    --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+  --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--f-body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 16px 48px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+.top img { height: 60px; width: auto; display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
+:root[data-theme="dark"] .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.btn { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 700; padding: 11px 18px; border-radius: 10px; }
+.btn.ghost { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 8px 14px; font-size: 15px; }
+h1 { font: 900 44px/0.98 var(--f-display); text-transform: uppercase; letter-spacing: .005em; margin: 0 0 14px; max-width: 18ch; }
+h2 { font: 800 30px/1 var(--f-display); text-transform: uppercase; margin: 48px 0 14px; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.lede { font-size: 20px; max-width: 60ch; color: var(--ink); }
+.muted { color: var(--muted); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
+figure { margin: 28px 0 0; }
+figure img { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(21,32,26,.12); }
+figcaption { color: var(--muted); font-size: 15px; margin-top: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.card p { color: var(--muted); margin: 0; font-size: 16px; }
+.step { font: 900 32px/1 var(--f-display); color: var(--accent); margin-bottom: 6px; }
+.grades { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+.grades span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 15px; }
+.grades b { font: 900 22px/1 var(--f-display); margin-right: 6px; }
+.gA { color: var(--good); } .gB { color: var(--good); } .gC, .gD { color: var(--warn); } .gF { color: var(--bad); }
+ul.ticks { padding-left: 20px; margin: 0 0 14px; }
+ul.ticks li { margin-bottom: 6px; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin: 8px 0 0; color: var(--muted); }
+.final { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 48px; text-align: center; }
+.final h2 { margin-top: 0; }
+/* Route tree diagram (inline SVG) */
+svg.tree { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); }
+.tree .turf { fill: #B3D7A2; } .tree .yl { stroke: #FFFFFF; stroke-opacity: .7; stroke-width: 1.5; } .tree .los { stroke: #FFFFFF; stroke-width: 3; }
+.tree .yt, .tree .dir { fill: #15201A; fill-opacity: .7; font: 600 15px var(--f-body); }
+.tree .r { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.tree .s-s { stroke: #15634F; } .tree .s-m { stroke: #E2711C; } .tree .s-d { stroke: #7B3DB6; }
+.tree .f-s { fill: #15634F; } .tree .f-m { fill: #E2711C; } .tree .f-d { fill: #7B3DB6; }
+.tree .rl { font: 800 20px var(--f-display); text-transform: uppercase; letter-spacing: .02em; paint-order: stroke; stroke: #B3D7A2; stroke-width: 4px; }
+.tree .t-s { fill: #0F4A3B; } .tree .t-m { fill: #A44E0C; } .tree .t-d { fill: #5B2A8A; }
+.tree .wr { fill: #15201A; } .tree .wrt { fill: #FFFFFF; font: 800 11px var(--f-body); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .turf { fill: #1D3A25; } :root:not([data-theme="light"]) .tree .rl { stroke: #1D3A25; }
+  :root:not([data-theme="light"]) .tree .yt, :root:not([data-theme="light"]) .tree .dir { fill: #CFE3D0; }
+  :root:not([data-theme="light"]) .tree .t-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .t-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .t-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .s-s { stroke: #3FC79C; } :root:not([data-theme="light"]) .tree .s-m { stroke: #F5953F; } :root:not([data-theme="light"]) .tree .s-d { stroke: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .f-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .f-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .f-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .wr { fill: #E5ECE4; } :root:not([data-theme="light"]) .tree .wrt { fill: #0E1410; } }
+.key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 15px; color: var(--muted); margin-top: 10px; }
+.key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+/* Route vs coverage cheat sheet */
+.tbl { overflow-x: auto; margin: 0 0 10px; }
+table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.cheat th, .cheat td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.cheat th { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 520px) { .cheat th, .cheat td { padding: 8px 5px; font-size: 13.5px; } .cheat th { letter-spacing: .02em; font-size: 11px; } }
+.cheat td.g { color: var(--good); font-weight: 700; } .cheat td.o { color: var(--muted); } .cheat td.t { color: var(--bad); font-weight: 600; }
+.route h3 { display: flex; align-items: baseline; gap: 10px; }
+.route h3 small { font-weight: 500; color: var(--muted); font-size: 14px; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
+@media (min-width: 760px) { h1 { font-size: 64px; } h2 { font-size: 36px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="/" aria-label="Open Grass home"><img src="/logo/open-grass-logo-header.png" width="101" height="72" alt="Open Grass"></a>
+    <a class="btn small" href="/">Open the app</a>
+  </header>
+  <main>
+<!-- Search terms (Keyword Planner 2026-10-07): flag football routes (~5k/mo), flag football route tree (~500/mo).
+     Route shapes and depths match engine.js ROUTES so the page agrees with the app. The cheat sheet is general coaching
+     guidance (consistent with engine.js TIPS), not engine output. Example plays are original; their grades come from the
+     engine, so re-check them if engine.js changes. No play names from the Air Raid playbook. -->
+    <h1>Flag football routes: the route tree</h1>
+    <p class="lede">Ten routes cover almost everything a flag football offense runs. Here’s each one on a single route tree, how deep to run it, and which defenses it beats.</p>
+    <figure>
+      <svg class="tree" viewBox="0 0 640 500" role="img" aria-labelledby="treeTitle treeDesc" xmlns="http://www.w3.org/2000/svg">
+      <title id="treeTitle">Flag football route tree</title>
+      <desc id="treeDesc">Ten routes from one receiver. Short: flat, hitch, out. Middle: slant, in, crosser. Deep: corner, post, go, wheel. Outside breaks go right, inside breaks go left.</desc>
+      <defs><marker id="ah-s" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-s"/></marker><marker id="ah-m" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-m"/></marker><marker id="ah-d" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-d"/></marker></defs>
+      <rect x="0" y="0" width="640" height="500" rx="14" class="turf"/>
+      <line x1="16" x2="624" y1="350" y2="350" class="yl"/><text x="22" y="344" class="yt">5 yds</text>
+      <line x1="16" x2="624" y1="230" y2="230" class="yl"/><text x="22" y="224" class="yt">10 yds</text>
+      <line x1="16" x2="624" y1="110" y2="110" class="yl"/><text x="22" y="104" class="yt">15 yds</text>
+      <line x1="16" x2="624" y1="470" y2="470" class="los"/><text x="22" y="463" class="yt">Line of scrimmage</text>
+      <text x="22" y="491" class="dir">← Inside</text><text x="618" y="491" class="dir" text-anchor="end">Outside →</text>
+      <path d="M418,470 L496,434 L613,398" class="r s-s" marker-end="url(#ah-s)"/>
+      <text x="613" y="381" text-anchor="end" class="rl t-s">Flat</text>
+      <path d="M418,470 L418,338 L400,357" class="r s-s" marker-end="url(#ah-s)"/>
+      <text x="405" y="321" text-anchor="end" class="rl t-s">Hitch</text>
+      <path d="M418,470 L418,350 L548,350" class="r s-s" marker-end="url(#ah-s)"/>
+      <text x="538" y="338" text-anchor="end" class="rl t-s">Out</text>
+      <path d="M418,470 L418,422 L288,302" class="r s-m" marker-end="url(#ah-m)"/>
+      <text x="278" y="295" text-anchor="end" class="rl t-m">Slant</text>
+      <path d="M418,470 L418,350 L236,350" class="r s-m" marker-end="url(#ah-m)"/>
+      <text x="226" y="356" text-anchor="end" class="rl t-m">In</text>
+      <path d="M418,470 L418,422 L288,326 L80,230" class="r s-m" marker-end="url(#ah-m)"/>
+      <text x="90" y="256" text-anchor="start" class="rl t-m">Crosser</text>
+      <path d="M418,470 L418,302 L548,182" class="r s-d" marker-end="url(#ah-d)"/>
+      <text x="532" y="170" text-anchor="end" class="rl t-d">Corner</text>
+      <path d="M418,470 L418,302 L288,134" class="r s-d" marker-end="url(#ah-d)"/>
+      <text x="280" y="129" text-anchor="end" class="rl t-d">Post</text>
+      <path d="M418,470 L418,86" class="r s-d" marker-end="url(#ah-d)"/>
+      <text x="418" y="72" text-anchor="middle" class="rl t-d">Go (fade)</text>
+      <path d="M418,470 L496,458 L574,398 L587,110" class="r s-d" marker-end="url(#ah-d)"/>
+      <text x="587" y="96" text-anchor="middle" class="rl t-d">Wheel</text>
+      <circle cx="418" cy="470" r="13" class="wr"/><text x="418" y="474" text-anchor="middle" class="wrt">WR</text>
+      </svg>
+      <div class="key"><span><i style="background:#15634F"></i>Short (0–5 yards)</span><span><i style="background:#E2711C"></i>Middle (5–10 yards)</span><span><i style="background:#7B3DB6"></i>Deep (7+ yards)</span></div>
+      <figcaption>Drawn for a receiver on the right side of the formation. For a receiver on the left, flip it: outside breaks go toward the left sideline.</figcaption>
+    </figure>
+
+    <h2>Short routes</h2>
+    <div class="grid">
+      <div class="card route"><h3>Flat <small>0–5 yds, to the sideline</small></h3><p>Release outside and work toward the sideline, catching it about 3–5 yards deep. Quick and easy for young quarterbacks. Best against Cover 3, which leaves the flats empty; tough against Cover 2, where the corners sit in the flats.</p></div>
+      <div class="card route"><h3>Hitch <small>5 yds, turn back</small></h3><p>Push to 5 yards, stop hard and turn back to the quarterback. Beats defenders who play soft and deep, like Cover 3 corners. Against man, the hard stop is the separation.</p></div>
+      <div class="card route"><h3>Out <small>5 yds, break outside</small></h3><p>Run 5 yards, plant and break flat to the sideline. Great against man because the defender has to react to the break. Risky against Cover 2, with a corner waiting in the flat.</p></div>
+    </div>
+
+    <h2>Middle routes</h2>
+    <div class="grid">
+      <div class="card route"><h3>Slant <small>2 steps, then 45° inside</small></h3><p>Two hard steps upfield, then cut inside at an angle. The quick break beats man, and against Cover 2 it fits in the hole between the corner and the linebacker. Throw it in front of the receiver, not at them.</p></div>
+      <div class="card route"><h3>In <small>5 yds, break inside</small></h3><p>Run 5 yards and break flat across the field. Finds the soft spot between the corner and linebacker in Cover 2, and the gaps between hook defenders in zone.</p></div>
+      <div class="card route"><h3>Crosser <small>across the field, 6–10 yds</small></h3><p>Release, then run across the field, gaining depth. The best man-coverage beater in flag football: defenders have to chase through traffic. Pair it with a route from the other side to create a rub.</p></div>
+    </div>
+
+    <h2>Deep routes</h2>
+    <div class="grid">
+      <div class="card route"><h3>Corner <small>7 yds, break to the sideline</small></h3><p>Run 7 yards, then break at an angle toward the back corner. The classic Cover 2 beater: it lands behind the corner and outside the safety. Against Cover 1, run it away from the lone safety.</p></div>
+      <div class="card route"><h3>Post <small>7 yds, break to the middle</small></h3><p>Run 7 yards, then break deep toward the middle. Splits the two safeties in Cover 2. Tough against Cover 1 and Cover 3, which keep a defender in the deep middle.</p></div>
+      <div class="card route"><h3>Go (fade) <small>straight upfield</small></h3><p>Run straight and fast. Against man it only wins with a faster receiver, and Cover 3 takes it away. Its real job is often to clear space by pulling a deep defender with it.</p></div>
+      <div class="card route"><h3>Wheel <small>from the slot or backfield</small></h3><p>Start toward the flat, then turn up the sideline. Hard for a linebacker to carry in man or Cover 1, and it stretches the flat defender in zone.</p></div>
+    </div>
+
+    <h2>Route vs coverage cheat sheet</h2>
+    <p>A general guide to where each route tends to get open. Whether it’s open in your play depends on the other routes around it, so test the whole play.</p>
+    <div class="tbl"><table class="cheat">
+      <thead><tr><th>Route</th><th>Cover 1</th><th>Cover 2</th><th>Cover 3</th><th>Man</th></tr></thead>
+      <tbody>
+        <tr><td>Flat</td><td class="o">Depends</td><td class="t">Tough</td><td class="g">Good</td><td class="o">Depends</td></tr>
+        <tr><td>Hitch</td><td class="o">Depends</td><td class="t">Tough</td><td class="g">Good</td><td class="o">Depends</td></tr>
+        <tr><td>Out</td><td class="o">Depends</td><td class="t">Tough</td><td class="g">Good</td><td class="g">Good</td></tr>
+        <tr><td>Slant</td><td class="g">Good</td><td class="g">Good</td><td class="o">Depends</td><td class="g">Good</td></tr>
+        <tr><td>In</td><td class="o">Depends</td><td class="g">Good</td><td class="o">Depends</td><td class="o">Depends</td></tr>
+        <tr><td>Crosser</td><td class="g">Good</td><td class="o">Depends</td><td class="o">Depends</td><td class="g">Good</td></tr>
+        <tr><td>Corner</td><td class="o">Depends</td><td class="g">Good</td><td class="t">Tough</td><td class="o">Depends</td></tr>
+        <tr><td>Post</td><td class="t">Tough</td><td class="g">Good</td><td class="t">Tough</td><td class="o">Depends</td></tr>
+        <tr><td>Go (fade)</td><td class="o">Depends</td><td class="o">Depends</td><td class="t">Tough</td><td class="o">Depends</td></tr>
+        <tr><td>Wheel</td><td class="g">Good</td><td class="o">Depends</td><td class="o">Depends</td><td class="g">Good</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">Not sure which coverage you’re facing? Cover 1 has one deep safety, Cover 2 has two, Cover 3 has three deep defenders, and in man every receiver has a defender following them.</p>
+
+    <h2>Routes work in combinations</h2>
+    <p>One route rarely beats a defense by itself. Good plays pair routes so a single defender has to choose, and the quarterback throws to whoever that defender leaves.</p>
+    <div class="grid">
+      <div class="card"><h3>High-low: corner over flat</h3><p>Two receivers to one side, one deep to the corner and one short to the flat. The defender in between can’t cover both. Open Grass grades this sample play A against Cover 1 and Cover 3, but D against man, where every receiver has a defender.</p><p style="margin-top:12px"><a href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.c3">Run it vs Cover 3 →</a></p></div>
+      <div class="card"><h3>Flood: three levels to one side</h3><p>A go, a corner and a flat stretch one sideline at three depths, with a crosser coming from the backside. It grades A against all three zones and C against man. Open Grass suggests turning the go into a second crosser, which lifts man to an A.</p><p style="margin-top:12px"><a href="/#j-eyJuYW1lIjoiVHJpcHMgTGVmdCwgRmxvb2QiLCJjb25jZXB0IjoiVGhyZWUgbGV2ZWxzIHRvIG9uZSBzaWRlbGluZSwgY3Jvc3NlciBmcm9tIHRoZSBiYWNrc2lkZSIsInBsYXllcnMiOlt7ImlkIjoiWCIsInN0YXJ0IjpbMywwXSwicm91dGUiOltbMywxOF1dLCJyb3V0ZU5hbWUiOiJHbyJ9LHsiaWQiOiJaIiwic3RhcnQiOls4LC0xXSwicm91dGUiOltbOCw3XSxbMy41LDExXV0sInJvdXRlTmFtZSI6IkNvcm5lciJ9LHsiaWQiOiJDIiwic3RhcnQiOlsxNSwwXSwicm91dGUiOltbMTIsMl0sWzUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0In0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTIsLTQuNl1dLCJyb3V0ZU5hbWUiOiJSb2xsIGxlZnQifSx7ImlkIjoiWSIsInN0YXJ0IjpbMjYsMF0sInJvdXRlIjpbWzI2LDJdLFsyMSw2XSxbMTIsOV1dLCJyb3V0ZU5hbWUiOiJDcm9zc2VyIiwic3RhciI6dHJ1ZX1dfQ.man">Run it vs man →</a></p></div>
+    </div>
+
+    <h2>Coaching routes in 5-on-5</h2>
+    <ul class="ticks">
+      <li><b>Keep it short.</b> Young quarterbacks are most accurate inside 10 yards, so the flat, hitch, slant and out do most of the work.</li>
+      <li><b>Teach depth with landmarks.</b> “Five big steps, then break” sticks better than yard numbers for young players.</li>
+      <li><b>Sell the break.</b> A hard plant before the cut is what creates space against man coverage.</li>
+      <li><b>Give every route a job.</b> A go route that never gets the ball still matters if it pulls a deep defender away from the play.</li>
+    </ul>
+
+    <h2>Questions</h2>
+    <details><summary>What is a route tree in flag football?</summary><p>A route tree is a diagram of every route a receiver can run from one spot, drawn together so they branch like a tree. It gives your team shared names for each route, so you can call a play in a few words.</p></details>
+    <details><summary>What are the best routes for young kids?</summary><p>Start with the flat, hitch, slant and go. They’re easy to learn, short enough for young quarterbacks to throw, and together they attack the defense short, middle and deep.</p></details>
+    <details><summary>What route beats Cover 2?</summary><p>Corners and posts. Cover 2 has two deep safeties and corners who sit in the flats, so the soft spots are behind the corners near the sideline and in the middle between the safeties.</p></details>
+    <details><summary>What route beats man coverage?</summary><p>Routes with hard breaks (slants, outs) and routes that cross (crossers, slants from both sides). Crossing routes make defenders chase through traffic.</p></details>
+    <details><summary>How can I tell if my routes will work?</summary><p>Put your play into Open Grass and run it against Cover 1, Cover 2, Cover 3 and man. It shows where the open grass is, grades the play, and suggests route changes you can try with one tap.</p></details>
+
+    <div class="final">
+      <h2>Test your routes against a real defense</h2>
+      <p class="muted">Describe a play or upload your play card, and see which routes get open.</p>
+      <a class="btn" href="/">Try Open Grass free</a>
+    </div>
+  </main>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Play designer</a> · <a href="/flag-football-routes">Routes</a> · <a href="/privacy.html">Privacy</a></footer>
+</div>
+</body>
+</html>

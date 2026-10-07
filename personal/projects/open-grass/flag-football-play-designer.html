@@ -123,6 +123,33 @@ summary { cursor: pointer; font-weight: 600; }
 details p { margin: 8px 0 0; color: var(--muted); }
 .final { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 48px; text-align: center; }
 .final h2 { margin-top: 0; }
+/* Route tree diagram (inline SVG) */
+svg.tree { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); }
+.tree .turf { fill: #B3D7A2; } .tree .yl { stroke: #FFFFFF; stroke-opacity: .7; stroke-width: 1.5; } .tree .los { stroke: #FFFFFF; stroke-width: 3; }
+.tree .yt, .tree .dir { fill: #15201A; fill-opacity: .7; font: 600 15px var(--f-body); }
+.tree .r { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.tree .s-s { stroke: #15634F; } .tree .s-m { stroke: #E2711C; } .tree .s-d { stroke: #7B3DB6; }
+.tree .f-s { fill: #15634F; } .tree .f-m { fill: #E2711C; } .tree .f-d { fill: #7B3DB6; }
+.tree .rl { font: 800 20px var(--f-display); text-transform: uppercase; letter-spacing: .02em; paint-order: stroke; stroke: #B3D7A2; stroke-width: 4px; }
+.tree .t-s { fill: #0F4A3B; } .tree .t-m { fill: #A44E0C; } .tree .t-d { fill: #5B2A8A; }
+.tree .wr { fill: #15201A; } .tree .wrt { fill: #FFFFFF; font: 800 11px var(--f-body); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .turf { fill: #1D3A25; } :root:not([data-theme="light"]) .tree .rl { stroke: #1D3A25; }
+  :root:not([data-theme="light"]) .tree .yt, :root:not([data-theme="light"]) .tree .dir { fill: #CFE3D0; }
+  :root:not([data-theme="light"]) .tree .t-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .t-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .t-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .s-s { stroke: #3FC79C; } :root:not([data-theme="light"]) .tree .s-m { stroke: #F5953F; } :root:not([data-theme="light"]) .tree .s-d { stroke: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .f-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .f-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .f-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .wr { fill: #E5ECE4; } :root:not([data-theme="light"]) .tree .wrt { fill: #0E1410; } }
+.key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 15px; color: var(--muted); margin-top: 10px; }
+.key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+/* Route vs coverage cheat sheet */
+.tbl { overflow-x: auto; margin: 0 0 10px; }
+table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.cheat th, .cheat td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.cheat th { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 520px) { .cheat th, .cheat td { padding: 8px 5px; font-size: 13.5px; } .cheat th { letter-spacing: .02em; font-size: 11px; } }
+.cheat td.g { color: var(--good); font-weight: 700; } .cheat td.o { color: var(--muted); } .cheat td.t { color: var(--bad); font-weight: 600; }
+.route h3 { display: flex; align-items: baseline; gap: 10px; }
+.route h3 small { font-weight: 500; color: var(--muted); font-size: 14px; }
 footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
 @media (min-width: 760px) { h1 { font-size: 64px; } h2 { font-size: 36px; } }
 </style>
@@ -172,6 +199,7 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
       <span><b class="gA">A</b>Cover 1</span><span><b class="gB">B</b>Cover 2</span><span><b class="gA">A</b>Cover 3</span><span><b class="gD">D</b>Man to man</span>
     </div>
     <p>Man coverage takes it away, because every receiver has a defender running with them. Open Grass suggests turning the corner route into a slant so the two routes cross and the man defenders have to fight through traffic. That one change raises the grade against man from a D to a B.</p>
+    <p class="muted">New to route names? See the <a href="/flag-football-routes">flag football route tree</a>.</p>
     <div class="ctas">
       <a class="btn" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.man">Run it vs man</a>
       <a class="btn ghost" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.c2">Run it vs Cover 2</a>
@@ -198,7 +226,7 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
       <a class="btn" href="/">Design a play free</a>
     </div>
   </main>
-  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Play designer</a> · <a href="/privacy.html">Privacy</a></footer>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Play designer</a> · <a href="/flag-football-routes">Routes</a> · <a href="/privacy.html">Privacy</a></footer>
 </div>
 </body>
 </html>
