@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- ga:begin (build.py copies this block into every content page) -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html promises no advertising use,
+     so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
+     only as GA4 key events imported in Google Ads. Change this only together with privacy.html. */
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
+  gtag('set', { allow_google_signals: false, allow_ad_personalization_signals: false });
+  gtag('js', new Date());
+
+  /* page_location drops Clerk's __clerk* query params and the #fragment: it can hold the owner token (#owner=...) or a whole custom play
+     packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
+     On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
+     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
+     Analytics is off (Google's documented ga-disable flag) when the visitor turned it off under "Your data" (og-no-analytics)
+     or their browser sends Global Privacy Control. */
+  (() => {
+    let off = !!navigator.globalPrivacyControl;
+    try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
+    const h = location.hash.slice(1);
+    // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
+    const q = new URLSearchParams(location.search);
+    [...q.keys()].filter(k => k.startsWith('__clerk')).forEach(k => q.delete(k));
+    const qs = q.toString();
+    let owner = h.startsWith('owner=') && h !== 'owner=off';
+    try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
+    gtag('config', 'G-1T9DMC15V7', {
+      page_location: location.origin + location.pathname + (qs ? '?' + qs : ''),
+      link_type: !h ? 'none' : h.startsWith('owner=') ? 'owner' : h.startsWith('j-') ? 'custom_play' : h.startsWith('s-') ? 'legacy_share' : 'builtin_play',
+      ...(owner ? { traffic_type: 'internal' } : {}),
+      ...(/(^|\.)open-grass\.com$/.test(location.hostname) ? {} : { debug_mode: true })
+    });
+  })();
+</script>
+<!-- ga:end -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flag Football Play Designer That Grades Your Plays | Open Grass</title>
+<meta name="description" content="Describe a flag football play or upload your play card. Open Grass draws it, runs it against Cover 1, 2, 3 and man, and grades it. Free in beta.">
+<meta name="author" content="Open Grass, LLC">
+<link rel="canonical" href="https://open-grass.com/flag-football-play-designer">
+<meta name="theme-color" content="#1C5A37">
+<link rel="icon" type="image/png" sizes="48x48" href="/logo/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/logo/favicon-96.png">
+<link rel="apple-touch-icon" href="/logo/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Open Grass">
+<meta property="og:url" content="https://open-grass.com/flag-football-play-designer">
+<meta property="og:title" content="Flag football play designer that tells you if the play works">
+<meta property="og:description" content="Describe a flag football play or upload your play card. Open Grass draws it, runs it against Cover 1, 2, 3 and man, and grades it. Free in beta.">
+<meta property="og:image" content="https://open-grass.com/logo/og-image.jpg?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [
+  {"@type": "WebPage", "@id": "https://open-grass.com/flag-football-play-designer#page", "url": "https://open-grass.com/flag-football-play-designer", "name": "Flag football play designer that tells you if the play works", "description": "Describe a flag football play or upload your play card. Open Grass draws it, runs it against Cover 1, 2, 3 and man, and grades it. Free in beta.",
+   "isPartOf": {"@type": "WebSite", "name": "Open Grass", "url": "https://open-grass.com/"}, "about": {"@id": "https://open-grass.com/#app"},
+   "publisher": {"@type": "Organization", "@id": "https://open-grass.com/#org", "name": "Open Grass", "legalName": "Open Grass, LLC"}},
+  {"@type": "BreadcrumbList", "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Open Grass", "item": "https://open-grass.com/"},
+    {"@type": "ListItem", "position": 2, "name": "Flag Football Play Designer", "item": "https://open-grass.com/flag-football-play-designer"}]}
+]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Content pages (pages/*.html, built by build.py). Same tokens as the app and privacy.html. */
+:root {
+  --paper: #EEF2EA; --panel: #FFFFFF; --ink: #15201A; --muted: #5B6A60; --line: #D5DECF; --chip: #E3EADD;
+  --accent: #1C5A37; --accent-ink: #FFFFFF; --good: #1D8A4B; --warn: #B87D05; --bad: #C1362B;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+    --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+  --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--f-body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 16px 48px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+.top img { height: 60px; width: auto; display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
+:root[data-theme="dark"] .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.btn { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 700; padding: 11px 18px; border-radius: 10px; }
+.btn.ghost { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 8px 14px; font-size: 15px; }
+h1 { font: 900 44px/0.98 var(--f-display); text-transform: uppercase; letter-spacing: .005em; margin: 0 0 14px; max-width: 18ch; }
+h2 { font: 800 30px/1 var(--f-display); text-transform: uppercase; margin: 48px 0 14px; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.lede { font-size: 20px; max-width: 60ch; color: var(--ink); }
+.muted { color: var(--muted); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
+figure { margin: 28px 0 0; }
+figure img { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(21,32,26,.12); }
+figcaption { color: var(--muted); font-size: 15px; margin-top: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.card p { color: var(--muted); margin: 0; font-size: 16px; }
+.step { font: 900 32px/1 var(--f-display); color: var(--accent); margin-bottom: 6px; }
+.grades { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+.grades span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 15px; }
+.grades b { font: 900 22px/1 var(--f-display); margin-right: 6px; }
+.gA { color: var(--good); } .gB { color: var(--good); } .gC, .gD { color: var(--warn); } .gF { color: var(--bad); }
+ul.ticks { padding-left: 20px; margin: 0 0 14px; }
+ul.ticks li { margin-bottom: 6px; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin: 8px 0 0; color: var(--muted); }
+.final { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 48px; text-align: center; }
+.final h2 { margin-top: 0; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
+@media (min-width: 760px) { h1 { font-size: 64px; } h2 { font-size: 36px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="/" aria-label="Open Grass home"><img src="/logo/open-grass-logo-header.png" width="101" height="72" alt="Open Grass"></a>
+    <a class="btn small" href="/">Open the app</a>
+  </header>
+  <main>
+<!-- Search terms (Keyword Planner 2026-10-07): play designer / creator / maker, playbook app / maker / software.
+     The demo play is original (not from any playbook); its links carry the play in the URL. Grades come from the engine:
+     re-check them if engine.js changes. No hand-drawing tool yet, so don't promise one. -->
+    <h1>Flag football play designer that tells you if the play works</h1>
+    <p class="lede">Describe a play or upload a photo of your play card. Open Grass draws it, runs it against Cover 1, Cover 2, Cover 3 and man coverage, and grades it before your team ever lines up.</p>
+    <div class="ctas">
+      <a class="btn" href="/">Design a play free</a>
+      <a class="btn ghost" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.man">See a sample play vs man</a>
+    </div>
+    <p class="muted">Free while in beta. Works in any browser on a phone, tablet or computer.</p>
+    <figure>
+      <img src="/img/designer-demo.jpg" width="1600" height="1418" alt="Open Grass showing a Twins Right Corner-Flat play graded A against Cover 1, B against Cover 2, A against Cover 3 and D against man to man, with the open holes highlighted and suggested route changes.">
+      <figcaption>A sample play in Open Grass: graded against all four coverages at once, with the open grass highlighted and route changes ready to try.</figcaption>
+    </figure>
+
+    <h2>How it works</h2>
+    <div class="grid">
+      <div class="card"><div class="step">1</div><h3>Get your play in</h3><p>Describe it in plain words (“twins right, corner over a flat, slant on the backside”), upload a photo or screenshot of a play card or whiteboard, or import a playbook file. Open Grass draws it for you.</p></div>
+      <div class="card"><div class="step">2</div><h3>Put a defense on it</h3><p>Drag Cover 1, Cover 2, Cover 3 or man onto the field, add a linebacker or safety blitz, or move single defenders to match the team you play Saturday.</p></div>
+      <div class="card"><div class="step">3</div><h3>Watch it and fix it</h3><p>Run the play and watch the defense react. Open Grass grades it A–F, ranks your QB’s reads, and suggests route changes you can try with one tap.</p></div>
+    </div>
+
+    <h2>A play designer that tests, not just draws</h2>
+    <p>Most flag football play makers are drawing tools. They’re good at routes, play cards and wristbands, and some animate the routes as drawn. But the defense on the page never moves, so the drawing can’t tell you whether the play will work.</p>
+    <p>Open Grass starts where they stop. Zone defenders guard their areas, man defenders chase their receivers, a blitzer can rush the quarterback, and a heatmap shows where the open grass is while the play runs. You see why a route is open, not just that it is.</p>
+    <ul class="ticks">
+      <li><b>A–F grade against every coverage</b> in one scouting report, so you know which looks a play beats.</li>
+      <li><b>QB read progression</b> for each coverage: who’s open, who’s tight, who’s covered, and when.</li>
+      <li><b>Coach’s adjustments:</b> route changes that raise the grade, each with a one-tap Try it.</li>
+      <li><b>Runs too:</b> handoffs, pitches and trick plays are graded with pursuit.</li>
+    </ul>
+
+    <h2>Example: Twins Right, Corner-Flat</h2>
+    <p>Two receivers to the right run a corner and a flat. One defender can’t cover both, so against zone the quarterback reads that defender and throws to whichever receiver that defender leaves. On the backside, a slant gives the quarterback a quick answer.</p>
+    <div class="grades" aria-label="Grades for this play">
+      <span><b class="gA">A</b>Cover 1</span><span><b class="gB">B</b>Cover 2</span><span><b class="gA">A</b>Cover 3</span><span><b class="gD">D</b>Man to man</span>
+    </div>
+    <p>Man coverage takes it away, because every receiver has a defender running with them. Open Grass suggests turning the corner route into a slant so the two routes cross and the man defenders have to fight through traffic. That one change raises the grade against man from a D to a B.</p>
+    <div class="ctas">
+      <a class="btn" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.man">Run it vs man</a>
+      <a class="btn ghost" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.c2">Run it vs Cover 2</a>
+    </div>
+
+    <h2>Built for volunteer coaches</h2>
+    <ul class="ticks">
+      <li>Nothing to install: it runs in the browser on the sideline or at the kitchen table.</li>
+      <li>A free account saves your plays and favorites so they follow you to any device.</li>
+      <li>Send a share link that opens your play and the coverage, or save an animated GIF for the team chat.</li>
+      <li>Built for 5-on-5 flag football today, with more formats on the way.</li>
+    </ul>
+
+    <h2>Questions</h2>
+    <details><summary>How do I create a play?</summary><p>Tap New play. Describe the play in your own words, or upload a photo or screenshot of a play card or whiteboard, and Open Grass draws it as a draft you can test and save. You can also import plays from an Open Grass playbook file.</p></details>
+    <details><summary>Is the play designer free?</summary><p>Yes, while Open Grass is in beta. A free account saves your plays, favorites and share links. Early coaches get founding-coach perks.</p></details>
+    <details><summary>Which defenses can I test against?</summary><p>Cover 1, Cover 2, Cover 3 and man to man, each with an optional linebacker or safety blitz. If the other team lines up differently, drag any defender to match what you see.</p></details>
+    <details><summary>Does it work for 7-on-7?</summary><p>Open Grass is built for 5-on-5 flag football today. More formats are on the way.</p></details>
+    <details><summary>Are my plays private?</summary><p>Yes. Plays you save stay in your browser, or in your private account when you’re signed in. A play is shared only when you send someone a share link. See the <a href="/privacy.html">privacy policy</a> for the details.</p></details>
+
+    <div class="final">
+      <h2>Will your play beat their defense?</h2>
+      <p class="muted">Get your first play in and find out in a minute.</p>
+      <a class="btn" href="/">Design a play free</a>
+    </div>
+  </main>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Play designer</a> · <a href="/privacy.html">Privacy</a></footer>
+</div>
+</body>
+</html>
