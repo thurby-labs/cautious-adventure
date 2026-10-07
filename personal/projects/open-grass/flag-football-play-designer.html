@@ -167,6 +167,17 @@ svg.pd { width: 100%; height: auto; display: block; border-radius: 10px; }
 .cov .deepline { stroke: #1E2A46; stroke-opacity: .5; stroke-dasharray: 6 4; } .cov .dl { fill: #1E2A46; fill-opacity: .7; font: 700 10px var(--f-body); text-anchor: end; text-transform: uppercase; letter-spacing: .08em; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cov .zn { fill: #A9BCE6; stroke: #A9BCE6; } :root:not([data-theme="light"]) .cov .df { fill: #DCE4F4; }
   :root:not([data-theme="light"]) .cov .dt { fill: #17203A; } :root:not([data-theme="light"]) .cov .deepline { stroke: #A9BCE6; } :root:not([data-theme="light"]) .cov .dl { fill: #CFE3D0; } }
+/* Before/after fix cards (pages/_fixes.js) */
+.fix { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 0 0 18px; }
+.fix h3 { font-size: 21px; display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.fix .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font: 900 20px var(--f-display); }
+.fix > p { margin: 0 0 8px; }
+.ba { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
+.ba figure { margin: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.ba figure svg { width: 100%; }
+.ba figcaption { margin: 0; font: 800 16px var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ba .grades { margin: 0; gap: 6px; } .ba .grades span { padding: 4px 8px; font-size: 13px; } .ba .grades b { font-size: 18px; margin-right: 4px; }
+.grades span.hl { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 /* Route vs coverage cheat sheet */
 .tbl { overflow-x: auto; margin: 0 0 10px; }
 table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
@@ -250,7 +261,7 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
       <a class="btn" href="/">Test a play free</a>
     </div>
   </main>
-  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="/flag-football-routes">Routes</a> · <a href="/flag-football-plays">Plays</a> · <a href="/how-to-read-a-flag-football-defense">Reading defenses</a> · <a href="/privacy.html">Privacy</a></footer>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="/flag-football-routes">Routes</a> · <a href="/flag-football-plays">Plays</a> · <a href="/how-to-read-a-flag-football-defense">Reading defenses</a> · <a href="/why-isnt-my-flag-football-play-working">Fix a play</a> · <a href="/privacy.html">Privacy</a></footer>
 </div>
 </body>
 </html>
