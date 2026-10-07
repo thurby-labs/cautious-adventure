@@ -1125,9 +1125,19 @@ function football(x, y, rot = -30, sc = 1) {
   return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${sc.toFixed(2)})"><ellipse rx="8" ry="5" style="fill:var(--ball);stroke:var(--chalk)" stroke-width="1"/><path d="M-3 0h6M-1.5 -1.5v3M0 -1.5v3M1.5 -1.5v3" style="stroke:var(--chalk)" stroke-width=".9"/></g>`;
 }
 
-function frameAt(t) {
+/* The sim steps every DT (0.05 s); blend the two frames around t so players move every display frame. */
+function simFrame(t) {
   const fr = state.run.sim.frames;
   return fr[clamp(Math.round(t / DT), 0, fr.length - 1)];
+}
+function frameAt(t) {
+  const fr = state.run.sim.frames, k = clamp(t / DT, 0, fr.length - 1), i = Math.floor(k), u = k - i;
+  const a = fr[i], b = fr[Math.min(i + 1, fr.length - 1)];
+  if (u < 1e-6 || a === b) return a;
+  const mix = (p, q) => [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u];
+  const off = {};
+  for (const id in a.off) off[id] = mix(a.off[id], b.off[id]);
+  return { t, off, def: a.def.map((p, j) => mix(p, b.def[j])) };
 }
 
 /* Pre-snap, holes are the gaps between where each zone will be. After the snap, they are the gaps between actual defenders. */
@@ -1239,7 +1249,8 @@ function fieldMarkup(t) {
     if (d.role !== 'zone' || !d.zone) return;
     s += `<ellipse cx="${X(d.zone.c[0])}" cy="${Y(d.zone.c[1])}" rx="${d.zone.rx * S}" ry="${d.zone.ry * S}" style="fill:var(--zone);stroke:var(--zone)" fill-opacity=".09" stroke-opacity=".45" stroke-dasharray="3 4" stroke-width="1.2"/>`;
   });
-  if (run && state.holes) s += holesLayer(f, roles, t);
+  // holes use the unblended sim frame, so the HOLE labels only move at 0.05 s steps instead of flickering between near-ties
+  if (run && state.holes) s += holesLayer(simFrame(t), roles, t);
 
   // routes: ghost of the original route where the coach changed it
   play.players.forEach(pl => {
