@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
 <!-- ga:begin (build.py copies this block into every content page) -->
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7"></script>
+<!-- Google tag (gtag.js): loaded by the script below unless analytics is off -->
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
-  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html promises no advertising use,
-     so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
+  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html discloses ad measurement but
+     promises no ad cookies, retargeting or personalized ads, so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
      only as GA4 key events imported in Google Ads. Change this only together with privacy.html. */
   gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
   gtag('set', { allow_google_signals: false, allow_ad_personalization_signals: false });
@@ -18,12 +17,19 @@
      packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
      On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
      A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
-     Analytics is off (Google's documented ga-disable flag) when the visitor turned it off under "Your data" (og-no-analytics)
-     or their browser sends Global Privacy Control. */
+     Analytics is off when the visitor turned it off under "Your data" (og-no-analytics) or their browser sends Global Privacy Control:
+     then gtag.js never loads, so neither GA4 nor the linked Google Ads page-view ping is sent (the ga-disable flag alone only
+     stops GA4). privacy.html promises that opting out stops both. */
   (() => {
     let off = !!navigator.globalPrivacyControl;
     try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
     if (off) window['ga-disable-G-1T9DMC15V7'] = true;
+    else {
+      const t = document.createElement('script');
+      t.async = true;
+      t.src = 'https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7';
+      document.head.appendChild(t);
+    }
     const h = location.hash.slice(1);
     // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
     const q = new URLSearchParams(location.search);
@@ -2605,7 +2611,7 @@ function openYourData() {
   const signedIn = !!account.user;
   openDialog(`${dlgHead('Your data')}
     <div class="pane">
-      <label class="tog"><input type="checkbox" id="gaOn" ${off ? '' : 'checked'} ${gpc ? 'disabled' : ''}> Share usage statistics (Google Analytics)</label>
+      <label class="tog"><input type="checkbox" id="gaOn" ${off ? '' : 'checked'} ${gpc ? 'disabled' : ''}> Share usage statistics (Google Analytics and Google Ads measurement)</label>
       <p class="muted">${gpc ? 'Your browser sends Global Privacy Control, so Open Grass doesn’t load analytics here.' : 'Anonymous counts of which features coaches use. Never your plays, play names, descriptions or email. Applies to this browser.'}</p>
     </div>
     ${signedIn ? `<div class="pane">
