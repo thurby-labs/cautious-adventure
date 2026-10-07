@@ -432,7 +432,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
   </section>
 
   <footer class="foot">
-    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="privacy.html">Privacy</a> · <button class="linkbtn" id="dataBtn">Your data</button> · <button class="linkbtn" id="tourLink">Take the tour</button></p>
+    <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <button class="linkbtn" id="dataBtn">Your data</button> · <button class="linkbtn" id="tourLink">Take the tour</button></p>
     <p>Free while in beta. Early coaches get founding-coach perks. · <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">Send feedback</a></p>
   </footer>
 </div>
@@ -2241,7 +2241,8 @@ function showGate(reason, play) {
     <div class="gate-actions">
       <button class="act primary" id="gateUp">Create free account</button>
       <button class="linkbtn" id="gateIn">I already have an account</button>
-    </div>`);
+    </div>
+    <p class="muted">By creating an account you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>`);
   $('gateUp').addEventListener('click', () => openClerk('sign_up', reason));
   $('gateIn').addEventListener('click', () => openClerk('sign_in', reason));
 }
@@ -2297,6 +2298,7 @@ async function openStudio(tab) {
     <div class="pane" data-pane="image" hidden>
       <p class="muted">Upload a screenshot or photo of a play card. The AI reads the players, routes, motion and fakes, and draws it as a draft you can test and save.</p>
       <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'}>
+      <p class="muted">Play diagrams only: photos that show people are rejected. See the <a href="terms.html" target="_blank" rel="noopener">Terms</a>.</p>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
       ${img && !account.user ? `<p class="muted">${FREE_NOTE()}</p>` : ''}
@@ -2732,7 +2734,7 @@ function openYourData() {
       <p class="status" id="dataStatus"></p>
     </div>`}
     <p class="muted">Photos you draw plays from are sent to Anthropic, whose AI reads them. A photo that shows people, has inappropriate content, or isn’t a play diagram is rejected and never stored.</p>
-    <p class="muted"><a href="privacy.html">Privacy policy</a></p>`);
+    <p class="muted"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms of Service</a></p>`);
   $('gaOn').addEventListener('change', e => {
     const on = e.target.checked;
     try { on ? localStorage.removeItem('og-no-analytics') : localStorage.setItem('og-no-analytics', '1'); } catch (err) {}
