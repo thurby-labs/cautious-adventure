@@ -1759,7 +1759,7 @@ const aiError = e => e && e.code ? (AI_ERRORS[e.code] || (e.code === 'cancelled'
    The first time a browser signs in, the plays already saved in it move into the account.
    CLERK_PUBLISHABLE_KEY is public (it ships to every browser); keep it the same as in worker/wrangler.toml.
    Empty = no sign-in button, and the app works exactly as before. */
-const CLERK_PUBLISHABLE_KEY = 'pk_test_YXB0LWdvcGhlci0zNDEzLmNsZXJrLmFjY291bnRzLmRldiQ';
+const CLERK_PUBLISHABLE_KEY = 'pk_live_Y2xlcmsub3Blbi1ncmFzcy5jb20k';
 
 const account = {
   user: null,          // { id, label } when signed in
