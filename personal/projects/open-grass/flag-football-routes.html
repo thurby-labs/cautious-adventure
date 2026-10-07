@@ -141,6 +141,25 @@ svg.tree { width: 100%; height: auto; display: block; border-radius: 14px; borde
   :root:not([data-theme="light"]) .tree .wr { fill: #E5ECE4; } :root:not([data-theme="light"]) .tree .wrt { fill: #0E1410; } }
 .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 15px; color: var(--muted); margin-top: 10px; }
 .key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+/* Play cards with diagrams (pages/_plays.js) */
+.plays { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; }
+.pcard p { color: var(--muted); font-size: 16px; margin: 0 0 10px; }
+.pcard .grades { margin: 0 0 12px; gap: 6px; } .pcard .grades span { padding: 4px 8px; font-size: 13px; } .pcard .grades b { font-size: 18px; margin-right: 4px; }
+.pcard .lesson { color: var(--ink); font-weight: 600; font-size: 15px; }
+.pcard .pacts { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 15px; }
+.pcard h3 { margin-top: 12px; }
+svg.pd { width: 100%; height: auto; display: block; border-radius: 10px; }
+.pd .turf { fill: #B3D7A2; } .pd .yl { stroke: #FFFFFF; stroke-opacity: .6; } .pd .los { stroke: #FFFFFF; stroke-width: 2; }
+.pd .rt { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; } .pd .da { stroke-dasharray: 5 4; } .pd .mo { stroke-dasharray: 1.5 4; stroke-width: 2.2; }
+.pd .s-o { stroke: #E2711C; } .pd .s-p { stroke: #7B3DB6; } .pd .s-g { stroke: #15634F; } .pd .s-k { stroke: #1A1A1A; } .pd .s-r { stroke: #D23229; }
+.pd .f-o { fill: #E2711C; } .pd .f-p { fill: #7B3DB6; } .pd .f-g { fill: #15634F; } .pd .f-k { fill: #1A1A1A; } .pd .f-r { fill: #D23229; }
+.pd .star { stroke: #EBF25A; stroke-width: 2.5; }
+.pd .pl { fill: #FFFFFF; font: 800 12px var(--f-body); text-anchor: middle; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pd .turf { fill: #1D3A25; }
+  :root:not([data-theme="light"]) .pd .s-o { stroke: #F5953F; } :root:not([data-theme="light"]) .pd .s-p { stroke: #B78BF2; } :root:not([data-theme="light"]) .pd .s-g { stroke: #3FC79C; } :root:not([data-theme="light"]) .pd .s-k { stroke: #F4F4F0; } :root:not([data-theme="light"]) .pd .s-r { stroke: #FF6A5C; }
+  :root:not([data-theme="light"]) .pd .f-o { fill: #F5953F; } :root:not([data-theme="light"]) .pd .f-p { fill: #B78BF2; } :root:not([data-theme="light"]) .pd .f-g { fill: #3FC79C; } :root:not([data-theme="light"]) .pd .f-k { fill: #F4F4F0; } :root:not([data-theme="light"]) .pd .f-r { fill: #FF6A5C; }
+  :root:not([data-theme="light"]) .pd .pl { fill: #0E1410; } }
 /* Route vs coverage cheat sheet */
 .tbl { overflow-x: auto; margin: 0 0 10px; }
 table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
@@ -252,6 +271,8 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
       <div class="card"><h3>Flood: three levels to one side</h3><p>A go, a corner and a flat stretch one sideline at three depths, with a crosser coming from the backside. It grades A against all three zones and C against man. Open Grass suggests turning the go into a second crosser, which lifts man to an A.</p><p style="margin-top:12px"><a href="/#j-eyJuYW1lIjoiVHJpcHMgTGVmdCwgRmxvb2QiLCJjb25jZXB0IjoiVGhyZWUgbGV2ZWxzIHRvIG9uZSBzaWRlbGluZSwgY3Jvc3NlciBmcm9tIHRoZSBiYWNrc2lkZSIsInBsYXllcnMiOlt7ImlkIjoiWCIsInN0YXJ0IjpbMywwXSwicm91dGUiOltbMywxOF1dLCJyb3V0ZU5hbWUiOiJHbyJ9LHsiaWQiOiJaIiwic3RhcnQiOls4LC0xXSwicm91dGUiOltbOCw3XSxbMy41LDExXV0sInJvdXRlTmFtZSI6IkNvcm5lciJ9LHsiaWQiOiJDIiwic3RhcnQiOlsxNSwwXSwicm91dGUiOltbMTIsMl0sWzUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0In0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTIsLTQuNl1dLCJyb3V0ZU5hbWUiOiJSb2xsIGxlZnQifSx7ImlkIjoiWSIsInN0YXJ0IjpbMjYsMF0sInJvdXRlIjpbWzI2LDJdLFsyMSw2XSxbMTIsOV1dLCJyb3V0ZU5hbWUiOiJDcm9zc2VyIiwic3RhciI6dHJ1ZX1dfQ.man">Run it vs man →</a></p></div>
     </div>
 
+    <p class="muted">See these routes in full plays: <a href="/flag-football-plays">flag football plays, graded against every defense</a>.</p>
+
     <h2>Coaching routes in 5-on-5</h2>
     <ul class="ticks">
       <li><b>Keep it short.</b> Young quarterbacks are most accurate inside 10 yards, so the flat, hitch, slant and out do most of the work.</li>
@@ -273,7 +294,7 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
       <a class="btn" href="/">Try Open Grass free</a>
     </div>
   </main>
-  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Play designer</a> · <a href="/flag-football-routes">Routes</a> · <a href="/privacy.html">Privacy</a></footer>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="/flag-football-routes">Routes</a> · <a href="/flag-football-plays">Plays</a> · <a href="/privacy.html">Privacy</a></footer>
 </div>
 </body>
 </html>
