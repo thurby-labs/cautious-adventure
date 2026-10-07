@@ -35,11 +35,55 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Youth 5v5 flag football play tester: overlay a coverage, animate the play, find the open grass.">
+<!-- SEO: copy says "flag football", not "5v5": 7v7 and other formats are coming. Keep title ≤ ~60 chars, description ≤ ~155. -->
+<title>Flag Football Play Tester: Beat Cover 2, Cover 3 &amp; Man | Open Grass</title>
+<meta name="description" content="Test your flag football plays against Cover 1, 2, 3 and man. Watch the defense react, find the open grass, get a letter grade and route fixes. Free in beta.">
 <meta name="author" content="Open Grass, LLC">
-<link rel="icon" type="image/png" href="logo/open-grass-icon.png">
-<link rel="apple-touch-icon" href="logo/open-grass-icon.png">
-<title>Open Grass</title>
+<link rel="canonical" href="https://open-grass.com/">
+<meta name="theme-color" content="#1C5A37">
+<link rel="icon" type="image/png" sizes="48x48" href="logo/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="logo/favicon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="logo/icon-192.png">
+<link rel="apple-touch-icon" href="logo/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Grass">
+<meta property="og:url" content="https://open-grass.com/">
+<meta property="og:title" content="Will your play beat Cover 2? Test it on Open Grass">
+<meta property="og:description" content="Drag a defense onto your flag football play, watch it run, and find the open grass. Grades every play vs Cover 1, 2, 3 and man.">
+<meta property="og:image" content="https://open-grass.com/logo/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A flag football play on Open Grass with the open holes in Cover 2 highlighted, graded C and fixed to an A.">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://open-grass.com/#org",
+      "name": "Open Grass",
+      "legalName": "Open Grass, LLC",
+      "url": "https://open-grass.com/",
+      "logo": "https://open-grass.com/logo/icon-512.png",
+      "email": "opengrassllc@gmail.com"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://open-grass.com/#app",
+      "name": "Open Grass",
+      "url": "https://open-grass.com/",
+      "description": "Flag football play tester. Put a defense on your play, watch it run, see where the open grass is, and get a letter grade and route fixes against Cover 1, Cover 2, Cover 3 and man coverage.",
+      "applicationCategory": "SportsApplication",
+      "operatingSystem": "Any (web browser)",
+      "image": "https://open-grass.com/logo/og-image.jpg",
+      "publisher": { "@id": "https://open-grass.com/#org" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Free while in beta" }
+    }
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap">
@@ -258,6 +302,17 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .sketch .lockmsg span { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; }
 .perks { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14px; }
 .gate-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* Below-the-field explainer (crawlable copy) */
+.about { border-top: 1px solid var(--line); padding-top: 24px; display: grid; gap: 14px; max-width: 980px; }
+.about h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; text-transform: uppercase; line-height: 1; margin: 6px 0 0; }
+.about .lede { margin: 0; font-size: 17px; max-width: 72ch; }
+.about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.about-grid > div { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.about h3 { font-size: 16px; margin: 0 0 4px; }
+.about-grid p, .about details p { margin: 0; color: var(--muted); }
+.about details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.about summary { cursor: pointer; font-weight: 600; }
+.about details p { margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -267,7 +322,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
   <header class="top">
     <div class="brand">
       <img class="mark" src="logo/open-grass-logo-header.png" width="101" height="72" alt="">
-      <div><h1 class="sr-only">Open Grass</h1><p class="tagline">Find the hole. Beat the coverage. <button class="beta" id="betaBtn" title="Free while in beta">Beta</button></p></div>
+      <div><h1 class="sr-only">Open Grass: flag football play tester</h1><p class="tagline">Find the hole. Beat the coverage. <button class="beta" id="betaBtn" title="Free while in beta">Beta</button></p></div>
     </div>
     <div class="head-actions">
       <div class="play-pick">
@@ -340,6 +395,25 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 
     <aside class="read" id="read"></aside>
   </main>
+
+  <!-- What Google reads: the app itself is drawn by script. Keep this honest to what the app does today, say "flag football" (not only 5v5),
+       and never use play names from the Air Raid playbook. -->
+  <section class="about" aria-labelledby="aboutTitle">
+    <h2 id="aboutTitle">Test your flag football plays before game day</h2>
+    <p class="lede">Open Grass is a flag football play tester for coaches. Put a defense on your play, watch it run, and see exactly where the open grass is against Cover 1, Cover 2, Cover 3 and man coverage.</p>
+    <div class="about-grid">
+      <div><h3>Bring your own playbook</h3><p>Draw a new play, describe it in plain words, or snap a photo of your play card and Open Grass draws it for you. Sample plays are there to try it out.</p></div>
+      <div><h3>Watch the defense react</h3><p>Drag a coverage onto the field or move single defenders to match what the other team runs. Zone defenders guard their areas, man defenders chase their receiver, and a blitzer can rush the QB.</p></div>
+      <div><h3>Find the hole</h3><p>A heatmap shows open grass before the snap and while the play runs, so you can see why a route is open, not just that it is.</p></div>
+      <div><h3>Get a grade and a fix</h3><p>Every play gets an A–F grade against each coverage, a QB read order, and route changes you can try with one tap. Runs are graded too.</p></div>
+    </div>
+    <h2>Coach questions</h2>
+    <details><summary>Is Open Grass free?</summary><p>Yes, while it is in beta. A free account saves your plays, favorites and share links. Early coaches get founding-coach perks.</p></details>
+    <details><summary>What kind of flag football does it support?</summary><p>Open Grass is built for 5-on-5 flag football today, the most common youth format. More formats are on the way.</p></details>
+    <details><summary>How do I beat Cover 2 in flag football?</summary><p>Cover 2 splits the deep field between two safeties, which leaves the seam between them and the sideline holes under them. Run your play against Cover 2 in Open Grass and the heatmap shows which of those holes your routes reach.</p></details>
+    <details><summary>Does it work on a phone?</summary><p>Yes. Open Grass runs in any browser on a phone, tablet or computer, with nothing to install.</p></details>
+    <details><summary>Can I share plays with my team?</summary><p>Yes. Send a share link that opens the play and coverage, or save an animated GIF for your team chat.</p></details>
+  </section>
 
   <footer class="foot">
     <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="privacy.html">Privacy</a> · <button class="linkbtn" id="dataBtn">Your data</button> · <button class="linkbtn" id="tourLink">Take the tour</button></p>
