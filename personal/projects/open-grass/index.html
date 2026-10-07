@@ -1675,6 +1675,60 @@ recompute();
 setT(0);
 </script>
 <script>
+/* ---------- Word filter for play text (name, concept, route names, group) ----------
+   One file for both sides: build.py inlines it into index.html (shared links, imports, AI drafts and saved plays are
+   cleaned in normalizePlay), and the Worker imports it to clean /sync and PUT /plays (worker/src/index.js).
+   A field with a blocked word is replaced as a whole (e.g. the name becomes "Untitled play") instead of masked, so
+   nothing of the message is left. Words match whole after folding case, accents, look-alike digits (f4g, 5h1t) and
+   stretched letters; a short list also matches inside run-together or spaced-out text ("f u c k").
+   The lists are ROT13 so the page source doesn't read like a list of slurs. To add a word:
+     node -e "console.log(process.argv[1].replace(/[a-z]/g, c => String.fromCharCode((c.charCodeAt(0) - 84) % 26 + 97)))" word */
+const WF_WORDS = 'nff nffrf nffubyr nffubyrf nefr nefrubyr qhzonff wnpxnff onfgneq ovgpu ovgpurf ovgpul oybjwbo obare obbo obbof obbovrf pbpx pbpxf phz phzfubg phag phagf qvpx qvpxf qvpxurnq qvyqb qbhpur qbhpuront qlxr snt sntf snttbg snttbgf shpx shpxrq shpxre shpxref shpxvat shpxf tbbx unaqwbo urvy uvgyre ubeal wvmm xvxr xxx xlf zvys anxrq anmv anmvf avttn avttnf avttre avttref ahqr ahqrf cravf cvff cbea cbeab cbeauho cevpx chffl chffvrf encr encrq encvat encvfg ergneq ergneqrq frk frkl fuvg fuvgf fuvggl fuvgurnq fyhg fyhgf fcvp gvg gvgf gvggvrf genaal gjng intvan jnax jnaxre jrgonpx juber juberf puvax ornare pbba';
+const WF_INSIDE = 'shpx avttre avttn zbgureshpx snttbg pbpxfhpx xvyylbhefrys';
+const wfRot = s => s.replace(/[a-z]/g, c => String.fromCharCode((c.charCodeAt(0) - 84) % 26 + 97));
+const wfWords = new Set(wfRot(WF_WORDS).split(' '));
+const wfInside = wfRot(WF_INSIDE).split(' ');
+const wfSqueeze = s => s.replace(/(.)\1+/g, '$1');
+const wfSqueezed = new Set([...wfWords].map(wfSqueeze));
+const WF_LEET = { '0': 'o', '1': 'i', '!': 'i', '3': 'e', '4': 'a', '@': 'a', '5': 's', '$': 's', '7': 't', '+': 't', '8': 'b', '9': 'g' };
+
+function hasBadWords(text) {
+  const plain = String(text ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // Checked as written and with look-alikes read as letters ("Go!!!" must not turn into "goiii")
+  return wfCheck(plain) || wfCheck(plain.replace(/[0-9!@$+]/g, c => WF_LEET[c]));
+}
+function wfCheck(s) {
+  const tokens = s.split(/[^a-z]+/).filter(Boolean);
+  // Spaced-out letters ("a b c") count as one word too
+  const spaced = s.match(/\b[a-z](?:[^a-z]+[a-z]\b){2,}/g) || [];
+  for (const t of [...tokens, ...spaced.map(x => x.replace(/[^a-z]/g, ''))]) {
+    if (wfWords.has(t) || wfWords.has(t.replace(/(.)\1{2,}/g, '$1$1'))) return true;
+    // Stretched on purpose (3+ of a letter): compare with every repeat squeezed out, on both sides
+    if (/(.)\1\1/.test(t) && wfSqueezed.has(wfSqueeze(t))) return true;
+  }
+  const joined = tokens.join(''), squeezed = wfSqueeze(joined);
+  return wfInside.some(w => joined.includes(w) || squeezed.includes(wfSqueeze(w)));
+}
+
+/* Replaces any play text field that has a blocked word. Returns how many fields it changed. Mutates the play. */
+function cleanPlayText(play) {
+  if (!play || typeof play !== 'object') return 0;
+  let n = 0;
+  const fix = (o, key, fallback) => {
+    if (o && typeof o[key] === 'string' && hasBadWords(o[key])) {
+      if (fallback === undefined) delete o[key]; else o[key] = fallback;
+      n++;
+    }
+  };
+  fix(play, 'name', 'Untitled play');
+  fix(play, 'concept', play.handoff ? 'Run' : 'Pass');
+  fix(play, 'group');
+  if (Array.isArray(play.players)) play.players.forEach(p => fix(p, 'routeName', p && p.id === 'Q' ? 'Drop' : 'Route'));
+  return n;
+}
+
+if (typeof module === 'object' && module.exports) module.exports = { hasBadWords, cleanPlayText };
+
 /* ---------- AI: describe a play, or read a diagram ----------
    AI drafting goes through the Open Grass Worker (worker/ folder), which holds the Anthropic key
    and the play-drawing prompts. Set AI_ENDPOINT to the Worker's URL after `npm run deploy`;
@@ -1682,7 +1736,9 @@ setT(0);
    Never put API keys in this file: it ships to every browser. */
 const AI_ENDPOINT = 'https://open-grass-ai.thurby-labs.workers.dev';
 const AI_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-const AI_MAX_IMAGE = 5 * 1024 * 1024;
+const AI_MAX_IMAGE = 5 * 1024 * 1024;        // what the Worker and the API accept, after re-encoding
+const AI_MAX_SOURCE = 25 * 1024 * 1024;      // the file the coach picks (phone photos are often over 5 MB)
+const AI_MAX_EDGE = 1568;                    // px on the long edge: what the model reads at full detail; bigger only costs more
 
 /* Owner override: open the site once with #owner=<OWNER_TOKEN> to save the token in this browser
    (#owner=off forgets it). It's sent as X-OG-Owner and skips the Worker's daily limits.
@@ -1705,8 +1761,10 @@ function aiProvider() {
       if (input.image) {
         const f = input.image;
         if (!AI_IMAGE_TYPES.includes(f.type)) throw { code: 'image_rejected' };
-        if (f.size > AI_MAX_IMAGE) throw { code: 'image_too_large' };
-        body = { image: { mediaType: f.type, data: await fileToBase64(f) } };
+        if (f.size > AI_MAX_SOURCE) throw { code: 'image_too_large' };
+        const img = await reencodeImage(f);
+        if (img.size > AI_MAX_IMAGE) throw { code: 'image_too_large' };
+        body = { image: { mediaType: img.type, data: await fileToBase64(img) } };
       } else body = { description: input.description };
       let res;
       try {
@@ -1720,6 +1778,37 @@ function aiProvider() {
     },
     limits: async () => ({ images: { mediaTypes: AI_IMAGE_TYPES } })
   };
+}
+
+/* Every image is redrawn on a canvas before upload. That drops EXIF (GPS location, camera, time) and any other metadata,
+   applies the photo's rotation, and shrinks it to AI_MAX_EDGE. WebP where the browser can encode it, JPEG otherwise.
+   If the browser can't decode the file, it isn't sent: the original, metadata and all, never leaves the device. */
+async function reencodeImage(file) {
+  let src;
+  try {
+    src = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch (e) {
+    src = await new Promise((resolve, reject) => {
+      const im = new Image(), url = URL.createObjectURL(file);
+      im.onload = () => { URL.revokeObjectURL(url); resolve(im); };
+      im.onerror = () => { URL.revokeObjectURL(url); reject({ code: 'image_rejected' }); };
+      im.src = url;
+    });
+  }
+  const w0 = src.width || src.naturalWidth, h0 = src.height || src.naturalHeight;
+  if (!w0 || !h0) throw { code: 'image_rejected' };
+  const k = Math.min(1, AI_MAX_EDGE / Math.max(w0, h0));
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(w0 * k)); cv.height = Math.max(1, Math.round(h0 * k));
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);   // transparent screenshots get a white page, not black
+  g.drawImage(src, 0, 0, cv.width, cv.height);
+  if (src.close) src.close();
+  const blob = type => new Promise(r => cv.toBlob(r, type, 0.85));
+  let out = await blob('image/webp');
+  if (!out || out.type !== 'image/webp') out = await blob('image/jpeg');
+  if (!out) throw { code: 'image_rejected' };
+  return out;
 }
 
 function fileToBase64(file) {
@@ -1757,9 +1846,14 @@ const AI_ERRORS = {
   daily_limit: 'AI drafting has hit its limit for today. Describe it again tomorrow, or import a play file.',
   image_rejected: 'That image couldn’t be read. Try a PNG or JPG screenshot.', images_unavailable: 'Reading images isn’t available here. Describe the play instead.',
   refused: 'The AI couldn’t draw that one. Try describing it differently.', refused_image: 'That doesn’t look like a play diagram. Try a clear photo of just the play.',
+  // The Worker's photo check (worker/src/index.js VERDICT_CODES): a rejected photo gets no play and is never stored. Inappropriate ones use `inappropriate` below.
+  photo_people: 'We couldn’t use that photo because there are people in it. Take a photo of just the play diagram and try again.',
+  photo_rejected: 'We couldn’t use that photo. Take a photo of just the play diagram, with no people in it, and try again.',
   invalid_json: 'The answer didn’t come back as a play. Try again or add more detail.',
   empty_completion: 'No answer came back. Add more detail and try again.', prompt_too_large: 'That’s too long. Shorten the description.',
-  image_too_large: 'That image is over 5 MB. Try a smaller screenshot.', network: 'Couldn’t reach the AI. Check your connection and try again.'
+  image_too_large: 'That image is too large. Try a screenshot or a smaller photo.',
+  inappropriate: 'That can’t be used in Open Grass. Upload a play diagram or describe the play. Repeated uploads like this turn off AI drafting for the account.',
+  blocked: 'AI drafting is turned off for this account because of content that isn’t allowed. If you think that’s a mistake, email opengrassllc@gmail.com.', network: 'Couldn’t reach the AI. Check your connection and try again.'
 };
 const aiError = e => e && e.code ? (AI_ERRORS[e.code] || (e.code === 'cancelled' ? '' : 'Something went wrong reaching the AI. Try again.')) : (e && e.message) || 'That play couldn’t be built. Try again.';
 
@@ -2069,6 +2163,7 @@ function normalizePlay(raw, id) {
   if (group) play.group = group;
   if (callNum) play.num = callNum;
   if (typeof raw.photo === 'string' && /^[a-f0-9]{32}$/.test(raw.photo)) play.photo = raw.photo;
+  cleanPlayText(play);   // wordfilter.js: shared links, imports and AI drafts all pass through here
   return play;
 }
 const stripFlags = p => { const c = clone(p); delete c.draft; delete c.mine; delete c.shared; delete c.option; delete c.optionOn; return c; };
@@ -2236,6 +2331,8 @@ async function openStudio(tab) {
       track('ai_draft_error', { input, error_code: (e && e.code) || 'invalid_play', latency_ms: Math.round(performance.now() - t0), free_draft: free });
       if (free && e && e.code === 'free_draft_used') { markFreeDraftUsed(); showGate(input === 'image' ? 'photo' : 'ai'); return; }
       if (free && e && e.code === 'anon_limit') { showGate('anon_limit'); return; }
+      // The Worker doesn't give the free draft back for a photo its check rejected or anything inappropriate, so the next try opens the account prompt.
+      if (free && e && (e.code === 'inappropriate' || (input === 'image' && /^(photo_|refused)/.test(e.code)))) markFreeDraftUsed();
       if ($(st.id)) { st.className = 'status err'; st.textContent = aiError(e); }
     }
   };
@@ -2336,6 +2433,7 @@ function openDetails() {
     let group = cleanGroup($('dGroup').value);
     group = groups.find(g => g.toLowerCase() === group.toLowerCase()) || group;
     const name = $('dName').value.trim().replace(/^\d+\s*·\s*/, '').slice(0, 80) || cur.name;
+    if (hasBadWords(name) || hasBadWords(group)) { st.className = 'status err'; st.textContent = 'Pick a different name. Open Grass keeps play names clean for youth teams.'; return; }
     const next = stripFlags(cur);
     Object.assign(next, { name });
     if (group) next.group = group; else delete next.group;
@@ -2633,6 +2731,7 @@ function openYourData() {
       <div><button class="act danger" id="localClear">Clear Open Grass data from this browser</button></div>
       <p class="status" id="dataStatus"></p>
     </div>`}
+    <p class="muted">Photos you draw plays from are sent to Anthropic, whose AI reads them. A photo that shows people, has inappropriate content, or isn’t a play diagram is rejected and never stored.</p>
     <p class="muted"><a href="privacy.html">Privacy policy</a></p>`);
   $('gaOn').addEventListener('change', e => {
     const on = e.target.checked;
