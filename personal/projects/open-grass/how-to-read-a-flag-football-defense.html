@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- ga:begin (build.py copies this block into every content page) -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html promises no advertising use,
+     so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
+     only as GA4 key events imported in Google Ads. Change this only together with privacy.html. */
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
+  gtag('set', { allow_google_signals: false, allow_ad_personalization_signals: false });
+  gtag('js', new Date());
+
+  /* page_location drops Clerk's __clerk* query params and the #fragment: it can hold the owner token (#owner=...) or a whole custom play
+     packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
+     On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
+     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
+     Analytics is off (Google's documented ga-disable flag) when the visitor turned it off under "Your data" (og-no-analytics)
+     or their browser sends Global Privacy Control. */
+  (() => {
+    let off = !!navigator.globalPrivacyControl;
+    try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
+    const h = location.hash.slice(1);
+    // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
+    const q = new URLSearchParams(location.search);
+    [...q.keys()].filter(k => k.startsWith('__clerk')).forEach(k => q.delete(k));
+    const qs = q.toString();
+    let owner = h.startsWith('owner=') && h !== 'owner=off';
+    try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
+    gtag('config', 'G-1T9DMC15V7', {
+      page_location: location.origin + location.pathname + (qs ? '?' + qs : ''),
+      link_type: !h ? 'none' : h.startsWith('owner=') ? 'owner' : h.startsWith('j-') ? 'custom_play' : h.startsWith('s-') ? 'legacy_share' : 'builtin_play',
+      ...(owner ? { traffic_type: 'internal' } : {}),
+      ...(/(^|\.)open-grass\.com$/.test(location.hostname) ? {} : { debug_mode: true })
+    });
+  })();
+</script>
+<!-- ga:end -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How to Read a Flag Football Defense (Zone vs Man) | Open Grass</title>
+<meta name="description" content="Read a flag football defense before the snap: count the deep defenders, tell zone from man, spot the blitz, then call a play that beats it.">
+<meta name="author" content="Open Grass, LLC">
+<link rel="canonical" href="https://open-grass.com/how-to-read-a-flag-football-defense">
+<meta name="theme-color" content="#1C5A37">
+<link rel="icon" type="image/png" sizes="48x48" href="/logo/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/logo/favicon-96.png">
+<link rel="apple-touch-icon" href="/logo/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Open Grass">
+<meta property="og:url" content="https://open-grass.com/how-to-read-a-flag-football-defense">
+<meta property="og:title" content="How to read a flag football defense before the snap">
+<meta property="og:description" content="Read a flag football defense before the snap: count the deep defenders, tell zone from man, spot the blitz, then call a play that beats it.">
+<meta property="og:image" content="https://open-grass.com/logo/og-image.jpg?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [
+  {"@type": "WebPage", "@id": "https://open-grass.com/how-to-read-a-flag-football-defense#page", "url": "https://open-grass.com/how-to-read-a-flag-football-defense", "name": "How to read a flag football defense before the snap", "description": "Read a flag football defense before the snap: count the deep defenders, tell zone from man, spot the blitz, then call a play that beats it.",
+   "isPartOf": {"@type": "WebSite", "name": "Open Grass", "url": "https://open-grass.com/"}, "about": {"@id": "https://open-grass.com/#app"},
+   "publisher": {"@type": "Organization", "@id": "https://open-grass.com/#org", "name": "Open Grass", "legalName": "Open Grass, LLC"}},
+  {"@type": "BreadcrumbList", "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Open Grass", "item": "https://open-grass.com/"},
+    {"@type": "ListItem", "position": 2, "name": "How to Read a Flag Football Defense", "item": "https://open-grass.com/how-to-read-a-flag-football-defense"}]}
+]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Content pages (pages/*.html, built by build.py). Same tokens as the app and privacy.html. */
+:root {
+  --paper: #EEF2EA; --panel: #FFFFFF; --ink: #15201A; --muted: #5B6A60; --line: #D5DECF; --chip: #E3EADD;
+  --accent: #1C5A37; --accent-ink: #FFFFFF; --good: #1D8A4B; --warn: #B87D05; --bad: #C1362B;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+    --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+  --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--f-body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 16px 48px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+.top img { height: 60px; width: auto; display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
+:root[data-theme="dark"] .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.btn { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 700; padding: 11px 18px; border-radius: 10px; }
+.btn.ghost { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 8px 14px; font-size: 15px; }
+h1 { font: 900 44px/0.98 var(--f-display); text-transform: uppercase; letter-spacing: .005em; margin: 0 0 14px; max-width: 18ch; }
+h2 { font: 800 30px/1 var(--f-display); text-transform: uppercase; margin: 48px 0 14px; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.lede { font-size: 20px; max-width: 60ch; color: var(--ink); }
+.muted { color: var(--muted); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
+figure { margin: 28px 0 0; }
+figure img { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(21,32,26,.12); }
+figcaption { color: var(--muted); font-size: 15px; margin-top: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.card p { color: var(--muted); margin: 0; font-size: 16px; }
+.step { font: 900 32px/1 var(--f-display); color: var(--accent); margin-bottom: 6px; }
+.grades { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+.grades span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 15px; }
+.grades b { font: 900 22px/1 var(--f-display); margin-right: 6px; }
+.gA { color: var(--good); } .gB { color: var(--good); } .gC, .gD { color: var(--warn); } .gF { color: var(--bad); }
+ul.ticks { padding-left: 20px; margin: 0 0 14px; }
+ul.ticks li { margin-bottom: 6px; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin: 8px 0 0; color: var(--muted); }
+.final { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 48px; text-align: center; }
+.final h2 { margin-top: 0; }
+/* Route tree diagram (inline SVG) */
+svg.tree { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); }
+.tree .turf { fill: #B3D7A2; } .tree .yl { stroke: #FFFFFF; stroke-opacity: .7; stroke-width: 1.5; } .tree .los { stroke: #FFFFFF; stroke-width: 3; }
+.tree .yt, .tree .dir { fill: #15201A; fill-opacity: .7; font: 600 15px var(--f-body); }
+.tree .r { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.tree .s-s { stroke: #15634F; } .tree .s-m { stroke: #E2711C; } .tree .s-d { stroke: #7B3DB6; }
+.tree .f-s { fill: #15634F; } .tree .f-m { fill: #E2711C; } .tree .f-d { fill: #7B3DB6; }
+.tree .rl { font: 800 20px var(--f-display); text-transform: uppercase; letter-spacing: .02em; paint-order: stroke; stroke: #B3D7A2; stroke-width: 4px; }
+.tree .t-s { fill: #0F4A3B; } .tree .t-m { fill: #A44E0C; } .tree .t-d { fill: #5B2A8A; }
+.tree .wr { fill: #15201A; } .tree .wrt { fill: #FFFFFF; font: 800 11px var(--f-body); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .turf { fill: #1D3A25; } :root:not([data-theme="light"]) .tree .rl { stroke: #1D3A25; }
+  :root:not([data-theme="light"]) .tree .yt, :root:not([data-theme="light"]) .tree .dir { fill: #CFE3D0; }
+  :root:not([data-theme="light"]) .tree .t-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .t-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .t-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .s-s { stroke: #3FC79C; } :root:not([data-theme="light"]) .tree .s-m { stroke: #F5953F; } :root:not([data-theme="light"]) .tree .s-d { stroke: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .f-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .f-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .f-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .wr { fill: #E5ECE4; } :root:not([data-theme="light"]) .tree .wrt { fill: #0E1410; } }
+.key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 15px; color: var(--muted); margin-top: 10px; }
+.key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+/* Play cards with diagrams (pages/_plays.js) */
+.plays { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; }
+.pcard p { color: var(--muted); font-size: 16px; margin: 0 0 10px; }
+.pcard .grades { margin: 0 0 12px; gap: 6px; } .pcard .grades span { padding: 4px 8px; font-size: 13px; } .pcard .grades b { font-size: 18px; margin-right: 4px; }
+.pcard .lesson { color: var(--ink); font-weight: 600; font-size: 15px; }
+.pcard .pacts { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 15px; }
+.pcard h3 { margin-top: 12px; }
+svg.pd { width: 100%; height: auto; display: block; border-radius: 10px; }
+.pd .turf { fill: #B3D7A2; } .pd .yl { stroke: #FFFFFF; stroke-opacity: .6; } .pd .los { stroke: #FFFFFF; stroke-width: 2; }
+.pd .rt { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; } .pd .da { stroke-dasharray: 5 4; } .pd .mo { stroke-dasharray: 1.5 4; stroke-width: 2.2; }
+.pd .s-o { stroke: #E2711C; } .pd .s-p { stroke: #7B3DB6; } .pd .s-g { stroke: #15634F; } .pd .s-k { stroke: #1A1A1A; } .pd .s-r { stroke: #D23229; }
+.pd .f-o { fill: #E2711C; } .pd .f-p { fill: #7B3DB6; } .pd .f-g { fill: #15634F; } .pd .f-k { fill: #1A1A1A; } .pd .f-r { fill: #D23229; }
+.pd .star { stroke: #EBF25A; stroke-width: 2.5; }
+.pd .pl { fill: #FFFFFF; font: 800 12px var(--f-body); text-anchor: middle; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pd .turf { fill: #1D3A25; }
+  :root:not([data-theme="light"]) .pd .s-o { stroke: #F5953F; } :root:not([data-theme="light"]) .pd .s-p { stroke: #B78BF2; } :root:not([data-theme="light"]) .pd .s-g { stroke: #3FC79C; } :root:not([data-theme="light"]) .pd .s-k { stroke: #F4F4F0; } :root:not([data-theme="light"]) .pd .s-r { stroke: #FF6A5C; }
+  :root:not([data-theme="light"]) .pd .f-o { fill: #F5953F; } :root:not([data-theme="light"]) .pd .f-p { fill: #B78BF2; } :root:not([data-theme="light"]) .pd .f-g { fill: #3FC79C; } :root:not([data-theme="light"]) .pd .f-k { fill: #F4F4F0; } :root:not([data-theme="light"]) .pd .f-r { fill: #FF6A5C; }
+  :root:not([data-theme="light"]) .pd .pl { fill: #0E1410; } }
+/* Coverage diagrams (pages/_coverages.js) */
+.cov .zn { fill: #1E2A46; fill-opacity: .08; stroke: #1E2A46; stroke-opacity: .35; stroke-dasharray: 3 3; } .cov .zd { fill-opacity: .12; }
+.cov .df { fill: #1E2A46; } .cov .dd { fill: #1E2A46; stroke: #EBF25A; stroke-width: 2.5; }
+.cov .dt { fill: #F3F6FB; font: 800 10px var(--f-body); text-anchor: middle; }
+.cov .deepline { stroke: #1E2A46; stroke-opacity: .5; stroke-dasharray: 6 4; } .cov .dl { fill: #1E2A46; fill-opacity: .7; font: 700 10px var(--f-body); text-anchor: end; text-transform: uppercase; letter-spacing: .08em; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cov .zn { fill: #A9BCE6; stroke: #A9BCE6; } :root:not([data-theme="light"]) .cov .df { fill: #DCE4F4; }
+  :root:not([data-theme="light"]) .cov .dt { fill: #17203A; } :root:not([data-theme="light"]) .cov .deepline { stroke: #A9BCE6; } :root:not([data-theme="light"]) .cov .dl { fill: #CFE3D0; } }
+/* Route vs coverage cheat sheet */
+.tbl { overflow-x: auto; margin: 0 0 10px; }
+table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.cheat th, .cheat td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.cheat th { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 520px) { .cheat th, .cheat td { padding: 8px 5px; font-size: 13.5px; } .cheat th { letter-spacing: .02em; font-size: 11px; } }
+.cheat td.g { color: var(--good); font-weight: 700; } .cheat td.o { color: var(--muted); } .cheat td.t { color: var(--bad); font-weight: 600; }
+.route h3 { display: flex; align-items: baseline; gap: 10px; }
+.route h3 small { font-weight: 500; color: var(--muted); font-size: 14px; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
+@media (min-width: 760px) { h1 { font-size: 64px; } h2 { font-size: 36px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="/" aria-label="Open Grass home"><img src="/logo/open-grass-logo-header.png" width="101" height="72" alt="Open Grass"></a>
+    <a class="btn small" href="/">Open the app</a>
+  </header>
+  <main>
+<!-- Fits the bring-your-own-play niche: coaches who already have plays and need to know which one to call.
+     Search terms (Keyword Planner 2026-10-07): flag football zone defense (~500/mo), man defense, cover 2 / cover 3
+     flag football, defense formations (~50 each). Low head volume, high intent.
+     The coverage cards between the coverages markers are generated by pages/_coverages.js from engine.js alignments and
+     the example plays in pages/_plays.js: edit those scripts, never the cards. -->
+    <h1>How to read a flag football defense</h1>
+    <p class="lede">You don’t need film or a scouting report. Before the snap, two quick looks tell you which coverage you’re facing: how many defenders are deep, and whether the rest are guarding spots on the field or following your receivers. Then call the play that beats it.</p>
+
+    <h2>Step 1: Count the deep defenders</h2>
+    <p>Look past the defenders near the line to the ones standing about 10 or more yards back. That number narrows it down right away.</p>
+    <div class="grid">
+      <div class="card"><div class="step">1</div><h3>One deep</h3><p>Cover 1 or man to man. Go to step 2 to tell them apart.</p></div>
+      <div class="card"><div class="step">2</div><h3>Two deep</h3><p>Cover 2. Each deep defender takes half the field.</p></div>
+      <div class="card"><div class="step">3</div><h3>Three deep</h3><p>Cover 3. Each deep defender takes a third, which leaves only two defenders underneath.</p></div>
+    </div>
+
+    <h2>Step 2: Zone or man?</h2>
+    <p>In zone, defenders guard an area and react to whoever comes into it. In man, each defender follows one receiver wherever they go. Three clues give it away:</p>
+    <ul class="ticks">
+      <li><b>Where they line up.</b> Zone defenders spread out across the field at even depths. Man defenders line up across from a receiver, wherever that receiver stands.</li>
+      <li><b>Motion.</b> Send a receiver across the formation before the snap. If a defender runs across with them, it’s man. If the defenders just shift or call out, it’s zone.</li>
+      <li><b>Their eyes.</b> Zone defenders watch the quarterback. Man defenders watch their receiver.</li>
+    </ul>
+
+    <h2>Step 3: Watch for the blitz</h2>
+    <p>Any coverage can send one defender after the quarterback, which leaves one fewer in coverage. Look for a defender who creeps toward the line or stands straight across from the quarterback. Many leagues make the rusher start several yards back (often 7), so they’re easy to spot before the snap. When you see it, call a quick throw: the ball should be out before the rusher arrives.</p>
+
+    <h2>The four coverages at a glance</h2>
+    <p>What each one looks like before the snap, where it’s weak, and an example play Open Grass grades well against it.</p>
+<!-- coverages:begin (generated by pages/_coverages.js; don't edit by hand) -->
+    <div class="plays">
+      <article class="pcard">
+        <svg class="pd cov" viewBox="0 0 300 260" role="img" aria-label="Cover 1 pre-snap alignment" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="260" rx="10" class="turf"/><line x1="0" x2="300" y1="150.0" y2="150.0" class="yl"/><line x1="0" x2="300" y1="50.0" y2="50.0" class="yl"/><line x1="0" x2="300" y1="100.0" y2="100.0" class="deepline"/><text x="294" y="96.0" class="dl">deep</text><line x1="0" x2="300" y1="200.0" y2="200.0" class="los"/><ellipse cx="50.0" cy="140.0" rx="45.0" ry="35.0" class="zn"/><ellipse cx="105.0" cy="135.0" rx="35.0" ry="35.0" class="zn"/><ellipse cx="175.0" cy="135.0" rx="35.0" ry="35.0" class="zn"/><ellipse cx="250.0" cy="140.0" rx="45.0" ry="35.0" class="zn"/><ellipse cx="150.0" cy="60.0" rx="90.0" ry="60.0" class="zn zd"/><circle cx="30.0" cy="200.0" r="7" class="f-o"/><circle cx="100.0" cy="210.0" r="7" class="f-g"/><circle cx="150.0" cy="200.0" r="7" class="f-k"/><circle cx="270.0" cy="200.0" r="7" class="f-p"/><circle cx="150.0" cy="240.0" r="7" class="f-r"/><rect x="37.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="50" y="154.0" class="dt">CB</text><rect x="97.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="110" y="154.0" class="dt">SS</text><rect x="157.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="170" y="154.0" class="dt">LB</text><rect x="237.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="250" y="154.0" class="dt">CB</text><rect x="137.0" y="72.0" width="26" height="16" rx="4" class="df dd"/><text x="150" y="84.0" class="dt">FS</text></svg>
+        <h3>Cover 1</h3>
+        <p class="lesson">One deep safety in the middle</p>
+        <p><b>How to spot it:</b> One defender deep in the middle, about 12 yards back. The other four line up about 5 yards off the ball, spread across the field.</p>
+        <p><b>Weak spot:</b> Only one defender deep, so two deep routes make the safety pick one.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.c1">See a play that beats it</a><span class="muted">Twins Right, Corner-Flat: A</span></div>
+      </article>
+      <article class="pcard">
+        <svg class="pd cov" viewBox="0 0 300 260" role="img" aria-label="Cover 2 pre-snap alignment" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="260" rx="10" class="turf"/><line x1="0" x2="300" y1="150.0" y2="150.0" class="yl"/><line x1="0" x2="300" y1="50.0" y2="50.0" class="yl"/><line x1="0" x2="300" y1="100.0" y2="100.0" class="deepline"/><text x="294" y="96.0" class="dl">deep</text><line x1="0" x2="300" y1="200.0" y2="200.0" class="los"/><ellipse cx="45.0" cy="145.0" rx="35.0" ry="35.0" class="zn"/><ellipse cx="150.0" cy="135.0" rx="35.0" ry="35.0" class="zn"/><ellipse cx="255.0" cy="145.0" rx="35.0" ry="35.0" class="zn"/><ellipse cx="85.0" cy="60.0" rx="65.0" ry="60.0" class="zn zd"/><ellipse cx="215.0" cy="60.0" rx="65.0" ry="60.0" class="zn zd"/><circle cx="30.0" cy="200.0" r="7" class="f-o"/><circle cx="100.0" cy="210.0" r="7" class="f-g"/><circle cx="150.0" cy="200.0" r="7" class="f-k"/><circle cx="270.0" cy="200.0" r="7" class="f-p"/><circle cx="150.0" cy="240.0" r="7" class="f-r"/><rect x="32.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="45" y="154.0" class="dt">CB</text><rect x="137.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="150" y="154.0" class="dt">LB</text><rect x="242.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="255" y="154.0" class="dt">CB</text><rect x="77.0" y="72.0" width="26" height="16" rx="4" class="df dd"/><text x="90" y="84.0" class="dt">FS</text><rect x="197.0" y="72.0" width="26" height="16" rx="4" class="df dd"/><text x="210" y="84.0" class="dt">SS</text></svg>
+        <h3>Cover 2</h3>
+        <p class="lesson">Two deep safeties, one on each half</p>
+        <p><b>How to spot it:</b> Two defenders deep, each splitting the field in half. The corners sit about 5 yards off the outside receivers and the linebacker stays in the middle.</p>
+        <p><b>Weak spot:</b> The seam between the two safeties, and the holes between the corners and the linebacker.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiU3ByZWFkLCBTZWFtcyIsImNvbmNlcHQiOiJUd28gc2VhbXMgc3BsaXQgdGhlIGRlZXAgZGVmZW5kZXJzOyBvdXRzaWRlIHJlY2VpdmVycyBydW4gb3V0cyIsInBsYXllcnMiOlt7ImlkIjoiWCIsInN0YXJ0IjpbMywwXSwicm91dGUiOltbMyw1XSxbMC44LDVdXSwicm91dGVOYW1lIjoiT3V0In0seyJpZCI6IlkiLCJzdGFydCI6WzI3LDBdLCJyb3V0ZSI6W1syNyw1XSxbMjkuMiw1XV0sInJvdXRlTmFtZSI6Ik91dCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsxMCwtMV0sInJvdXRlIjpbWzEwLDE2XV0sInJvdXRlTmFtZSI6IlNlYW0iLCJzdGFyIjp0cnVlfSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE4LDNdLFsyMCwxNl1dLCJyb3V0ZU5hbWUiOiJTZWFtIHJpZ2h0In0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9XX0.c2">See a play that beats it</a><span class="muted">Spread, Seams: A</span></div>
+      </article>
+      <article class="pcard">
+        <svg class="pd cov" viewBox="0 0 300 260" role="img" aria-label="Cover 3 pre-snap alignment" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="260" rx="10" class="turf"/><line x1="0" x2="300" y1="150.0" y2="150.0" class="yl"/><line x1="0" x2="300" y1="50.0" y2="50.0" class="yl"/><line x1="0" x2="300" y1="100.0" y2="100.0" class="deepline"/><text x="294" y="96.0" class="dl">deep</text><line x1="0" x2="300" y1="200.0" y2="200.0" class="los"/><ellipse cx="45.0" cy="60.0" rx="50.0" ry="60.0" class="zn zd"/><ellipse cx="150.0" cy="60.0" rx="50.0" ry="60.0" class="zn zd"/><ellipse cx="255.0" cy="60.0" rx="50.0" ry="60.0" class="zn zd"/><ellipse cx="100.0" cy="135.0" rx="45.0" ry="35.0" class="zn"/><ellipse cx="200.0" cy="135.0" rx="45.0" ry="35.0" class="zn"/><circle cx="30.0" cy="200.0" r="7" class="f-o"/><circle cx="100.0" cy="210.0" r="7" class="f-g"/><circle cx="150.0" cy="200.0" r="7" class="f-k"/><circle cx="270.0" cy="200.0" r="7" class="f-p"/><circle cx="150.0" cy="240.0" r="7" class="f-r"/><rect x="32.0" y="72.0" width="26" height="16" rx="4" class="df dd"/><text x="45" y="84.0" class="dt">WS</text><rect x="137.0" y="67.0" width="26" height="16" rx="4" class="df dd"/><text x="150" y="79.0" class="dt">FS</text><rect x="242.0" y="72.0" width="26" height="16" rx="4" class="df dd"/><text x="255" y="84.0" class="dt">SS</text><rect x="87.0" y="132.0" width="26" height="16" rx="4" class="df"/><text x="100" y="144.0" class="dt">CB</text><rect x="187.0" y="132.0" width="26" height="16" rx="4" class="df"/><text x="200" y="144.0" class="dt">CB</text></svg>
+        <h3>Cover 3</h3>
+        <p class="lesson">Three deep defenders across the field</p>
+        <p><b>How to spot it:</b> Three defenders deep, one on each third of the field. Only two defenders are underneath, and they play inside.</p>
+        <p><b>Weak spot:</b> The flats and short throws. Two underneath defenders can’t cover three short routes.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiVHJpcHMgTGVmdCwgRmxvb2QiLCJjb25jZXB0IjoiVGhyZWUgbGV2ZWxzIHRvIG9uZSBzaWRlbGluZSwgY3Jvc3NlciBmcm9tIHRoZSBiYWNrc2lkZSIsInBsYXllcnMiOlt7ImlkIjoiWCIsInN0YXJ0IjpbMywwXSwicm91dGUiOltbMywxOF1dLCJyb3V0ZU5hbWUiOiJHbyJ9LHsiaWQiOiJaIiwic3RhcnQiOls4LC0xXSwicm91dGUiOltbOCw3XSxbMy41LDExXV0sInJvdXRlTmFtZSI6IkNvcm5lciJ9LHsiaWQiOiJDIiwic3RhcnQiOlsxNSwwXSwicm91dGUiOltbMTIsMl0sWzUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0In0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTIsLTQuNl1dLCJyb3V0ZU5hbWUiOiJSb2xsIGxlZnQifSx7ImlkIjoiWSIsInN0YXJ0IjpbMjYsMF0sInJvdXRlIjpbWzI2LDJdLFsyMSw2XSxbMTIsOV1dLCJyb3V0ZU5hbWUiOiJDcm9zc2VyIiwic3RhciI6dHJ1ZX1dfQ.c3">See a play that beats it</a><span class="muted">Trips Left, Flood: A</span></div>
+      </article>
+      <article class="pcard">
+        <svg class="pd cov" viewBox="0 0 300 260" role="img" aria-label="Man to man pre-snap alignment" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="260" rx="10" class="turf"/><line x1="0" x2="300" y1="150.0" y2="150.0" class="yl"/><line x1="0" x2="300" y1="50.0" y2="50.0" class="yl"/><line x1="0" x2="300" y1="100.0" y2="100.0" class="deepline"/><text x="294" y="96.0" class="dl">deep</text><line x1="0" x2="300" y1="200.0" y2="200.0" class="los"/><ellipse cx="150.0" cy="70.0" rx="100.0" ry="60.0" class="zn zd"/><circle cx="30.0" cy="200.0" r="7" class="f-o"/><circle cx="100.0" cy="210.0" r="7" class="f-g"/><circle cx="150.0" cy="200.0" r="7" class="f-k"/><circle cx="270.0" cy="200.0" r="7" class="f-p"/><circle cx="150.0" cy="240.0" r="7" class="f-r"/><rect x="17.0" y="147.0" width="26" height="16" rx="4" class="df"/><text x="30" y="159.0" class="dt">CB</text><rect x="137.0" y="147.0" width="26" height="16" rx="4" class="df"/><text x="150" y="159.0" class="dt">LB</text><rect x="57.0" y="142.0" width="26" height="16" rx="4" class="df"/><text x="70" y="154.0" class="dt">SS</text><rect x="257.0" y="147.0" width="26" height="16" rx="4" class="df"/><text x="270" y="159.0" class="dt">CB</text><rect x="137.0" y="72.0" width="26" height="16" rx="4" class="df dd"/><text x="150" y="84.0" class="dt">FS</text></svg>
+        <h3>Man to man</h3>
+        <p class="lesson">One deep safety, everyone else on a receiver</p>
+        <p><b>How to spot it:</b> Looks like Cover 1, but each underneath defender lines up across from a receiver and follows them. Send someone in motion: if a defender runs across with them, it’s man.</p>
+        <p><b>Weak spot:</b> Crossing routes and rubs. One step lost in traffic and the receiver is open.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiQnVuY2ggUmlnaHQsIFJ1YiIsImNvbmNlcHQiOiJUaHJlZSByZWNlaXZlcnMgYnVuY2hlZCB0aWdodDsgdGhlaXIgcm91dGVzIGNyb3NzIHNvIG1hbiBkZWZlbmRlcnMgZ2V0IHBpY2tlZCBpbiB0cmFmZmljIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOls0LDBdLCJyb3V0ZSI6W1s0LDUuNV0sWzQuNyw0LjddXSwicm91dGVOYW1lIjoiSGl0Y2gifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDZdLFsxMiw5XV0sInJvdXRlTmFtZSI6IlNpdCBtaWRkbGUifSx7ImlkIjoiWSIsInN0YXJ0IjpbMjIsMF0sInJvdXRlIjpbWzIyLDVdLFsyNyw5XV0sInJvdXRlTmFtZSI6IkNvcm5lciAoc2hvcnQpIn0seyJpZCI6IloiLCJzdGFydCI6WzI0LC0xLjJdLCJyb3V0ZSI6W1syNCwyXSxbMTksN11dLCJyb3V0ZU5hbWUiOiJTbGFudCIsInN0YXIiOnRydWV9LHsiaWQiOiJRIiwic3RhcnQiOlsxNSwtNF0sInJvdXRlIjpbWzE1LC01XV0sInJvdXRlTmFtZSI6IkRyb3AifV19.man">See a play that beats it</a><span class="muted">Bunch Right, Rub: A</span></div>
+      </article>
+    </div>
+    <!-- coverages:end -->
+
+    <h2>Then check your own plays against it</h2>
+    <p>Knowing the coverage only helps if you know which of <em>your</em> plays beats it. That’s what Open Grass is for.</p>
+    <div class="grid">
+      <div class="card"><div class="step">1</div><h3>Bring your play</h3><p>Upload a screenshot from your play app or a photo of your play card, or describe it in a sentence.</p></div>
+      <div class="card"><div class="step">2</div><h3>Put their defense on it</h3><p>Drag on the coverage you saw. Move single defenders to match exactly where they lined up, and add the blitz if they sent one.</p></div>
+      <div class="card"><div class="step">3</div><h3>Call the right play</h3><p>See the grade against every coverage at once, who’s open, and the route changes that help, before the next series.</p></div>
+    </div>
+
+    <h2>Reading the defense on game day</h2>
+    <ul class="ticks">
+      <li><b>Take the first series to look.</b> Count the deep defenders on every snap and jot down what you see.</li>
+      <li><b>Expect them to stick with it.</b> Many youth defenses play one coverage most of the game, so one good read can carry you.</li>
+      <li><b>Give your quarterback one job.</b> “Count the deep defenders” is enough for young players. Tell them which side to look to for each answer.</li>
+      <li><b>Adjust at halftime.</b> If the defense changed, put the new look on your plays and pick the ones that grade best.</li>
+    </ul>
+    <p class="muted">Need the route names? See the <a href="/flag-football-routes">flag football route tree</a>, and <a href="/flag-football-plays">example plays graded against every coverage</a>.</p>
+
+    <h2>Questions</h2>
+    <details><summary>How can I tell zone from man in flag football?</summary><p>Send a receiver in motion before the snap. If a defender follows them across the field, it’s man. If the defenders stay put and adjust, it’s zone. Where they line up helps too: man defenders line up across from a receiver, zone defenders spread out by area.</p></details>
+    <details><summary>What’s the difference between Cover 1 and man?</summary><p>Before the snap they can look the same: one deep safety and four defenders underneath. In Cover 1 the underneath defenders guard areas; in man each one follows a receiver. Motion is the quickest way to tell.</p></details>
+    <details><summary>How do you beat a zone defense in flag football?</summary><p>Put two receivers in one defender’s area so that defender has to choose, like a corner over a flat, and throw to the one left open. Against Cover 3, attack the flats; against Cover 2, throw between the corners and the linebacker or up the seam between the safeties.</p></details>
+    <details><summary>How do you beat man coverage in flag football?</summary><p>Crossing routes and rubs. When routes cross close together, man defenders have to run through traffic to stay with their receiver, and that’s where the separation comes from.</p></details>
+    <details><summary>Can a young quarterback really read a defense?</summary><p>Yes, if you keep it to one question. Count the deep defenders before the snap, and know where to look for each answer. Coaches can do the rest of the reading from the sideline.</p></details>
+
+    <div class="final">
+      <h2>Which of your plays beats their defense?</h2>
+      <p class="muted">Bring a play, put their coverage on it, and find out.</p>
+      <a class="btn" href="/">Test your plays free</a>
+    </div>
+  </main>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="/flag-football-routes">Routes</a> · <a href="/flag-football-plays">Plays</a> · <a href="/how-to-read-a-flag-football-defense">Reading defenses</a> · <a href="/privacy.html">Privacy</a></footer>
+</div>
+</body>
+</html>
