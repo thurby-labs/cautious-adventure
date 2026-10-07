@@ -42,8 +42,8 @@
 <!-- ga:end -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Flag Football Play Designer That Grades Your Plays | Open Grass</title>
-<meta name="description" content="Describe a flag football play or upload your play card. Open Grass draws it, runs it against Cover 1, 2, 3 and man, and grades it. Free in beta.">
+<title>Test Plays From Any Flag Football Play Designer | Open Grass</title>
+<meta name="description" content="Keep your play designer. Upload a screenshot or photo of any flag football play and Open Grass grades it against Cover 1, 2, 3 and man, with route fixes.">
 <meta name="author" content="Open Grass, LLC">
 <link rel="canonical" href="https://open-grass.com/flag-football-play-designer">
 <meta name="theme-color" content="#1C5A37">
@@ -54,20 +54,20 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Open Grass">
 <meta property="og:url" content="https://open-grass.com/flag-football-play-designer">
-<meta property="og:title" content="Flag football play designer that tells you if the play works">
-<meta property="og:description" content="Describe a flag football play or upload your play card. Open Grass draws it, runs it against Cover 1, 2, 3 and man, and grades it. Free in beta.">
+<meta property="og:title" content="Already have a play designer? Find out if your plays work.">
+<meta property="og:description" content="Keep your play designer. Upload a screenshot or photo of any flag football play and Open Grass grades it against Cover 1, 2, 3 and man, with route fixes.">
 <meta property="og:image" content="https://open-grass.com/logo/og-image.jpg?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
 {"@context": "https://schema.org", "@graph": [
-  {"@type": "WebPage", "@id": "https://open-grass.com/flag-football-play-designer#page", "url": "https://open-grass.com/flag-football-play-designer", "name": "Flag football play designer that tells you if the play works", "description": "Describe a flag football play or upload your play card. Open Grass draws it, runs it against Cover 1, 2, 3 and man, and grades it. Free in beta.",
+  {"@type": "WebPage", "@id": "https://open-grass.com/flag-football-play-designer#page", "url": "https://open-grass.com/flag-football-play-designer", "name": "Already have a play designer? Find out if your plays work.", "description": "Keep your play designer. Upload a screenshot or photo of any flag football play and Open Grass grades it against Cover 1, 2, 3 and man, with route fixes.",
    "isPartOf": {"@type": "WebSite", "name": "Open Grass", "url": "https://open-grass.com/"}, "about": {"@id": "https://open-grass.com/#app"},
    "publisher": {"@type": "Organization", "@id": "https://open-grass.com/#org", "name": "Open Grass", "legalName": "Open Grass, LLC"}},
   {"@type": "BreadcrumbList", "itemListElement": [
     {"@type": "ListItem", "position": 1, "name": "Open Grass", "item": "https://open-grass.com/"},
-    {"@type": "ListItem", "position": 2, "name": "Flag Football Play Designer", "item": "https://open-grass.com/flag-football-play-designer"}]}
+    {"@type": "ListItem", "position": 2, "name": "Test Plays From Any Play Designer", "item": "https://open-grass.com/flag-football-play-designer"}]}
 ]}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -141,6 +141,25 @@ svg.tree { width: 100%; height: auto; display: block; border-radius: 14px; borde
   :root:not([data-theme="light"]) .tree .wr { fill: #E5ECE4; } :root:not([data-theme="light"]) .tree .wrt { fill: #0E1410; } }
 .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 15px; color: var(--muted); margin-top: 10px; }
 .key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+/* Play cards with diagrams (pages/_plays.js) */
+.plays { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; }
+.pcard p { color: var(--muted); font-size: 16px; margin: 0 0 10px; }
+.pcard .grades { margin: 0 0 12px; gap: 6px; } .pcard .grades span { padding: 4px 8px; font-size: 13px; } .pcard .grades b { font-size: 18px; margin-right: 4px; }
+.pcard .lesson { color: var(--ink); font-weight: 600; font-size: 15px; }
+.pcard .pacts { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 15px; }
+.pcard h3 { margin-top: 12px; }
+svg.pd { width: 100%; height: auto; display: block; border-radius: 10px; }
+.pd .turf { fill: #B3D7A2; } .pd .yl { stroke: #FFFFFF; stroke-opacity: .6; } .pd .los { stroke: #FFFFFF; stroke-width: 2; }
+.pd .rt { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; } .pd .da { stroke-dasharray: 5 4; } .pd .mo { stroke-dasharray: 1.5 4; stroke-width: 2.2; }
+.pd .s-o { stroke: #E2711C; } .pd .s-p { stroke: #7B3DB6; } .pd .s-g { stroke: #15634F; } .pd .s-k { stroke: #1A1A1A; } .pd .s-r { stroke: #D23229; }
+.pd .f-o { fill: #E2711C; } .pd .f-p { fill: #7B3DB6; } .pd .f-g { fill: #15634F; } .pd .f-k { fill: #1A1A1A; } .pd .f-r { fill: #D23229; }
+.pd .star { stroke: #EBF25A; stroke-width: 2.5; }
+.pd .pl { fill: #FFFFFF; font: 800 12px var(--f-body); text-anchor: middle; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pd .turf { fill: #1D3A25; }
+  :root:not([data-theme="light"]) .pd .s-o { stroke: #F5953F; } :root:not([data-theme="light"]) .pd .s-p { stroke: #B78BF2; } :root:not([data-theme="light"]) .pd .s-g { stroke: #3FC79C; } :root:not([data-theme="light"]) .pd .s-k { stroke: #F4F4F0; } :root:not([data-theme="light"]) .pd .s-r { stroke: #FF6A5C; }
+  :root:not([data-theme="light"]) .pd .f-o { fill: #F5953F; } :root:not([data-theme="light"]) .pd .f-p { fill: #B78BF2; } :root:not([data-theme="light"]) .pd .f-g { fill: #3FC79C; } :root:not([data-theme="light"]) .pd .f-k { fill: #F4F4F0; } :root:not([data-theme="light"]) .pd .f-r { fill: #FF6A5C; }
+  :root:not([data-theme="light"]) .pd .pl { fill: #0E1410; } }
 /* Route vs coverage cheat sheet */
 .tbl { overflow-x: auto; margin: 0 0 10px; }
 table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
@@ -161,37 +180,33 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
     <a class="btn small" href="/">Open the app</a>
   </header>
   <main>
-<!-- Search terms (Keyword Planner 2026-10-07): play designer / creator / maker, playbook app / maker / software.
-     The demo play is original (not from any playbook); its links carry the play in the URL. Grades come from the engine:
-     re-check them if engine.js changes. No hand-drawing tool yet, so don't promise one. -->
-    <h1>Flag football play designer that tells you if the play works</h1>
-    <p class="lede">Describe a play or upload a photo of your play card. Open Grass draws it, runs it against Cover 1, Cover 2, Cover 3 and man coverage, and grades it before your team ever lines up.</p>
+<!-- Positioning: Open Grass is NOT a play designer and doesn't compete with designer apps. It tests the plays a coach already
+     has, from any app, paper or whiteboard. This page catches "play designer / maker / creator" searches (Keyword Planner
+     2026-10-07, ~500/mo each) with that companion framing. Don't name competitors.
+     The demo play is original; its links carry the play in the URL. Grades come from the engine: re-check them if engine.js
+     changes. Plays come in by photo/screenshot, description or file import; don't promise a drawing tool. -->
+    <h1>Already have a play designer? Find out if your plays work.</h1>
+    <p class="lede">Keep drawing plays wherever you do now: an app, a notebook, a whiteboard. Upload a screenshot or photo of a play, and Open Grass runs it against Cover 1, Cover 2, Cover 3 and man, then tells you plainly whether it works and how to fix it.</p>
     <div class="ctas">
-      <a class="btn" href="/">Design a play free</a>
-      <a class="btn ghost" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.man">See a sample play vs man</a>
+      <a class="btn" href="/">Test a play free</a>
+      <a class="btn ghost" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.man">See a sample play graded</a>
     </div>
     <p class="muted">Free while in beta. Works in any browser on a phone, tablet or computer.</p>
     <figure>
-      <img src="/img/designer-demo.jpg" width="1600" height="1418" alt="Open Grass showing a Twins Right Corner-Flat play graded A against Cover 1, B against Cover 2, A against Cover 3 and D against man to man, with the open holes highlighted and suggested route changes.">
-      <figcaption>A sample play in Open Grass: graded against all four coverages at once, with the open grass highlighted and route changes ready to try.</figcaption>
+      <img src="/img/designer-demo.jpg" width="1600" height="1418" alt="Open Grass grading a Twins Right Corner-Flat play: A against Cover 1, B against Cover 2, A against Cover 3 and D against man to man, with the open holes highlighted and suggested route changes.">
+      <figcaption>A sample play in Open Grass: graded against all four coverages at once, with the open grass highlighted and route fixes ready to try.</figcaption>
     </figure>
+
+    <h2>Your play designer draws it. Open Grass tests it.</h2>
+    <p>Play designer apps are great at drawing routes, building a playbook and printing wristbands. Keep using yours. What a drawing can’t tell you is whether the play will work, because the defense on the page never moves.</p>
+    <p>Open Grass does just that one job. Bring a play you already have, put the defense you expect on it, and get simple, direct feedback: a grade, who’s open, and what to change.</p>
 
     <h2>How it works</h2>
     <div class="grid">
-      <div class="card"><div class="step">1</div><h3>Get your play in</h3><p>Describe it in plain words (“twins right, corner over a flat, slant on the backside”), upload a photo or screenshot of a play card or whiteboard, or import a playbook file. Open Grass draws it for you.</p></div>
+      <div class="card"><div class="step">1</div><h3>Bring your play</h3><p>Upload a screenshot from your play app, or a photo of a play card or whiteboard. Or just describe it (“twins right, corner over a flat, slant on the backside”). Open Grass puts it on the field as a draft you can check.</p></div>
       <div class="card"><div class="step">2</div><h3>Put a defense on it</h3><p>Drag Cover 1, Cover 2, Cover 3 or man onto the field, add a linebacker or safety blitz, or move single defenders to match the team you play Saturday.</p></div>
-      <div class="card"><div class="step">3</div><h3>Watch it and fix it</h3><p>Run the play and watch the defense react. Open Grass grades it A–F, ranks your QB’s reads, and suggests route changes you can try with one tap.</p></div>
+      <div class="card"><div class="step">3</div><h3>Get a straight answer</h3><p>Watch the play run with defenders that react. Open Grass grades it A–F against each coverage, ranks your quarterback’s reads, and suggests route changes you can try with one tap.</p></div>
     </div>
-
-    <h2>A play designer that tests, not just draws</h2>
-    <p>Most flag football play makers are drawing tools. They’re good at routes, play cards and wristbands, and some animate the routes as drawn. But the defense on the page never moves, so the drawing can’t tell you whether the play will work.</p>
-    <p>Open Grass starts where they stop. Zone defenders guard their areas, man defenders chase their receivers, a blitzer can rush the quarterback, and a heatmap shows where the open grass is while the play runs. You see why a route is open, not just that it is.</p>
-    <ul class="ticks">
-      <li><b>A–F grade against every coverage</b> in one scouting report, so you know which looks a play beats.</li>
-      <li><b>QB read progression</b> for each coverage: who’s open, who’s tight, who’s covered, and when.</li>
-      <li><b>Coach’s adjustments:</b> route changes that raise the grade, each with a one-tap Try it.</li>
-      <li><b>Runs too:</b> handoffs, pitches and trick plays are graded with pursuit.</li>
-    </ul>
 
     <h2>Example: Twins Right, Corner-Flat</h2>
     <p>Two receivers to the right run a corner and a flat. One defender can’t cover both, so against zone the quarterback reads that defender and throws to whichever receiver that defender leaves. On the backside, a slant gives the quarterback a quick answer.</p>
@@ -199,34 +214,36 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
       <span><b class="gA">A</b>Cover 1</span><span><b class="gB">B</b>Cover 2</span><span><b class="gA">A</b>Cover 3</span><span><b class="gD">D</b>Man to man</span>
     </div>
     <p>Man coverage takes it away, because every receiver has a defender running with them. Open Grass suggests turning the corner route into a slant so the two routes cross and the man defenders have to fight through traffic. That one change raises the grade against man from a D to a B.</p>
-    <p class="muted">New to route names? See the <a href="/flag-football-routes">flag football route tree</a>.</p>
     <div class="ctas">
       <a class="btn" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.man">Run it vs man</a>
       <a class="btn ghost" href="/#j-eyJuYW1lIjoiVHdpbnMgUmlnaHQsIENvcm5lci1GbGF0IiwiY29uY2VwdCI6IkhpZ2gtbG93IG9uIHRoZSBjb3JuZXI6IGNvcm5lciBvdmVyIGZsYXQsIHNsYW50IGJhY2tzaWRlIiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOlszLDBdLCJyb3V0ZSI6W1szLDJdLFs4LDddXSwicm91dGVOYW1lIjoiU2xhbnQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMTUsMF0sInJvdXRlIjpbWzE1LDUuNV0sWzE0LjMsNC43XV0sInJvdXRlTmFtZSI6IkhpdGNoIn0seyJpZCI6IlEiLCJzdGFydCI6WzE1LC00XSwicm91dGUiOltbMTUsLTVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJaIiwic3RhcnQiOlsyMCwtMV0sInJvdXRlIjpbWzIzLDEuNV0sWzI3LjUsNF1dLCJyb3V0ZU5hbWUiOiJGbGF0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IlkiLCJzdGFydCI6WzI1LDBdLCJyb3V0ZSI6W1syNSw3XSxbMjksMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIn1dfQ.c2">Run it vs Cover 2</a>
     </div>
+    <p class="muted">New to route names? See the <a href="/flag-football-routes">flag football route tree</a>.</p>
 
-    <h2>Built for volunteer coaches</h2>
+    <h2>What you get for each play</h2>
     <ul class="ticks">
-      <li>Nothing to install: it runs in the browser on the sideline or at the kitchen table.</li>
-      <li>A free account saves your plays and favorites so they follow you to any device.</li>
-      <li>Send a share link that opens your play and the coverage, or save an animated GIF for the team chat.</li>
-      <li>Built for 5-on-5 flag football today, with more formats on the way.</li>
+      <li><b>An A–F grade against every coverage</b> in one scouting report, so you know which looks the play beats.</li>
+      <li><b>A heatmap of the open grass</b> before the snap and while the play runs, so you see why a route is open.</li>
+      <li><b>Your quarterback’s read order</b> for each coverage: who’s open, who’s tight, who’s covered, and when.</li>
+      <li><b>Route fixes you can try with one tap</b>, each showing how much it raises the grade.</li>
+      <li><b>Runs and trick plays too:</b> handoffs, pitches and throws by the ball carrier are graded with defenders in pursuit.</li>
     </ul>
 
     <h2>Questions</h2>
-    <details><summary>How do I create a play?</summary><p>Tap New play. Describe the play in your own words, or upload a photo or screenshot of a play card or whiteboard, and Open Grass draws it as a draft you can test and save. You can also import plays from an Open Grass playbook file.</p></details>
-    <details><summary>Is the play designer free?</summary><p>Yes, while Open Grass is in beta. A free account saves your plays, favorites and share links. Early coaches get founding-coach perks.</p></details>
-    <details><summary>Which defenses can I test against?</summary><p>Cover 1, Cover 2, Cover 3 and man to man, each with an optional linebacker or safety blitz. If the other team lines up differently, drag any defender to match what you see.</p></details>
+    <details><summary>Do I have to redraw my playbook?</summary><p>No. Upload a screenshot or photo of each play and Open Grass draws it as a draft you can check and test. You can also describe a play in your own words, or import an Open Grass playbook file.</p></details>
+    <details><summary>Which play designer apps does it work with?</summary><p>Any of them. Open Grass reads the picture of the play, not the app’s file, so a screenshot from any app works, and so does a photo of a hand-drawn play card or a whiteboard.</p></details>
+    <details><summary>Is Open Grass a play designer?</summary><p>No. Keep the app you already use for drawing plays, printing wristbands and sharing with your team. Open Grass does one job: testing your plays against a defense and telling you how to make them better.</p></details>
+    <details><summary>Is it free?</summary><p>Yes, while Open Grass is in beta. Your first AI draft is free without an account; a free account gives you more drafts and saves your plays, favorites and share links. Early coaches get founding-coach perks.</p></details>
     <details><summary>Does it work for 7-on-7?</summary><p>Open Grass is built for 5-on-5 flag football today. More formats are on the way.</p></details>
     <details><summary>Are my plays private?</summary><p>Yes. Plays you save stay in your browser, or in your private account when you’re signed in. A play is shared only when you send someone a share link. See the <a href="/privacy.html">privacy policy</a> for the details.</p></details>
 
     <div class="final">
       <h2>Will your play beat their defense?</h2>
-      <p class="muted">Get your first play in and find out in a minute.</p>
-      <a class="btn" href="/">Design a play free</a>
+      <p class="muted">Bring one play and find out in a minute.</p>
+      <a class="btn" href="/">Test a play free</a>
     </div>
   </main>
-  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Play designer</a> · <a href="/flag-football-routes">Routes</a> · <a href="/privacy.html">Privacy</a></footer>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="/flag-football-routes">Routes</a> · <a href="/flag-football-plays">Plays</a> · <a href="/privacy.html">Privacy</a></footer>
 </div>
 </body>
 </html>
