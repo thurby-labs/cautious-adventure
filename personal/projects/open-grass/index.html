@@ -6,6 +6,11 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html promises no advertising use,
+     so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
+     only as GA4 key events imported in Google Ads. Change this only together with privacy.html. */
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
+  gtag('set', { allow_google_signals: false, allow_ad_personalization_signals: false });
   gtag('js', new Date());
 
   /* page_location drops Clerk's __clerk* query params and the #fragment: it can hold the owner token (#owner=...) or a whole custom play
