@@ -171,14 +171,14 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 /* Coverage tray */
 .tray { display: grid; gap: 8px; }
 .tray-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
-.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-@media (max-width: 560px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.cov { display: grid; grid-template-columns: minmax(0,1fr); align-content: start; gap: 6px; padding: 8px; border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--panel); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; text-align: left; }
+/* One row of defenses (5 or 6); scrolls sideways when it doesn't fit. pan-x keeps the sideways swipe, a drag down still reaches the field. */
+.cards { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(118px, 1fr); gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+.cov { display: grid; grid-template-columns: minmax(0,1fr); align-content: start; gap: 5px; padding: 7px; border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--panel); cursor: grab; touch-action: pan-x; user-select: none; -webkit-user-select: none; text-align: left; }
 .cov:hover { border-color: var(--muted); }
 .cov[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.cov svg { width: 100%; height: auto; aspect-ratio: 64 / 34; border-radius: 5px; display: block; }
-.cov b { display: block; font-family: var(--f-display); font-size: 19px; font-weight: 800; line-height: 1; text-transform: uppercase; }
-.cov small { color: var(--muted); font-size: 12px; line-height: 1.2; display: block; margin-top: 2px; }
+.cov svg { width: 100%; height: auto; aspect-ratio: 64 / 26; border-radius: 5px; display: block; }
+.cov b { display: block; font-family: var(--f-display); font-size: 17px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+.cov small { color: var(--muted); font-size: 11.5px; line-height: 1.25; display: block; margin-top: 2px; }
 .ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -50%) rotate(-3deg); box-shadow: 0 10px 28px rgba(0,0,0,.25); width: 170px; opacity: .95; }
 .toggles { display: flex; flex-wrap: wrap; gap: 6px; }
 .tog { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -194,7 +194,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .lbl { font-family: var(--f-body); font-weight: 700; }
 
 /* Timeline */
-.timeline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.timeline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .playbtn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; }
 .playbtn svg { width: 16px; height: 16px; fill: currentColor; }
 .track { position: relative; padding-block: 14px 16px; }
@@ -215,6 +215,11 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 .speed button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 2px 7px; font-size: 12px; cursor: pointer; }
 .speed button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .speed .loop { margin-left: 4px; }
+.timeline .speed { flex-direction: column; gap: 3px; }
+.timeline .speed .loop { margin-left: 0; }
+.timeline .speed button { padding: 3px 7px; }
+@media (min-width: 641px) { .timeline .speed { display: grid; grid-template-columns: repeat(3, auto); } .timeline .speed .loop { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .timeline { grid-template-columns: auto minmax(0, 1fr) auto; } .timeline .speed { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; } }
 .hint { margin: 0; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
 .key { display: inline-flex; align-items: center; gap: 5px; }
 .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
@@ -223,13 +228,15 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 .read { display: grid; gap: 14px; min-width: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
 .card h3 { font-family: var(--f-display); font-weight: 800; font-size: 20px; text-transform: uppercase; margin: 0; letter-spacing: .01em; line-height: 1; }
-.scout-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.sc { border: 1.5px solid var(--line); background: var(--paper); border-radius: 9px; padding: 7px 4px 6px; display: grid; justify-items: center; gap: 2px; cursor: pointer; }
-.sc[aria-pressed="true"] { border-color: var(--ink); }
-.sc span { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .g { font-family: var(--f-display); font-weight: 900; line-height: 1; }
-.sc .g { font-size: 26px; }
 .gA, .gB { color: var(--good); } .gC { color: var(--warn); } .gD, .gF { color: var(--bad); }
+/* One line for every look (5 in 5v5, 6 in 7v7): long names wrap inside the tile */
+.scout-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; }
+.sc { border: 1.5px solid var(--line); background: var(--paper); border-radius: 9px; padding: 6px 2px 5px; display: grid; justify-items: center; align-content: start; gap: 2px; cursor: pointer; }
+.sc[aria-pressed="true"] { border-color: var(--ink); }
+.sc span { font-size: 10.5px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.15; }
+@media (max-width: 480px) { .scout-row { gap: 4px; } .sc { padding-inline: 0; } .sc span { font-size: 10px; } }
+.sc .g { font-size: 26px; }
 .verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .bigg { font-size: 64px; width: 64px; text-align: center; margin-top: -4px; }
 .verdict h2 { font-family: var(--f-display); font-weight: 800; font-size: 26px; text-transform: uppercase; line-height: 1; margin: 2px 0 6px; text-wrap: balance; }
@@ -251,6 +258,7 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 .sug { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 6px; background: var(--paper); }
 .sug-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sug-top .arrow { color: var(--muted); }
+.delta.room { font-family: var(--f-body); font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--good); }
 .delta { margin-left: auto; font-family: var(--f-display); font-weight: 800; font-size: 18px; white-space: nowrap; }
 .sug p { margin: 0; font-size: 14px; }
 .sug .muted { color: var(--muted); font-size: 13px; }
@@ -261,6 +269,8 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 dl.notes { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 14px; }
 dl.notes dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding-top: 2px; }
 dl.notes dd { margin: 0; }
+.more summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--accent); }
+.more[open] summary { margin-bottom: 10px; }
 .concepts { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
 .qbread, .sug .why { margin: 8px 0 0; font-size: 13px; }
 .checks { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
@@ -351,7 +361,6 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
       </div>
       <button class="act primary" id="newPlayBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New play</button>
       <button class="act" id="tourBtn" title="Take the tour"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6M12 17h.01"/></svg>Tour</button>
-      <button class="act" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export favorites</button>
       <div class="acct" id="acctBox" hidden>
         <button class="act" id="acctBtn" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Sign in</button>
         <div id="userBtn" hidden></div>
@@ -373,6 +382,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <button class="act" id="optBtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg><span>Option</span></button>
         <button class="act" id="shareBtn"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share link</button>
         <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
+        <button class="act" id="exportBtn" hidden title="Save your favorite plays as a playbook file or a scouting sheet"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export</button>
         <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
         <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
         <button class="act" id="detailsBtn" hidden><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Number &amp; group</button>
@@ -381,13 +391,13 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 
       <div class="tray">
         <div class="tray-head">
-          <span class="eyebrow">Defense · drag a coverage onto the field, or tap it</span>
+          <span class="eyebrow" id="trayLbl">Defense · tap or drag onto the field</span>
           <div class="toggles">
-            <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">LB/FS blitz</span></label>
+            <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">Extra rusher</span></label>
             <label class="tog"><input type="checkbox" id="holesT" checked> Show holes</label>
           </div>
         </div>
-        <div class="cards" id="cards"></div>
+        <div class="cards" id="cards" role="group" aria-label="Defenses"></div>
       </div>
 
       <div class="field-wrap" id="fieldWrap">
@@ -401,6 +411,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
           <div class="marks" id="marks"></div>
         </div>
         <div class="clock"><b id="clockT">0.0s</b><span id="clockL">Pre-snap</span></div>
+        <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
       </div>
       <p class="hint">
         <span class="key"><i class="sw" style="background:var(--hole);outline:1px solid var(--hole-edge)"></i>Open grass</span>
@@ -409,7 +420,6 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <span class="key"><i class="sw" style="background:var(--warn)"></i>Tight</span>
         <span class="key"><i class="sw" style="background:var(--bad)"></i>Covered</span>
         <span id="dragHint">Pre-snap: drag any defender to match what you see.</span>
-        <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
       </p>
     </section>
 
@@ -1770,7 +1780,7 @@ function dotFor(pl) {
 }
 function renderRead() {
   const covs = covsFor(state.play), cov = state.cov ? covs[state.cov] : null;
-  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with blitz)' : ''}</div><div class="scout-row">`;
+  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}</div><div class="scout-row">`;
   covOrder(state.play).forEach(c => {
     const g = state.scout[c].grade;
     h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${covs[c].name}</span></button>`;
@@ -1790,7 +1800,7 @@ function renderRead() {
     let rs = `<b>${tp.label}</b> gets the ball at ${fmtT(r.th)} and ` + (r.t !== null
       ? `gains <b>${r.yards.toFixed(1)} yds</b> before the ${r.by} pulls the flag at ${fmtT(r.t)}.`
       : `is still running at ${fmtT(tEnd())}, <b>${r.yards.toFixed(1)} yds</b> downfield.`);
-    h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + blitz' : ''}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
+    h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
     const st = r.yards >= 5 ? 'open' : r.yards >= 2.5 ? 'tight' : 'covered';
     h += `<div class="card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${esc(tp.routeName)}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
       <p class="src">Gain is measured to where the first defender reaches the ball carrier. Tap to jump there.</p>
@@ -1810,7 +1820,7 @@ function renderRead() {
   }
   if (sim.hurry !== null && sim.hurry !== undefined) sum += ` The rusher reaches the QB at ${fmtT(sim.hurry)}. Throws after that are hurried, and the QB has about half a second left.`;
   else if (sim.pressure !== null) sum += ` The rusher gets home at ${fmtT(sim.pressure)}, so the ball has to be out before then.`;
-  h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">vs ${cov.name}${state.blitz ? ' + blitz' : ''}</div><h2>${head}</h2><p>${sum}</p></div></div></div>`;
+  h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}</div><h2>${head}</h2><p>${sum}</p></div></div></div>`;
 
   h += `<div class="card"><h3>QB read progression</h3><ol class="reads">`;
   ev.order.forEach((id, i) => {
@@ -1844,10 +1854,13 @@ function sugsHtml(g, cov) {
       ? `<p class="empty">This play already beats ${cov.name}. Run it as drawn.</p>`
       : `<p class="empty">No single route change helps much here. Try one of the concepts or your plays listed below.</p>`;
   }
+  const tips = new Set();   // a coverage tip shows once, on the first fix that uses it
   state.sugs.forEach((sg, i) => {
     const pl = playerById(sg.id), nb = sg.ev.run ? null : sg.ev.receivers[sg.id].best;
-    h += `<div class="sug"><div class="sug-top">${dotFor(pl)}<span><b>${pl.label}</b> ${esc(sg.from)} <span class="arrow">→</span> <b>${esc(sg.to)}</b></span><span class="delta"><span class="g${g}">${g}</span> <span class="arrow">→</span> <span class="g${sg.ev.grade}">${sg.ev.grade}</span></span></div>`;
-    h += `<p>${sg.tip}</p>`;
+    const delta = sg.ev.grade === g ? `<span class="delta room">More room</span>`
+      : `<span class="delta"><span class="g${g}">${g}</span> <span class="arrow">→</span> <span class="g${sg.ev.grade}">${sg.ev.grade}</span></span>`;
+    h += `<div class="sug"><div class="sug-top">${dotFor(pl)}<span><b>${pl.label}</b> ${esc(sg.from)} <span class="arrow">→</span> <b>${esc(sg.to)}</b></span>${delta}</div>`;
+    if (sg.tip && !tips.has(sg.tip)) { tips.add(sg.tip); h += `<p>${sg.tip}</p>`; }
     if (sg.why) h += `<p class="why"><b>Why it works:</b> ${esc(sg.why)}</p>`;
     if (sg.ev.run) h += `<p class="muted">Ball carrier gains ${sg.ev.run.yards.toFixed(1)} yds instead of ${state.run.ev.run.yards.toFixed(1)}.</p>`;
     else if (nb.t !== null) h += `<p class="muted">${pl.label} gets ${nb.eff.toFixed(1)} yds of space at ${fmtT(nb.t)}, ${fmtY(nb.pos[1])} yds downfield.</p>`;
@@ -1865,16 +1878,18 @@ function bestPlaysFor(covId) {
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
   return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(playLabel(p))}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
+let glanceOpen = false;   // "More on …" stays open across re-renders once the coach opens it
 function notesHtml(cov) {
   let h = '';
   h += `<div class="card"><h3>${cov.name} at a glance</h3><dl class="notes">
     <dt>Spot it</dt><dd>${cov.spot}</dd>
+    <dt>How to beat</dt><dd>${cov.beat}</dd></dl>
+    <details class="more" id="moreNotes"${glanceOpen ? ' open' : ''}><summary>More on ${cov.name}</summary><dl class="notes">
     <dt>Strength</dt><dd>${cov.strength}</dd>
     <dt>Weakness</dt><dd>${cov.weakness}</dd>
-    <dt>How to beat</dt><dd>${cov.beat}</dd>
-    <dt>Blitz</dt><dd>${cov.blitz}</dd>
+    <dt>Extra rusher</dt><dd>${cov.blitz}</dd>
     <dt>Concepts that work</dt><dd><ul class="concepts">${cov.concepts.map(c => `<li>${c}</li>`).join('')}</ul></dd>
-    <dt>Your best plays</dt><dd>${bestPlaysFor(cov.id)}</dd></dl></div>`;
+    <dt>Your best plays</dt><dd>${bestPlaysFor(cov.id)}</dd></dl></details></div>`;
   return h;
 }
 
@@ -1900,7 +1915,8 @@ function renderHead() {
   $('deletePlayBtn').hidden = !state.play.mine;
   $('detailsBtn').hidden = !state.play.mine;
   $('photoBtn').hidden = !(state.play.photo && typeof account !== 'undefined' && account.user);
-  document.querySelectorAll('.cov').forEach(c => c.setAttribute('aria-pressed', c.dataset.cov === state.cov));
+  $('exportBtn').hidden = !library.favs.length;
+  updateCards();
 }
 
 /* ---------- coverage cards + drag and drop ---------- */
@@ -1920,16 +1936,34 @@ function miniCov(id, F = fmtOf(state.play)) {
   (F.id === '7v7' ? [5, 13, 20, 27, 35] : [5, 11, 15, 24]).forEach(x => { s += `<circle cx="${mx(x)}" cy="${my(0)}" r="1.8" style="fill:var(--chalk)"/>`; });
   return s + `</svg>`;
 }
-const COV_SUB = { c1: '1 deep, 4 under', c2: '2 deep halves', c3: '3 deep thirds', c4: '4 deep, 1 rusher', man: 'Man + deep FS' };
-const COV_SUB7 = { c1: 'Man, 1 deep, rusher', c2: '2 deep, 4 under', c3: '3 deep, 3 under', c4: '4 deep, 2 under', p2: '2 rushers, 2 deep', m2: 'Man, 2 deep, no rush' };
+/* Subtitle, same pattern in both formats: the shape ("2 deep, 3 under" or "Man, 1 deep"), then the rush ("no rush", "1 rusher + spy").
+   Read from the coverage itself, so the extra-rusher toggle updates it: the rusher leaves the shape and joins the rush. */
+function covSub(F, id, blitz) {
+  const c = F.covs[id], defs = c.defenders.filter(d => !(blitz && d.id === c.blitzer));
+  const deep = defs.filter(d => d.deep && !d.rush).length, man = defs.some(d => d.man);
+  const under = defs.filter(d => !d.deep && !d.rush && !d.mirror).length;
+  const rush = defs.filter(d => d.rush).length + (blitz && c.defenders.some(d => d.id === c.blitzer) ? 1 : 0);
+  const shape = man ? (deep ? `Man, ${deep} deep` : 'Man, no deep help') : `${deep} deep` + (under ? `, ${under} under` : '');
+  const r = (rush ? `${rush} rusher${rush > 1 ? 's' : ''}` : 'No rush') + (defs.some(d => d.mirror) ? ' + spy' : '');
+  return `${shape}<br>${r}`;
+}
 let cardsFmt = null;
 function buildCards() {
-  const F = fmtOf(state.play), sub = F.id === '7v7' ? COV_SUB7 : COV_SUB;
+  const F = fmtOf(state.play);
   if (cardsFmt === F.id) return;
   cardsFmt = F.id;
-  $('blitzL').textContent = F.id === '7v7' ? 'Extra rusher' : 'LB/FS blitz';   // 7v7 always has one rusher
-  $('cards').innerHTML = F.order.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id, F)}<span><b>${F.covs[id].name}</b><small>${sub[id]}</small></span></button>`).join('');
+  $('trayLbl').textContent = `Defense · ${F.id} · tap or drag onto the field`;
+  $('cards').innerHTML = F.order.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id, F)}<span><b>${F.covs[id].name}</b><small></small></span></button>`).join('');
   document.querySelectorAll('.cov').forEach(card => card.addEventListener('pointerdown', startCardDrag));
+}
+// Selected state and subtitle per card, in place, so a card keeps focus while the coach works with the keyboard
+function updateCards() {
+  buildCards();
+  const F = fmtOf(state.play);
+  document.querySelectorAll('.cov').forEach(card => {
+    card.setAttribute('aria-pressed', card.dataset.cov === state.cov);
+    card.querySelector('small').innerHTML = covSub(F, card.dataset.cov, state.blitz);
+  });
 }
 function setCoverage(id, method) {
   if (state.cov !== id) state.nudges = {};
@@ -2054,6 +2088,7 @@ function pickPlay(id, method) {
   track('select_play', { ...playInfo(pl), favorite: library.favs.includes(pl.id), method });
 }
 $('playSel').addEventListener('change', e => pickPlay(e.target.value, 'dropdown'));
+$('read').addEventListener('toggle', e => { if (e.target.id === 'moreNotes') glanceOpen = e.target.open; }, true);
 $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
   const pb = e.target.closest('[data-play]'); if (pb) { pickPlay(pb.dataset.play, 'read_panel'); return; }
@@ -2749,7 +2784,8 @@ $('betaBtn').addEventListener('click', showBeta);
 const EXAMPLES = [
   'Trips right. X runs a flat to the left, Z a short corner, Y a go, C an out to the right. QB drops back.',
   'Split T run: Z takes the handoff and runs off-tackle left. X and Y run go routes as decoys, C releases right.',
-  'Bunch left. Y slants under, X runs a corner, Z sits at 5 yards, C runs an out right. Throw to Y.'
+  'Bunch left. Y slants under, X runs a corner, Z sits at 5 yards, C runs an out right. Throw to Y.',
+  '7v7, trips right: H and Y run hitches, Z a corner, X a deep post from the left, C blocks, the back swings left.'
 ];
 async function openStudio(tab) {
   const sample = aiProvider();
@@ -2780,7 +2816,7 @@ async function openStudio(tab) {
       <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : sample ? 'Reading images isn’t available here. Describe the play instead.' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="file" hidden>
-      <p class="muted">Import plays from an Open Grass playbook file (.json), like the one Export favorites saves. They go into My plays.</p>
+      <p class="muted">Import plays from an Open Grass playbook file (.json), like the one Export saves. They go into My plays.</p>
       <input type="file" id="jsonFile" accept=".json,application/json">
       <p class="status" id="fileStatus"></p>
     </div>`);
@@ -3084,7 +3120,7 @@ async function renderGif(progress) {
     .replace(/class="lbl"/g, 'font-family="Barlow, Arial, sans-serif" font-weight="700"')
     .replace(/class="def[^"]*"/g, '');
   const mark = !account.user;   // signed out, the GIF carries the site address over the field
-  const title = `${state.play.name}  ·  vs ${state.cov ? covsFor(state.play)[state.cov].name : 'no defense'}${state.blitz ? ' + blitz' : ''}`;
+  const title = `${state.play.name}  ·  vs ${state.cov ? covsFor(state.play)[state.cov].name : 'no defense'}${state.blitz ? ' + extra rusher' : ''}`;
   const draw = async t => {
     const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmtOf(state.play).w * S} 336" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
     const img = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr));
@@ -3180,7 +3216,7 @@ $('exportBtn').addEventListener('click', () => {
     // one column per coverage across both formats; a play's cells are blank for the other format's coverages
     const cols = ['c1', 'c2', 'c3', 'c4', 'p2', 'm2', 'man'], cname = c => (COVERAGES[c] || COVERAGES7[c]).name;
     const grade = (p, c, o) => covsFor(p)[c] ? runPlay(p, c, o).ev.grade : '';
-    const rows = [['#', 'Play', 'Group', 'Format', 'Type', 'Concept', ...cols.map(cname), ...cols.map(c => cname(c) + ' + blitz')]];
+    const rows = [['#', 'Play', 'Group', 'Format', 'Type', 'Concept', ...cols.map(cname), ...cols.map(c => cname(c) + ' + extra rusher')]];
     favs.forEach(p => rows.push([p.mine && p.num || '', p.name, p.mine && p.group || '', fmtOf(p).id, p.type, p.concept,
       ...cols.map(c => grade(p, c, {})), ...cols.map(c => grade(p, c, { blitz: true }))]));
     if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) { toast('Scouting sheet saved.'); track('file_download', { file_extension: 'csv', content_type: 'scouting_sheet', play_count: favs.length }); }
