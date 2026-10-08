@@ -610,7 +610,15 @@ const PLAYS = [
   C7(), QB7(),
   Y_([29, 0], [[31, 2], [36, 4]], 'Quick out'),
   Z_([35, 0], [[35, 2], [30, 7]], 'Slant'),
-  R_([23, -4.5], [[27, -3], [31, -1]], 'Flare right') ] }
+  R_([23, -4.5], [[27, -3], [31, -1]], 'Flare right') ] },
+
+{ num: 105, series: '7v7', format: '7v7', id: 'p74', name: 'Doubles, Delayed Draw Left', type: 'run', concept: 'Clear the left side, let the rusher go by, hand off late', handoff: { to: 'R', at: 0 }, players: [
+  X_([5, 0], [[5, 17]], 'Go (clear)'),
+  H_([13, 0], [[13, 17]], 'Go (clear)'),
+  C7(), QB7([[20, -5]], 'Hand off'),
+  Y_([27, 0], [[27, 5.5], [27.5, 4.7]], 'Hitch'),
+  Z_([35, 0], [[35, 5.5], [34.5, 4.7]], 'Hitch'),
+  R_([22, -5], [[20.6, -4.6], [17, -1], [15, 12]], 'Draw left', { delay: 0.9, shape: 'star', dashed: true }) ] }
 ];
 /* Free beta: signed out, coaches can open these four (three 5v5, one 7v7); the rest of the library needs a free account (gate in app.src.html).
    Picked to show the engine's range: a stack that grades well against everything, a motion flat that beats zone
