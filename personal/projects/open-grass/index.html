@@ -107,7 +107,7 @@
   --accent: #1C5A37; --accent-ink: #FFFFFF;
   --turf: #B3D7A2; --turf-2: #A9D097; --chalk: #FFFFFF; --hole: #EBF25A; --hole-edge: #6E7A12;
   --def: #1E2A46; --def-ink: #F3F6FB; --zone: #1E2A46;
-  --r-orange: #E2711C; --r-green: #15634F; --r-purple: #7B3DB6; --r-red: #D23229; --r-ink: #1A1A1A; --ball: #7A4522;
+  --r-orange: #E2711C; --r-green: #15634F; --r-purple: #7B3DB6; --r-red: #D23229; --r-ink: #1A1A1A; --r-teal: #0E7C86; --r-gold: #A8740A; --ball: #7A4522;
   --good: #1D8A4B; --warn: #B87D05; --bad: #C1362B;
   --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
@@ -119,7 +119,7 @@
     --accent: #79CF96; --accent-ink: #0E1410;
     --turf: #1D3A25; --turf-2: #21412A; --chalk: #CFE3D0; --hole: #E2EA45; --hole-edge: #E2EA45;
     --def: #DCE4F4; --def-ink: #17203A; --zone: #A9BCE6;
-    --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --ball: #C98A57;
+    --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --r-teal: #4FC9D2; --r-gold: #E8B33E; --ball: #C98A57;
     --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E;
     color-scheme: dark;
   }
@@ -129,7 +129,7 @@
   --accent: #79CF96; --accent-ink: #0E1410;
   --turf: #1D3A25; --turf-2: #21412A; --chalk: #CFE3D0; --hole: #E2EA45; --hole-edge: #E2EA45;
   --def: #DCE4F4; --def-ink: #17203A; --zone: #A9BCE6;
-  --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --ball: #C98A57;
+  --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --r-teal: #4FC9D2; --r-gold: #E8B33E; --ball: #C98A57;
   --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E;
   color-scheme: dark;
 }
@@ -206,12 +206,15 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .mk.rush { color: var(--bad); }
 .mk.throw { color: var(--ink); }
 .mk.tick { color: var(--muted); font-weight: 500; }
+button.mk { pointer-events: auto; border: 0; background: none; padding: 2px 3px; font-family: inherit; line-height: 1.2; cursor: pointer; border-radius: 4px; }
+button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decoration: underline; }
 .clock { text-align: right; min-width: 74px; }
 .clock b { font-family: var(--f-display); font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; display: block; }
 .clock span { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
 .speed { display: flex; gap: 4px; }
 .speed button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 2px 7px; font-size: 12px; cursor: pointer; }
 .speed button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.speed .loop { margin-left: 4px; }
 .hint { margin: 0; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
 .key { display: inline-flex; align-items: center; gap: 5px; }
 .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
@@ -378,7 +381,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <div class="tray-head">
           <span class="eyebrow">Defense · drag a coverage onto the field, or tap it</span>
           <div class="toggles">
-            <label class="tog"><input type="checkbox" id="blitzT"> LB/FS blitz</label>
+            <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">LB/FS blitz</span></label>
             <label class="tog"><input type="checkbox" id="holesT" checked> Show holes</label>
           </div>
         </div>
@@ -390,7 +393,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
       </div>
 
       <div class="timeline">
-        <button class="playbtn" id="playBtn" aria-label="Run the play"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></button>
+        <button class="playbtn" id="playBtn" aria-label="Run the play" aria-keyshortcuts="Space" title="Play / pause (Space). Step with ← →"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></button>
         <div class="track">
           <input type="range" id="scrub" min="0" max="4" step="0.05" value="0" aria-label="Time after the snap">
           <div class="marks" id="marks"></div>
@@ -404,7 +407,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <span class="key"><i class="sw" style="background:var(--warn)"></i>Tight</span>
         <span class="key"><i class="sw" style="background:var(--bad)"></i>Covered</span>
         <span id="dragHint">Pre-snap: drag any defender to match what you see.</span>
-        <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button></span>
+        <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
       </p>
     </section>
 
@@ -425,7 +428,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
     <p>Coach guides: <a href="/flag-football-play-designer">Test plays from any play designer</a> · <a href="/flag-football-routes">Flag football route tree</a> · <a href="/flag-football-plays">Plays graded against every defense</a> · <a href="/how-to-read-a-flag-football-defense">How to read a defense</a> · <a href="/why-isnt-my-flag-football-play-working">Why isn’t my play working?</a></p>
     <h2>Coach questions</h2>
     <details><summary>Is Open Grass free?</summary><p>Yes, while it is in beta. A free account saves your plays, favorites and share links. Early coaches get founding-coach perks.</p></details>
-    <details><summary>What kind of flag football does it support?</summary><p>Open Grass is built for 5-on-5 flag football today, the most common youth format. More formats are on the way.</p></details>
+    <details><summary>What kind of flag football does it support?</summary><p>Open Grass handles 5-on-5 and 7-on-7 flag football. A 7-on-7 play gets a 40-yard-wide field and seven defenders, including a rusher from 7 yards.</p></details>
     <details><summary>Which defenses can I test against?</summary><p>Cover 1, Cover 2, Cover 3 and man to man, each with an optional linebacker or safety blitz. The scouting report grades your play against all four at once. If the other team lines up differently, drag any defender to match what you see.</p></details>
     <details><summary>Does it work on a phone?</summary><p>Yes. Open Grass runs in any browser on a phone, tablet or computer, with nothing to install.</p></details>
     <details><summary>Can I share plays with my team?</summary><p>Yes. Send a share link that opens the play and coverage, or save an animated GIF for your team chat.</p></details>
@@ -654,6 +657,133 @@ const COVERAGES = {
 };
 const COV_ORDER = ['c1', 'c2', 'c3', 'man'];
 
+/* 7v7: seven defenders on a 40-yard field (ball at x = 20). A rusher (rush: true) always comes from the 7-yard line;
+   the blitz toggle sends the coverage's blitzer as well. Man defenders are listed left to right. */
+const COVERAGES7 = {
+  c1: {
+    id: 'c1', name: 'Cover 1', short: 'C1', blitzer: 'LB',
+    defenders: [
+      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'CBL', label: 'CB', man: true },
+      { id: 'NBL', label: 'NB', man: true },
+      { id: 'LB', label: 'LB', man: true },
+      { id: 'NBR', label: 'NB', man: true },
+      { id: 'CBR', label: 'CB', man: true },
+      { id: 'FS', label: 'FS', pos: [20, 12], zone: { c: [20, 13], rx: 12, ry: 6 }, deep: true }
+    ],
+    spot: 'One deep safety, a rusher, and everyone else pressed up on a receiver.',
+    strength: 'Tight coverage on short routes, with help deep in the middle.',
+    weakness: 'Rubs, crossers and two deep routes on opposite sides.',
+    beat: 'Cross receivers close together so defenders get caught in traffic, or send deep routes to both sidelines.',
+    blitz: 'A second rusher leaves one receiver uncovered. Find him fast.',
+    concepts: ['Slant outside with a quick out or wheel inside (a rub)', 'Two shallow crossers passing close to each other', 'Deep routes on both sidelines so the safety has to choose']
+  },
+  c2: {
+    id: 'c2', name: 'Cover 2', short: 'C2', blitzer: 'LBL',
+    defenders: [
+      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'CBL', label: 'CB', pos: [5, 5], zone: { c: [5, 5.5], rx: 4.5, ry: 3.5 } },
+      { id: 'LBL', label: 'LB', pos: [14, 6], zone: { c: [14, 6.5], rx: 4.5, ry: 3.5 } },
+      { id: 'LBR', label: 'LB', pos: [26, 6], zone: { c: [26, 6.5], rx: 4.5, ry: 3.5 } },
+      { id: 'CBR', label: 'CB', pos: [35, 5], zone: { c: [35, 5.5], rx: 4.5, ry: 3.5 } },
+      { id: 'FS', label: 'S', pos: [11, 12], zone: { c: [10.5, 14], rx: 8.5, ry: 6 }, deep: true },
+      { id: 'SS', label: 'S', pos: [29, 12], zone: { c: [29.5, 14], rx: 8.5, ry: 6 }, deep: true }
+    ],
+    spot: 'Two deep safeties, corners sitting shallow near the sidelines, two hook defenders in the middle.',
+    strength: 'Quick outside throws and the deep ball over the top.',
+    weakness: 'The deep middle between the safeties and the sideline behind the corner.',
+    beat: 'Send a route up the middle between the safeties, or a corner route behind the corner sitting in the flat.',
+    blitz: 'When a hook defender rushes, the middle opens up underneath.',
+    concepts: ['Short hitch outside with a corner route behind it', 'A seam up the middle between the two safeties', 'Two verticals on the hashes to split the safeties']
+  },
+  c3: {
+    id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'MLB',
+    defenders: [
+      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'OLL', label: 'OLB', pos: [9, 6], zone: { c: [8, 6.5], rx: 5.5, ry: 3.5 } },
+      { id: 'MLB', label: 'MLB', pos: [20, 4.5], zone: { c: [20, 6.5], rx: 4.5, ry: 3.5 } },
+      { id: 'OLR', label: 'OLB', pos: [31, 6], zone: { c: [32, 6.5], rx: 5.5, ry: 3.5 } },
+      { id: 'CBL', label: 'CB', pos: [6, 12], zone: { c: [6, 14], rx: 6.5, ry: 6 }, deep: true },
+      { id: 'FS', label: 'FS', pos: [20, 13], zone: { c: [20, 14.5], rx: 6.5, ry: 6 }, deep: true },
+      { id: 'CBR', label: 'CB', pos: [34, 12], zone: { c: [34, 14], rx: 6.5, ry: 6 }, deep: true }
+    ],
+    spot: 'Three deep across the field, three short defenders and a rusher.',
+    strength: 'Deep passes. It is hard to get behind.',
+    weakness: 'Three short defenders can’t cover 40 yards of width.',
+    beat: 'Put two receivers in one short defender’s area and throw to the one he leaves.',
+    blitz: 'When the middle defender rushes, the area over the ball is empty.',
+    concepts: ['Three receivers flooding one side at deep, middle and short depths', 'Quick outs and flats to both sidelines', 'Comebacks outside under the deep corners']
+  },
+  c4: {
+    id: 'c4', name: 'Cover 4', short: 'C4', blitzer: 'LBL',
+    defenders: [
+      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'LBL', label: 'LB', pos: [13, 6], zone: { c: [13, 6.5], rx: 6, ry: 3.5 } },
+      { id: 'LBR', label: 'LB', pos: [27, 6], zone: { c: [27, 6.5], rx: 6, ry: 3.5 } },
+      { id: 'CBL', label: 'CB', pos: [6, 11], zone: { c: [6, 13], rx: 5, ry: 6 }, deep: true },
+      { id: 'SL', label: 'S', pos: [16, 12], zone: { c: [16, 14], rx: 5, ry: 6 }, deep: true },
+      { id: 'SR', label: 'S', pos: [24, 12], zone: { c: [24, 14], rx: 5, ry: 6 }, deep: true },
+      { id: 'CBR', label: 'CB', pos: [34, 11], zone: { c: [34, 13], rx: 5, ry: 6 }, deep: true }
+    ],
+    spot: 'Four defenders deep and only two short. Before the snap it can look like Cover 2.',
+    strength: 'Nothing gets behind it.',
+    weakness: 'The short areas, especially the flats near each sideline.',
+    beat: 'Throw short and quick, outside the two short defenders, and let your receiver run.',
+    blitz: 'If a short defender rushes, only one is left underneath.',
+    concepts: ['Quick outs and flats to both sidelines', 'Every receiver runs a 5-yard hitch', 'A drag under the deep defenders']
+  },
+  c0: {
+    id: 'c0', name: 'Cover 0', short: 'C0', blitzer: 'LB',
+    defenders: [
+      { id: 'RS1', label: 'RSH', pos: [17, 7], rush: true },
+      { id: 'RS2', label: 'RSH', pos: [23, 7], rush: true },
+      { id: 'CBL', label: 'CB', man: true },
+      { id: 'NBL', label: 'NB', man: true },
+      { id: 'LB', label: 'LB', man: true },
+      { id: 'NBR', label: 'NB', man: true },
+      { id: 'CBR', label: 'CB', man: true }
+    ],
+    spot: 'Two rushers and man coverage with nobody deep.',
+    strength: 'Pressure. The QB has very little time.',
+    weakness: 'No help deep. One beaten defender is a touchdown.',
+    beat: 'Get the ball out fast: quick breaks, rubs, or a double move with nobody behind it.',
+    blitz: 'A third rusher leaves a receiver completely uncovered.',
+    concepts: ['Quick slants with a rub underneath', 'Two shallow crossers passing close to each other', 'A hitch and go against a defender jumping the short route']
+  },
+  m2: {
+    id: 'm2', name: '2-Man Under', short: '2M', blitzer: 'LB',
+    defenders: [
+      { id: 'CBL', label: 'CB', man: true },
+      { id: 'NBL', label: 'NB', man: true },
+      { id: 'LB', label: 'LB', man: true },
+      { id: 'NBR', label: 'NB', man: true },
+      { id: 'CBR', label: 'CB', man: true },
+      { id: 'FS', label: 'S', pos: [12, 12], zone: { c: [11, 14], rx: 9, ry: 6 }, deep: true },
+      { id: 'SS', label: 'S', pos: [28, 12], zone: { c: [29, 14], rx: 9, ry: 6 }, deep: true }
+    ],
+    spot: 'No rusher. Five in man coverage with two safeties deep over the top.',
+    strength: 'Everyone is covered and there’s help deep.',
+    weakness: 'Nobody pressures the QB, so receivers have time to work.',
+    beat: 'Be patient. Crossers and routes that break away from the defender win.',
+    blitz: 'The rusher’s receiver is left uncovered.',
+    concepts: ['Two shallow crossers passing close to each other', 'Out routes breaking away from a trailing defender', 'A dig under the two safeties']
+  }
+};
+
+/* Field size and coverages per format. A play without `format` is 5v5. */
+const FORMATS = {
+  '5v5': { id: '5v5', w: 30, mid: 15, order: COV_ORDER, covs: COVERAGES },
+  '7v7': { id: '7v7', w: 40, mid: 20, order: ['c1', 'c2', 'c3', 'c4', 'c0', 'm2'], covs: COVERAGES7 }
+};
+const fmtOf = play => FORMATS[play && play.format === '7v7' ? '7v7' : '5v5'];
+const covsFor = play => fmtOf(play).covs;
+const covOrder = play => fmtOf(play).order;
+// Keep a coverage choice when switching between a 5v5 and a 7v7 play
+function fitCov(cov, play) {
+  if (!cov || covsFor(play)[cov]) return cov;
+  return { man: 'c1', c4: 'c2', c0: 'man', m2: 'man' }[cov] || 'c2';
+}
+
 /* Coaching tips used to explain suggested adjustments, by coverage and route family. */
 const TIPS = {
   c1: { deep: 'Cover 1 has a single safety. A second deep route on the other side forces him to pick one.',
@@ -669,6 +799,28 @@ const TIPS = {
          short: 'A hard break makes a man defender react, and that reaction is your separation.',
          middle: 'Crossers and rubs make man defenders fight through traffic.' }
 };
+
+const TIPS7 = {
+  c1: { deep: 'Cover 1 has one deep safety. Deep routes on opposite sides make him pick one.',
+        short: 'Man defenders sit on short routes. A hard break or a rub creates the space.',
+        middle: 'Crossers and rubs make man defenders fight through traffic, and the safety can’t help underneath.' },
+  c2: { deep: 'The two safeties split the deep field. The middle between them opens if a hook defender doesn’t carry the route.',
+        short: 'Cover 2 corners sit in the flats, so quick outside throws need the corner to bite inside.',
+        middle: 'The hole between the corner and the hook defender is the soft spot in Cover 2.' },
+  c3: { deep: 'Three deep defenders take away straight vertical routes in Cover 3.',
+        short: 'Three short defenders can’t cover the whole width. Throw to the side they leave.',
+        middle: 'Put two routes in one short defender’s area and throw to the one he doesn’t take.' },
+  c4: { deep: 'Four deep defenders sit on vertical routes. Deep routes mostly clear space underneath.',
+        short: 'Cover 4 leaves the flats almost empty. Quick outs and flats win.',
+        middle: 'Two short defenders guard the middle. A route between them, under the safeties, is open.' },
+  c0: { deep: 'Nobody is deep. A clean release or a double move is a touchdown.',
+        short: 'Two rushers are coming, so the ball has to come out fast. Quick, short routes win.',
+        middle: 'Rubs and crossers beat tight man coverage with no help behind it.' },
+  m2: { deep: 'Two safeties help over the top, so deep routes get double coverage.',
+        short: 'Man defenders trail from underneath. Breaking away from the defender gets space.',
+        middle: 'Crossers win: the trailing defender can’t undercut them and the safeties sit deep.' }
+};
+const tipsFor = play => fmtOf(play).id === '7v7' ? TIPS7 : TIPS;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -729,9 +881,10 @@ function clampToEllipse(p, z) {
 }
 
 function buildDefense(covId, play, opts = {}) {
-  const T = COVERAGES[covId];
-  const defs = T.defenders.map(d => ({ ...clone(d), role: d.man ? 'man' : 'zone' }));
-  if (covId === 'man') {
+  const F = fmtOf(play), T = F.covs[covId];
+  const defs = T.defenders.map(d => ({ ...clone(d), role: d.rush ? 'rush' : d.man ? 'man' : 'zone' }));
+  if (F.id === '7v7') assignMan7(defs, play, F.mid);
+  else if (covId === 'man') {
     const elig = play.players.filter(p => p.eligible).slice().sort((a, b) => a.start[0] - b.start[0] || b.start[1] - a.start[1]);
     const mids = elig.slice(1, -1).sort((a, b) => b.start[1] - a.start[1]);
     const assign = { CBL: elig[0], CBR: elig[elig.length - 1], LB: mids[0], SS: mids[1] };
@@ -745,7 +898,7 @@ function buildDefense(covId, play, opts = {}) {
   }
   if (opts.blitz) {
     const b = defs.find(d => d.id === T.blitzer);
-    if (b) { b.role = 'rush'; b.pos = [MID, 7]; }
+    if (b) { b.role = 'rush'; b.pos = F.id === '7v7' ? [F.mid + 3, 7] : [MID, 7]; }
   }
   const nudges = opts.nudges || {};
   defs.forEach(d => {
@@ -755,6 +908,32 @@ function buildDefense(covId, play, opts = {}) {
     if (d.zone) d.zone.c = [d.zone.c[0] + n[0], d.zone.c[1] + n[1]];
   });
   return { id: covId, defenders: defs };
+}
+
+/* 7v7 man coverage: the outside receivers get the corners, the rest go to the inside defenders left to right.
+   With more receivers than defenders the deepest backfield player is left to the safety; a defender with nobody to cover drops into a short middle zone. */
+function assignMan7(defs, play, mid) {
+  const md = defs.filter(d => d.role === 'man');
+  if (!md.length) return;
+  const elig = play.players.filter(p => p.eligible).slice().sort((a, b) => a.start[0] - b.start[0] || b.start[1] - a.start[1]);
+  const assign = new Map();
+  if (elig.length) { assign.set(md[0], elig[0]); if (elig.length > 1) assign.set(md[md.length - 1], elig[elig.length - 1]); }
+  let mids = elig.slice(1, -1);
+  const inner = md.slice(1, -1);
+  while (mids.length > inner.length) {
+    const deepest = mids.reduce((a, b) => b.start[1] < a.start[1] ? b : a);
+    mids = mids.filter(p => p !== deepest);
+  }
+  mids.forEach((r, i) => {
+    const k = mids.length === 1 ? Math.floor((inner.length - 1) / 2) : Math.round(i * (inner.length - 1) / (mids.length - 1));
+    assign.set(inner[k], r);
+  });
+  md.forEach(d => {
+    const r = assign.get(d);
+    if (!r) { d.role = 'zone'; d.man = false; d.pos = [mid, 8]; d.zone = { c: [mid, 8], rx: 5, ry: 4 }; return; }
+    d.man = r.id;
+    d.pos = r.start[1] >= -0.5 ? [r.start[0], 4.5] : [r.start[0] + (r.start[0] <= mid ? -3 : 3), 5];
+  });
 }
 
 function simulate(play, defense, opts = {}) {
@@ -778,6 +957,7 @@ function simulate(play, defense, opts = {}) {
   // fakes and decoys: players drawn dashed or marked fake, other than the ball carrier
   const fakers = ho ? play.players.filter(p => (p.dashed || p.fake) && p.id !== ho.to) : [];
   const defs = defense.defenders.map(d => ({ ...d, p: [...d.pos], cushion: null, rubbed: new Set(), rubLag: 0 }));
+  const rushRead = fmtOf(play).id === '7v7' ? 0.45 : 0;
   const frames = [];
   const steps = Math.round(playTime(play) / DT);
   let pressure = null;
@@ -800,7 +980,8 @@ function simulate(play, defense, opts = {}) {
         const read = (d.role === 'man' ? 0.8 : d.deep ? 0.6 : 0.5) + (d.bites ? 0.8 : 0);
         const chases = !ballRun || !ballRun.thenPass || d.role === 'rush' || (d.role === 'zone' && !d.deep);
         const sees = carrier && chases && t >= ballRun.th + read;
-        if (d.role === 'rush') { target = carrier || off[qb.id]; speed = 5.4; }
+        // a 7v7 rusher's job is the QB: after a handoff he takes a beat to find the ball carrier
+        if (d.role === 'rush') { target = carrier && t >= ballRun.th + rushRead ? carrier : off[qb.id]; speed = 5.4; }
         else if (t < 0.25) { /* reading the snap */ }
         else if (carrier && d.bites && !sees && chases) { target = off[d.bites]; speed = 5.3; }
         else if (sees) {
@@ -848,8 +1029,7 @@ function simulate(play, defense, opts = {}) {
       if (i >= 0) ballRun.tackle = { t, pos: [...carrier], by: defs[i].label };
     }
     frames.push({ t, off, def: defs.map(d => [...d.p]) });
-    const rusher = defs.find(d => d.role === 'rush');
-    if (!ballRun && rusher && pressure === null && dist(rusher.p, off[qb.id]) < 1.2) pressure = t;
+    if (!ballRun && pressure === null && defs.some(d => d.role === 'rush' && dist(d.p, off[qb.id]) < 1.2)) pressure = t;
   }
   const throwBy = opts.throwBy || 3.0;
   let deadline = pressure !== null ? Math.min(throwBy, pressure) : throwBy;
@@ -943,7 +1123,8 @@ const ROUTES = [
   { key: 'wheel', name: 'Wheel', fam: 'deep', inside: true, pts: (i, o) => [[o * 3, 0.5], [o * 6, 3], [o * 6.5, 15]] }
 ];
 
-function routeVariants(pl) {
+function routeVariants(pl, F = FORMATS['5v5']) {
+  const MID = F.mid, FIELD_W = F.w;
   const lead = pl.route.filter(p => p[1] < 0);            // keep any backfield action, like a play fake
   const base = lead.length ? lead[lead.length - 1] : pl.start;
   const bx = base[0];
@@ -963,12 +1144,13 @@ function routeVariants(pl) {
   return list;
 }
 
-function runLanes(pl, at) {
+function runLanes(pl, at, F = FORMATS['5v5']) {
+  const W = F.w;
   const lead = pl.route.slice(0, at + 1);
   const [hx, hy] = lead[lead.length - 1];
-  const cx = x => clamp(x, 1.5, 28.5);
+  const cx = x => clamp(x, 1.5, W - 1.5);
   return [
-    { name: 'Sweep right', route: [[cx(hx + 6), Math.min(hy + 2, -1)], [27.5, 2], [27.5, 12]], dir: 1 },
+    { name: 'Sweep right', route: [[cx(hx + 6), Math.min(hy + 2, -1)], [W - 2.5, 2], [W - 2.5, 12]], dir: 1 },
     { name: 'Sweep left', route: [[cx(hx - 6), Math.min(hy + 2, -1)], [2.5, 2], [2.5, 12]], dir: -1 },
     { name: 'Off-tackle right', route: [[cx(hx + 3), 0.5], [cx(hx + 4.5), 12]], dir: 1 },
     { name: 'Off-tackle left', route: [[cx(hx - 3), 0.5], [cx(hx - 4.5), 12]], dir: -1 },
@@ -993,18 +1175,19 @@ function suggest(play, covId, opts, baseScore) {
     tp.route = v.route; tp.routeName = v.name;
     return runPlay(trial, covId, opts);
   };
-  play.players.filter(p => p.eligible).forEach(pl => {
+  const F = fmtOf(play), tips = tipsFor(play);
+  play.players.filter(p => p.eligible || (ho && ho.to === p.id)).forEach(pl => {
     let best = null;
     const isCarrier = ho && ho.to === pl.id;
     if (isCarrier && ho.thenPass) return;            // the trick passer keeps their path
-    const variants = isCarrier ? runLanes(pl, ho.at) : routeVariants(pl);
+    const variants = isCarrier ? runLanes(pl, ho.at, F) : routeVariants(pl, F);
     for (const v of variants) {
       const r = tryChange(pl, v);
       const gain = r.ev.score - baseScore;
       if (!best || gain > best.gain) {
         const tip = isCarrier ? laneTip(def0, v.hx, v.dir)
           : ho && !ho.thenPass ? 'A better decoy. This route pulls a defender away from the ball carrier.'
-          : TIPS[covId][v.fam];
+          : tips[covId][v.fam];
         best = { id: pl.id, from: pl.routeName, to: v.name, fam: v.fam, route: v.route, gain, ev: r.ev, tip };
       }
     }
@@ -1019,7 +1202,7 @@ function suggest(play, covId, opts, baseScore) {
 <script>
 const S = 12, YTOP = 21;
 const X = x => x * S, Y = y => (YTOP - y) * S;
-const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)' };
+const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)', teal: 'var(--r-teal)', gold: 'var(--r-gold)' };
 const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
 
 /* Free beta gate: signed out, only the STARTERS (plays.js) are open; the rest of the built-in library needs a free account.
@@ -1038,7 +1221,7 @@ try {
 } catch (e) {}
 const state = {
   basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
-  cov: 'c2', blitz: false, holes: true, t: 0, playing: false, speed: 0.5, nudges: {},
+  cov: 'c2', blitz: false, holes: true, t: 0, playing: false, speed: 0.5, loop: false, nudges: {},
   run: null, scout: {}, sugs: []
 };
 const $ = id => document.getElementById(id);
@@ -1068,7 +1251,8 @@ function recompute(full = true) {
   state.run = state.cov ? runPlay(state.play, state.cov, opts()) : null;
   state.ball = planBall();
   if (full) {
-    COV_ORDER.forEach(c => { state.scout[c] = runPlay(state.play, c, { blitz: state.blitz }).ev; });
+    state.scout = {};
+    covOrder(state.play).forEach(c => { state.scout[c] = runPlay(state.play, c, { blitz: state.blitz }).ev; });
     state.sugs = state.run ? suggest(state.play, state.cov, opts(), state.run.ev.score) : [];
     renderRead();
     renderHead();
@@ -1078,28 +1262,32 @@ function recompute(full = true) {
 }
 
 /* ---------- field ---------- */
-function staticField() {
+/* The field is 30 yards wide for 5v5 and 40 for 7v7 (S px per yard, so 360 or 480 px). */
+const fieldW = (p = state.play) => fmtOf(p).w;
+function staticField(w) {
+  const PX = w * S, mid = w / 2;
   let s = `<defs>`;
   Object.entries(COLOR).forEach(([k, c]) => {
     s += `<marker id="ah-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:${c}"/></marker>`;
   });
   s += `<marker id="ah-ghost" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--chalk)" fill-opacity=".7"/></marker>`;
   s += `<marker id="ah-bad" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--bad)"/></marker></defs>`;
-  s += `<rect width="360" height="336" style="fill:var(--turf)"/>`;
-  [[-5, 0], [5, 10], [15, 20]].forEach(([a, b]) => { s += `<rect x="0" y="${Y(b)}" width="360" height="${(b - a) * S}" style="fill:var(--turf-2)"/>`; });
+  s += `<rect width="${PX}" height="336" style="fill:var(--turf)"/>`;
+  [[-5, 0], [5, 10], [15, 20]].forEach(([a, b]) => { s += `<rect x="0" y="${Y(b)}" width="${PX}" height="${(b - a) * S}" style="fill:var(--turf-2)"/>`; });
   for (let y = -6; y <= 20; y++) {
     if (y % 5 === 0) continue;
-    s += `<path d="M${X(0.4)} ${Y(y)}h6M${X(29.6) - 6} ${Y(y)}h6M${X(12) - 3} ${Y(y)}h6M${X(18) - 3} ${Y(y)}h6" style="stroke:var(--chalk)" stroke-opacity=".45" stroke-width="1"/>`;
+    s += `<path d="M${X(0.4)} ${Y(y)}h6M${X(w - 0.4) - 6} ${Y(y)}h6M${X(mid - 3) - 3} ${Y(y)}h6M${X(mid + 3) - 3} ${Y(y)}h6" style="stroke:var(--chalk)" stroke-opacity=".45" stroke-width="1"/>`;
   }
   [5, 10, 15, 20, -5].forEach(y => {
-    s += `<line x1="0" x2="360" y1="${Y(y)}" y2="${Y(y)}" style="stroke:var(--chalk)" stroke-opacity=".75" stroke-width="1.5"/>`;
+    s += `<line x1="0" x2="${PX}" y1="${Y(y)}" y2="${Y(y)}" style="stroke:var(--chalk)" stroke-opacity=".75" stroke-width="1.5"/>`;
     if (y > 0) s += `<text x="${X(1.2)}" y="${Y(y) - 4}" class="lbl" font-size="10" style="fill:var(--chalk)" fill-opacity=".9">${y}</text>`;
   });
-  s += `<line x1="0" x2="360" y1="${Y(0)}" y2="${Y(0)}" style="stroke:var(--chalk)" stroke-width="2.5"/>`;
-  s += `<text x="${X(29.6)}" y="${Y(0) + 13}" text-anchor="end" class="lbl" font-size="9" letter-spacing="1" style="fill:var(--chalk)">LINE OF SCRIMMAGE</text>`;
+  s += `<line x1="0" x2="${PX}" y1="${Y(0)}" y2="${Y(0)}" style="stroke:var(--chalk)" stroke-width="2.5"/>`;
+  s += `<text x="${X(w - 0.4)}" y="${Y(0) + 13}" text-anchor="end" class="lbl" font-size="9" letter-spacing="1" style="fill:var(--chalk)">LINE OF SCRIMMAGE</text>`;
   return s;
 }
-const STATIC = staticField();
+const STATICS = {};
+const staticFor = w => STATICS[w] || (STATICS[w] = staticField(w));
 
 function routePath(pl) {
   return [pl.start, ...pl.route].map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(' ');
@@ -1154,7 +1342,7 @@ function planBall() {
   if (ho && br) {
     const d = dist(at(qb.id, br.th), at(ho.to, br.th));
     const kind = d > 1.5 ? (ho.thenPass ? 'lateral' : 'pitch') : 'handoff';
-    plan.legs.push({ from: qb.id, to: ho.to, kind, release: d > 1.5 ? Math.max(SNAP_T, br.th - d / PITCH_SPEED) : br.th, arrive: br.th });
+    if (ho.to !== qb.id) plan.legs.push({ from: qb.id, to: ho.to, kind, release: d > 1.5 ? Math.max(SNAP_T, br.th - d / PITCH_SPEED) : br.th, arrive: br.th });
     holder = ho.to; ready = br.th + 0.3;
   }
   if (!run.ev.run) {
@@ -1209,16 +1397,16 @@ function holesLayer(f, roles, t) {
     });
     return m;
   };
-  const [lo, span, need] = zoneMode ? [2.2, 4, 3.3] : [3.6, 5, 5];
+  const [lo, span, need] = zoneMode ? [2.2, 4, 3.3] : [3.6, 5, 5], w = fieldW();
   let s = '';
   const cand = [];
-  for (let gx = 0; gx < 30; gx++) for (let gy = 0; gy < 17; gy++) {
+  for (let gx = 0; gx < w; gx++) for (let gy = 0; gy < 17; gy++) {
     const c = [gx + 0.5, gy + 0.5];
     const d = reach(c);
     if (d === Infinity) continue;
     const a = clamp((d - lo) / span, 0, 1) * 0.62;
     if (a > 0.03) s += `<rect x="${X(gx)}" y="${Y(gy + 1)}" width="${S}" height="${S}" style="fill:var(--hole)" fill-opacity="${a.toFixed(2)}"/>`;
-    if (gy >= 1 && gy <= 15 && gx >= 1 && gx <= 28) cand.push({ c, d, score: d * (0.6 + 0.4 * Math.min(gy, 8) / 8) });
+    if (gy >= 1 && gy <= 15 && gx >= 1 && gx <= w - 2) cand.push({ c, d, score: d * (0.6 + 0.4 * Math.min(gy, 8) / 8) });
   }
   cand.sort((a, b) => b.score - a.score);
   const picks = [];
@@ -1228,22 +1416,27 @@ function holesLayer(f, roles, t) {
     if (picks.length === 3) break;
   }
   picks.forEach(p => {
-    const x = clamp(p.c[0], 3, 27);
+    const x = clamp(p.c[0], 3, w - 3);
     s += `<g transform="translate(${X(x)} ${Y(p.c[1])})"><ellipse rx="29" ry="13" style="fill:var(--hole);stroke:var(--hole-edge)" stroke-width="1.2" fill-opacity=".9"/><text text-anchor="middle" y="4" class="lbl" font-size="11" letter-spacing="1.5" fill="#1d2208">HOLE</text></g>`;
   });
   return s;
 }
 
-function renderField() { svg.innerHTML = fieldMarkup(state.t); }
+function renderField() {
+  const vb = `0 0 ${fieldW() * S} 336`;
+  if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
+  svg.innerHTML = fieldMarkup(state.t);
+}
 function fieldMarkup(t) {
   const run = state.run, play = state.play;
-  let s = STATIC;
+  const w = fieldW();
+  let s = staticFor(w);
   const f = run ? frameAt(t) : null;
   const def = run ? run.def : null, roles = run ? run.sim.roles : [];
 
-  if (run && state.blitz) {
-    s += `<line x1="0" x2="360" y1="${Y(7)}" y2="${Y(7)}" style="stroke:var(--bad)" stroke-width="1.2" stroke-dasharray="4 4" stroke-opacity=".7"/>`;
-    s += `<text x="${X(29.6)}" y="${Y(7) - 4}" text-anchor="end" class="lbl" font-size="9" letter-spacing="1" style="fill:var(--bad)">7-YD RUSH LINE</text>`;
+  if (run && def.defenders.some(d => d.role === 'rush')) {
+    s += `<line x1="0" x2="${w * S}" y1="${Y(7)}" y2="${Y(7)}" style="stroke:var(--bad)" stroke-width="1.2" stroke-dasharray="4 4" stroke-opacity=".7"/>`;
+    s += `<text x="${X(w - 0.4)}" y="${Y(7) - 4}" text-anchor="end" class="lbl" font-size="9" letter-spacing="1" style="fill:var(--bad)">7-YD RUSH LINE</text>`;
   }
   if (run) def.defenders.forEach(d => {
     if (d.role !== 'zone' || !d.zone) return;
@@ -1263,6 +1456,7 @@ function fieldMarkup(t) {
     if (pl.motion) s += `<path d="${zigzag([...pl.motion, pl.start])}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="2" stroke-linejoin="round"/>`;
   });
   play.players.forEach(pl => {
+    if (pl.blocker) return;   // a 7v7 center who snaps and stays in has no route to draw
     const dash = pl.dashed ? ' stroke-dasharray="5 5"' : '';
     s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="${pl.qb ? 2.5 : 3}" stroke-linejoin="round" stroke-linecap="round"${dash} marker-end="url(#ah-${pl.color})"/>`;
     if (state.changes[pl.id]) {
@@ -1323,17 +1517,18 @@ function fieldMarkup(t) {
   });
 
   if (!run) {
-    s += `<text x="180" y="${Y(13)}" text-anchor="middle" class="lbl" font-size="13" style="fill:var(--chalk)">Drag a coverage onto the field</text>`;
+    s += `<text x="${w * S / 2}" y="${Y(13)}" text-anchor="middle" class="lbl" font-size="13" style="fill:var(--chalk)">Drag a coverage onto the field</text>`;
   }
   return s;
 }
 
 /* A still drawing of a play: routes and players, no defense. The locked-play prompt shows it blurred. */
 function playSketch(p) {
-  let s = STATIC.replace(/<defs>[\s\S]*?<\/defs>/, '');
-  p.players.forEach(pl => { s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
+  const w = fieldW(p);
+  let s = staticFor(w).replace(/<defs>[\s\S]*?<\/defs>/, '');
+  p.players.forEach(pl => { if (!pl.blocker) s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
   p.players.forEach(pl => { s += `<circle cx="${X(pl.start[0])}" cy="${Y(pl.start[1])}" r="10" style="fill:${COLOR[pl.color]};stroke:var(--chalk)" stroke-width="1.5"/>`; });
-  return `<svg viewBox="0 0 360 336" aria-hidden="true">${s}</svg>`;
+  return `<svg viewBox="0 0 ${w * S} 336" aria-hidden="true">${s}</svg>`;
 }
 
 /* ---------- timeline ---------- */
@@ -1354,25 +1549,36 @@ function renderMarks() {
   if (state.run) {
     const sim = state.run.sim, r = state.run.ev.run;
     const label = { pitch: 'Pitch', handoff: 'Handoff', lateral: 'Lateral', pass: 'Throw' };
-    (state.ball ? state.ball.legs : []).forEach(L => { s += `<span class="mk top throw" style="left:${pct(L.release)}">● ${label[L.kind]}</span>`; });
-    if (r && r.t !== null) s += `<span class="mk top rush" style="left:${pct(r.t)}">▼ Flag ${fmtT(r.t)}</span>`;
-    else if (!r && sim.pressure !== null) s += `<span class="mk top rush" style="left:${pct(sim.pressure)}">▼ Rush ${fmtT(sim.pressure)}</span>`;
-    else if (!r && !(state.ball && state.ball.legs.some(L => L.kind === 'pass'))) s += `<span class="mk top tick" style="left:${pct(sim.deadline)}">▼ Throw by ${fmtT(sim.deadline)}</span>`;
+    // the top marks are buttons: click one to jump the field to that moment
+    const mk = (cls, t, kind, text) => `<button class="mk top ${cls}" style="left:${pct(t)}" data-jump="${t}" data-mark="${kind}" aria-label="Jump to ${text.replace(/^[●▼] /, '')} at ${fmtT(t)}">${text}</button>`;
+    (state.ball ? state.ball.legs : []).forEach(L => { s += mk('throw', L.release, L.kind, `● ${label[L.kind]}`); });
+    if (r && r.t !== null) s += mk('rush', r.t, 'flag', `▼ Flag ${fmtT(r.t)}`);
+    else if (!r && sim.pressure !== null) s += mk('rush', sim.pressure, 'rush', `▼ Rush ${fmtT(sim.pressure)}`);
+    else if (!r && !(state.ball && state.ball.legs.some(L => L.kind === 'pass'))) s += mk('tick', sim.deadline, 'throw_by', `▼ Throw by ${fmtT(sim.deadline)}`);
   }
   m.innerHTML = s;
 }
-let raf = null, last = 0;
+let raf = null, last = 0, holdUntil = 0, completed = false;
+const LOOP_HOLD = 0.8;   // seconds the last frame stays up before a loop restarts
 function tick(ts) {
   if (!state.playing) return;
   const dt = last ? (ts - last) / 1000 : 0; last = ts;
-  const nt = state.t + dt * state.speed;
-  if (nt >= tEnd()) { setT(tEnd()); stop(); track('play_complete', { ...covInfo(), ...playInfo() }); return; }
-  setT(nt);
+  if (holdUntil) {
+    if (ts >= holdUntil) { holdUntil = 0; setT(0); }
+  } else {
+    const nt = state.t + dt * state.speed;
+    if (nt >= tEnd()) {
+      setT(tEnd());
+      if (!completed) { completed = true; track('play_complete', { ...covInfo(), ...playInfo() }); }   // once per Play press, not per loop
+      if (!state.loop || tour.on) { stop(); return; }   // the tour waits for playback to end
+      holdUntil = ts + LOOP_HOLD * 1000;
+    } else setT(nt);
+  }
   raf = requestAnimationFrame(tick);
 }
 function play() {
   if (state.t >= tEnd() - 0.01) setT(0);
-  state.playing = true; last = 0;
+  state.playing = true; last = 0; holdUntil = 0; completed = false;
   $('playBtn').innerHTML = '<svg viewBox="0 0 16 16"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"/></svg>';
   $('playBtn').setAttribute('aria-label', 'Pause');
   raf = requestAnimationFrame(tick);
@@ -1389,11 +1595,11 @@ function dotFor(pl) {
   return `<span class="dot" style="background:${COLOR[pl.color]};${pl.color === 'ink' ? 'color:var(--panel)' : ''}">${pl.label}</span>`;
 }
 function renderRead() {
-  const cov = state.cov ? COVERAGES[state.cov] : null;
+  const covs = covsFor(state.play), cov = state.cov ? covs[state.cov] : null;
   let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with blitz)' : ''}</div><div class="scout-row">`;
-  COV_ORDER.forEach(c => {
+  covOrder(state.play).forEach(c => {
     const g = state.scout[c].grade;
-    h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${COVERAGES[c].name}</span></button>`;
+    h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${covs[c].name}</span></button>`;
   });
   h += `</div></div>`;
 
@@ -1463,8 +1669,9 @@ function sugsHtml(g, cov) {
 }
 const bestCache = {};
 function bestPlaysFor(covId) {
-  const key = covId + (state.blitz ? '+b' : '') + ':' + library.version;
-  if (!bestCache[key]) bestCache[key] = allPlays().map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
+  // only plays of the same format: a 7v7 coverage says nothing about a 5v5 play
+  const fmt = fmtOf(state.play).id, key = fmt + covId + (state.blitz ? '+b' : '') + ':' + library.version;
+  if (!bestCache[key]) bestCache[key] = allPlays().filter(p => fmtOf(p).id === fmt).map(p => ({ p, ev: runPlay(p, covId, { blitz: state.blitz }).ev }))
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
   return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(playLabel(p))}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
@@ -1507,20 +1714,31 @@ function renderHead() {
 }
 
 /* ---------- coverage cards + drag and drop ---------- */
-function miniCov(id) {
-  const c = COVERAGES[id];
-  const mx = x => 2 + x / 30 * 60, my = y => 38 - y / 16 * 34;
+const MINI7 = { id: 'mini7', format: '7v7', players: [[5, 0], [13, 0], [27, 0], [35, 0], [23, -4.5]].map(([x, y], i) => ({ id: 'XHYZR'[i], start: [x, y], route: [[x, y + 5]], eligible: true }))
+  .concat([{ id: 'Q', start: [20, -4.5], route: [[20, -5]], qb: true }]) };
+function miniCov(id, F = fmtOf(state.play)) {
+  const c = F.covs[id], w = F.w;
+  const mx = x => 2 + x / w * 60, my = y => 38 - y / 16 * 34;
   let s = `<svg viewBox="0 4 64 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="64" height="42" style="fill:var(--turf)"/><line x1="0" x2="64" y1="${my(0)}" y2="${my(0)}" style="stroke:var(--chalk)" stroke-width="1"/>`;
-  const holes = { c1: [[3, 14], [27, 14]], c2: [[9.5, 8], [20.5, 8]], c3: [[2, 6], [28, 6]], man: [] }[id];
+  const holes = F.id === '7v7'
+    ? { c1: [[20, 4]], c2: [[20, 15], [2, 11], [38, 11]], c3: [[14.5, 8], [25.5, 8]], c4: [[3, 4], [37, 4]], c0: [[20, 14]], m2: [[20, 2]] }[id]
+    : { c1: [[3, 14], [27, 14]], c2: [[9.5, 8], [20.5, 8]], c3: [[2, 6], [28, 6]], man: [] }[id];
   holes.forEach(([x, y]) => { s += `<ellipse cx="${mx(x)}" cy="${my(y)}" rx="8" ry="4.5" style="fill:var(--hole);stroke:var(--hole-edge)" stroke-width=".6"/>`; });
-  const defs = id === 'man' ? [[5, 4.5], [11, 4.5], [15, 4.5], [24, 4.5], [15, 12]] : c.defenders.map(d => d.pos);
+  const defs = F.id === '7v7' ? buildDefense(id, MINI7).defenders.map(d => d.pos)
+    : id === 'man' ? [[5, 4.5], [11, 4.5], [15, 4.5], [24, 4.5], [15, 12]] : c.defenders.map(d => d.pos);
   defs.forEach(([x, y]) => { s += `<rect x="${mx(x) - 3}" y="${my(y) - 2.5}" width="6" height="5" rx="1.2" style="fill:var(--def)"/>`; });
-  [5, 11, 15, 24].forEach(x => { s += `<circle cx="${mx(x)}" cy="${my(0)}" r="1.8" style="fill:var(--chalk)"/>`; });
+  (F.id === '7v7' ? [5, 13, 20, 27, 35] : [5, 11, 15, 24]).forEach(x => { s += `<circle cx="${mx(x)}" cy="${my(0)}" r="1.8" style="fill:var(--chalk)"/>`; });
   return s + `</svg>`;
 }
 const COV_SUB = { c1: '1 deep, 4 under', c2: '2 deep halves', c3: '3 deep thirds', man: 'Man + deep FS' };
+const COV_SUB7 = { c1: 'Man, 1 deep, rusher', c2: '2 deep, 4 under', c3: '3 deep, 3 under', c4: '4 deep, 2 under', c0: 'Man, 2 rushers', m2: 'Man, 2 deep, no rush' };
+let cardsFmt = null;
 function buildCards() {
-  $('cards').innerHTML = COV_ORDER.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id)}<span><b>${COVERAGES[id].name}</b><small>${COV_SUB[id]}</small></span></button>`).join('');
+  const F = fmtOf(state.play), sub = F.id === '7v7' ? COV_SUB7 : COV_SUB;
+  if (cardsFmt === F.id) return;
+  cardsFmt = F.id;
+  $('blitzL').textContent = F.id === '7v7' ? 'Extra rusher' : 'LB/FS blitz';   // 7v7 always has one rusher
+  $('cards').innerHTML = F.order.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id, F)}<span><b>${F.covs[id].name}</b><small>${sub[id]}</small></span></button>`).join('');
   document.querySelectorAll('.cov').forEach(card => card.addEventListener('pointerdown', startCardDrag));
 }
 function setCoverage(id, method) {
@@ -1574,7 +1792,7 @@ svg.addEventListener('pointerdown', e => {
   try { svg.setPointerCapture(e.pointerId); } catch (err) {}
   const move = ev => {
     const p = toYards(ev);
-    const nx = clamp(orig[0] + n0[0] + p[0] - start[0], 1, 29), ny = clamp(orig[1] + n0[1] + p[1] - start[1], 1, 19);
+    const nx = clamp(orig[0] + n0[0] + p[0] - start[0], 1, fieldW() - 1), ny = clamp(orig[1] + n0[1] + p[1] - start[1], 1, 19);
     state.nudges[id] = [nx - orig[0], ny - orig[1]];
     recompute(false);
   };
@@ -1627,7 +1845,8 @@ function loadPlay(pl, cov, optionOn = false) {
   state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {};
   if (!pl.draft) { try { localStorage.setItem('og-play', pl.id); } catch (err) {} }
   if (cov !== undefined) state.cov = cov;
-  stop(); buildSelect(); recompute(); setT(0);
+  state.cov = fitCov(state.cov, state.play);
+  stop(); buildSelect(); buildCards(); recompute(); setT(0);
 }
 buildSelect();
 function pickPlay(id, method) {
@@ -1641,7 +1860,7 @@ $('playSel').addEventListener('change', e => pickPlay(e.target.value, 'dropdown'
 $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
   const pb = e.target.closest('[data-play]'); if (pb) { pickPlay(pb.dataset.play, 'read_panel'); return; }
-  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', covInfo()); return; }
+  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', { ...covInfo(), source: 'read_panel' }); return; }
   const sb = e.target.closest('[data-sug]');
   if (sb) {
     const sg = state.sugs[+sb.dataset.sug];
@@ -1669,15 +1888,42 @@ $('scrub').addEventListener('input', e => {
   const k = state.basePlay.id + ':' + state.cov;
   if (k !== scrubbed) { scrubbed = k; track('scrub_timeline', covInfo()); }
 });
-$('playBtn').addEventListener('click', () => {
+function togglePlay(method) {
   if (state.playing) { stop(); return; }
   play();
-  track('run_play', { ...covInfo(), speed: state.speed, ...playInfo() });
+  track('run_play', { ...covInfo(), speed: state.speed, loop: state.loop, method, ...playInfo() });
+}
+$('playBtn').addEventListener('click', () => togglePlay('button'));
+$('marks').addEventListener('click', e => {
+  const m = e.target.closest('[data-jump]'); if (!m) return;
+  stop(); setT(+m.dataset.jump);
+  track('jump_to_moment', { ...covInfo(), source: 'timeline', mark: m.dataset.mark });
 });
-document.querySelectorAll('.speed button').forEach(b => b.addEventListener('click', () => {
+$('loopBtn').addEventListener('click', e => {
+  state.loop = !state.loop;
+  e.currentTarget.setAttribute('aria-pressed', state.loop);
+  track('toggle_setting', { setting: 'loop', value: state.loop });
+});
+/* Keyboard: Space plays or pauses, ←/→ step 0.1 s. Not while typing, in a dialog, during the tour, or on another button (Space presses it). */
+let stepped = '';   // step_timeline once per play and coverage, like scrub_timeline
+document.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.isComposing || !$('scrim').hidden || tour.on) return;
+  const el = e.target, onScrub = el === $('scrub');
+  if (!onScrub && el.closest && el.closest('input, textarea, select, [contenteditable], dialog')) return;
+  if (e.key === ' ' && (onScrub || !(el.closest && el.closest('button, a, summary, [role="button"], .cov')))) {
+    e.preventDefault(); togglePlay('key');
+  } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && (onScrub || !(el.closest && el.closest('[role="tablist"], [role="radiogroup"]')))) {
+    e.preventDefault(); stop();
+    const step = e.key === 'ArrowRight' ? 0.1 : -0.1;
+    setT(Math.round((state.t + step) * 10) / 10);
+    const k = state.basePlay.id + ':' + state.cov;
+    if (k !== stepped) { stepped = k; track('step_timeline', covInfo()); }
+  }
+});
+document.querySelectorAll('.speed button[data-sp]').forEach(b => b.addEventListener('click', () => {
   state.speed = +b.dataset.sp;
   track('change_speed', { speed: state.speed });
-  document.querySelectorAll('.speed button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  document.querySelectorAll('.speed button[data-sp]').forEach(x => x.setAttribute('aria-pressed', x === b));
 }));
 
 document.getElementById('year').textContent = new Date().getFullYear();
@@ -2107,6 +2353,7 @@ function packPlay(play) {
     if (p.motion) q.motion = pts(p.motion);
     return q;
   }) };
+  if (play.format) o.format = play.format;
   if (play.handoff) o.handoff = play.handoff;
   const bytes = new TextEncoder().encode(JSON.stringify(o));
   let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
@@ -2120,10 +2367,15 @@ const shortHash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 
 
 /* ---------- turning AI output or an imported file into a safe, complete play ---------- */
 const DEFAULTS = { X: ['orange', 'Orange', [5, 0]], Y: ['purple', 'Purple', [25, 0]], Z: ['green', 'Green', [20, -2]], C: ['ink', 'Center', [15, 0]], Q: ['red', 'Quarterback', [15, -3.5]] };
+// 7v7 adds H and a back (R); those labels exist only in 7v7. 40-yard field, ball at x = 20.
+const DEFAULTS7 = { X: ['orange', 'Orange', [5, 0]], H: ['teal', 'Teal', [13, 0]], C: ['ink', 'Center', [20, 0]], Y: ['purple', 'Purple', [27, 0]], Z: ['green', 'Green', [35, 0]], Q: ['red', 'Quarterback', [20, -4.5]], R: ['gold', 'Back', [23, -4.5]] };
+const ORDER5 = ['X', 'C', 'Q', 'Z', 'Y'], ORDER7 = ['X', 'H', 'C', 'Q', 'Y', 'Z', 'R'];
+const ID_ALIAS = { QB: 'Q', R1: 'R', RB: 'R', HB: 'R', TB: 'R', FB: 'R', F: 'R', B: 'R' };
+const pidOf = p => { const k = String((p && (p.id || p.label)) || '').toUpperCase().trim(); return ID_ALIAS[k] || k; };
 const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? clamp(n, lo, hi) : d; };
-const toPt = (p, d) => {
+const toPt = (p, d, w = 30) => {
   if (!Array.isArray(p) || p.length < 2) return null;
-  const q = [num(p[0], 0.5, 29.5, d[0]), num(p[1], -9, 20, d[1])];
+  const q = [num(p[0], 0.5, w - 0.5, d[0]), num(p[1], -9, 20, d[1])];
   if (p[2]) q.push(num(p[2], 0, 2, 0));
   return q;
 };
@@ -2132,13 +2384,24 @@ const cleanGroup = g => String(g ?? '').replace(/\s+/g, ' ').trim().slice(0, 40)
 const cleanNum = n => { const v = Number(String(n ?? '').trim()); return Number.isInteger(v) && v >= 1 && v <= 99 ? v : null; };
 function normalizePlay(raw, id) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.players)) throw new Error('That doesn’t look like a play: no players found.');
+  // 7v7 when the play says so, uses H or a back, or has more than five players. Labels the format doesn't use
+  // (a diagram's own letters) fill the open receiver spots instead of being dropped.
+  const given = raw.players.filter(p => p && typeof p === 'object').slice(0, 7);
+  const is7 = raw.format === '7v7' || given.some(p => ['H', 'R'].includes(pidOf(p))) || given.length > 5;
+  const order = is7 ? ORDER7 : ORDER5, defs = is7 ? DEFAULTS7 : DEFAULTS, w = is7 ? 40 : 30;
+  const byId = {}, extra = [];
+  given.forEach(p => { const k = pidOf(p); if (order.includes(k) && !byId[k]) byId[k] = p; else extra.push(p); });
+  (is7 ? ['X', 'H', 'Y', 'Z', 'R'] : ['X', 'Y', 'Z']).forEach(k => { if (!byId[k] && extra.length) byId[k] = extra.shift(); });
   const players = [];
-  for (const pid of ['X', 'C', 'Q', 'Z', 'Y']) {
-    let r = raw.players.find(p => p && String(p.id || p.label || '').toUpperCase() === pid);
-    const [color, name, s0] = DEFAULTS[pid];
+  for (const pid of order) {
+    let r = byId[pid];
+    const [color, name, s0] = defs[pid];
     if (!r) { if (pid === 'Q' || pid === 'C') r = {}; else continue; }
-    const start = toPt(r.start, s0) || s0;
-    let route = (Array.isArray(r.route) ? r.route : []).map(p => toPt(p, start)).filter(Boolean).slice(0, 12);
+    const start = toPt(r.start, s0, w) || s0;
+    let route = (Array.isArray(r.route) ? r.route : []).map(p => toPt(p, start, w)).filter(Boolean).slice(0, 12);
+    // In 7v7 the center usually snaps and stays in: drawn without a route downfield, it isn't a receiver
+    const blocker = is7 && pid === 'C' && !route.some(p => p[1] > start[1] + 1 || Math.abs(p[0] - start[0]) > 1.5);
+    if (blocker) route = [[start[0], start[1]]];
     if (!route.length) route = pid === 'Q' ? [[start[0], start[1] - 1]] : [[start[0], start[1] + 5]];
     const p = {
       id: pid, label: pid, name, color, start, route,
@@ -2146,7 +2409,7 @@ function normalizePlay(raw, id) {
       delay: pid === 'C' ? 0.35 : pid === 'Q' ? 0.15 : 0,
       speed: pid === 'Q' ? 3.4 : pid === 'C' ? 5.0 : start[1] < -1 ? 5.4 : 5.6
     };
-    if (pid === 'Q') p.qb = true; else p.eligible = true;
+    if (pid === 'Q') p.qb = true; else if (blocker) { p.blocker = true; p.routeName = 'Snap, stay in'; } else p.eligible = true;
     if (r.star || r.shape === 'star') p.shape = 'star';
     if (r.dashed) p.dashed = true;
     if (r.fake) p.fake = true;
@@ -2156,14 +2419,18 @@ function normalizePlay(raw, id) {
   if (players.filter(p => p.eligible).length < 2) throw new Error('A play needs at least two receivers.');
   let handoff = null;
   if (raw.handoff && typeof raw.handoff === 'object') {
-    const to = String(raw.handoff.to || '').toUpperCase(), c = players.find(p => p.id === to && p.eligible);
+    const to = pidOf({ id: raw.handoff.to });
+    // 7v7 direct snap: the back snaps it and hands to the QB, who runs (a QB keep), so the QB can carry it there
+    const c = players.find(p => p.id === to && (p.eligible || (is7 && p.qb && !raw.handoff.thenPass && raw.type !== 'trick')));
     if (c) {
+      if (c.qb) c.speed = 5.2;
       handoff = { to, at: Math.round(num(raw.handoff.at, 0, c.route.length - 1, 0)) };
       if (raw.handoff.thenPass || raw.type === 'trick') handoff.thenPass = true;
     }
   }
   const play = {
     id: id || 'u' + rid(), series: 'mine',
+    ...(is7 ? { format: '7v7' } : {}),
     name: String(raw.name || 'Untitled play').replace(/^\d+\s*·\s*/, '').slice(0, 80),
     type: handoff ? (handoff.thenPass ? 'trick' : 'run') : 'pass',
     concept: String(raw.concept || (handoff ? 'Run' : 'Pass')).slice(0, 60),
@@ -2527,7 +2794,7 @@ function openShare() {
       <label class="eyebrow" for="shareUrl">Link</label>
       <input id="shareUrl" readonly value="${esc(url)}">
       <div><button class="act primary" id="copyLink" ${url ? '' : 'disabled'}>Copy link</button></div>
-      <p class="status${err ? ' err' : ''}" id="shareStatus">${err || `Opens ${esc(state.play.name)} vs ${state.cov ? COVERAGES[state.cov].name : 'no defense'}. ${note}`}</p>
+      <p class="status${err ? ' err' : ''}" id="shareStatus">${err || `Opens ${esc(state.play.name)} vs ${state.cov ? covsFor(state.play)[state.cov].name : 'no defense'}. ${note}`}</p>
     </div>`);
   $('copyLink').addEventListener('click', async () => {
     const inp = $('shareUrl');
@@ -2611,7 +2878,7 @@ function indexer(palette) {
 }
 const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 async function renderGif(progress) {
-  const W = 540, FH = 504, CAP = 46, H = FH + CAP, fps = 10, T = tEnd();
+  const W = 18 * fmtOf(state.play).w, FH = 504, CAP = 46, H = FH + CAP, fps = 10, T = tEnd();
   const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const cs = getComputedStyle(document.documentElement);
@@ -2620,9 +2887,9 @@ async function renderGif(progress) {
     .replace(/class="lbl"/g, 'font-family="Barlow, Arial, sans-serif" font-weight="700"')
     .replace(/class="def[^"]*"/g, '');
   const mark = !account.user;   // signed out, the GIF carries the site address over the field
-  const title = `${state.play.name}  ·  vs ${state.cov ? COVERAGES[state.cov].name : 'no defense'}${state.blitz ? ' + blitz' : ''}`;
+  const title = `${state.play.name}  ·  vs ${state.cov ? covsFor(state.play)[state.cov].name : 'no defense'}${state.blitz ? ' + blitz' : ''}`;
   const draw = async t => {
-    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 336" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmtOf(state.play).w * S} 336" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
     const img = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr));
     ctx.fillStyle = tok('--panel'); ctx.fillRect(0, 0, W, CAP);
     ctx.fillStyle = tok('--ink'); ctx.font = '700 17px Barlow, Arial, sans-serif'; ctx.textBaseline = 'middle';
@@ -2705,7 +2972,7 @@ $('exportBtn').addEventListener('click', () => {
       <div><button class="act primary" id="expJson">Playbook file (.json)</button></div>
       <p class="muted">Every route and alignment. Import it on another device with New play → Import file, or share it with another coach.</p>
       <div><button class="act" id="expCsv">Scouting sheet (.csv)</button></div>
-      <p class="muted">One row per play with its grade against Cover 1, 2, 3 and Man. Opens in Excel or Google Sheets.</p>
+      <p class="muted">One row per play with its grade against each coverage. Opens in Excel or Google Sheets.</p>
     </div>`);
   $('expJson').addEventListener('click', async () => {
     const data = JSON.stringify({ app: 'Open Grass', format: 1, exportedAt: new Date().toISOString(), plays: favs.map(exportPlay) }, null, 1);
@@ -2713,9 +2980,12 @@ $('exportBtn').addEventListener('click', () => {
   });
   $('expCsv').addEventListener('click', async () => {
     const q = v => `"${String(v).replace(/"/g, '""')}"`;
-    const rows = [['#', 'Play', 'Group', 'Type', 'Concept', ...COV_ORDER.map(c => COVERAGES[c].name), ...COV_ORDER.map(c => COVERAGES[c].name + ' + blitz')]];
-    favs.forEach(p => rows.push([p.mine && p.num || '', p.name, p.mine && p.group || '', p.type, p.concept,
-      ...COV_ORDER.map(c => runPlay(p, c, {}).ev.grade), ...COV_ORDER.map(c => runPlay(p, c, { blitz: true }).ev.grade)]));
+    // one column per coverage across both formats; a play's cells are blank for the other format's coverages
+    const cols = ['c1', 'c2', 'c3', 'c4', 'c0', 'm2', 'man'], cname = c => (COVERAGES[c] || COVERAGES7[c]).name;
+    const grade = (p, c, o) => covsFor(p)[c] ? runPlay(p, c, o).ev.grade : '';
+    const rows = [['#', 'Play', 'Group', 'Format', 'Type', 'Concept', ...cols.map(cname), ...cols.map(c => cname(c) + ' + blitz')]];
+    favs.forEach(p => rows.push([p.mine && p.num || '', p.name, p.mine && p.group || '', fmtOf(p).id, p.type, p.concept,
+      ...cols.map(c => grade(p, c, {})), ...cols.map(c => grade(p, c, { blitz: true }))]));
     if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) { toast('Scouting sheet saved.'); track('file_download', { file_extension: 'csv', content_type: 'scouting_sheet', play_count: favs.length }); }
   });
 });
@@ -2796,7 +3066,7 @@ $('dataBtn').addEventListener('click', openYourData);
 
 /* ---------- startup: links, then the coach's saved plays and favorites ---------- */
 function parseHash() {
-  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|man|none))?$/.exec((location.hash || '').slice(1));
+  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|c4|c0|m2|man|none))?$/.exec((location.hash || '').slice(1));
   return m ? { shared: !!m[1], packed: m[1] === 'j-', id: m[2], cov: m[3] === 'none' ? null : m[3] } : null;
 }
 const link = parseHash();
