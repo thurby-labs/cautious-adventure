@@ -1020,7 +1020,9 @@ function simulate(play, defense, opts = {}) {
           d.bites = fakers.includes(near) ? near.id : null;
         }
         // youth defenders take a moment to recognize the run; biting on a fake costs more
-        const read = (d.role === 'man' ? 0.8 : d.deep ? 0.6 : 0.5) + (d.bites ? 0.8 : 0);
+        // 7v7: a man defender whose man takes the ball, and the spy, are already watching the ball carrier
+        const read = (is7 && ballRun && d.man === ballRun.id ? 0.2 : is7 && d.role === 'mirror' ? 0.3
+          : d.role === 'man' ? 0.8 : d.deep ? 0.6 : 0.5) + (d.bites ? 0.8 : 0);
         const chases = !ballRun || !ballRun.thenPass || d.role === 'rush' || (d.role === 'zone' && !d.deep);
         const sees = carrier && chases && t >= ballRun.th + read;
         // a 7v7 rusher's job is the QB: after a handoff he takes a beat to find the ball carrier
@@ -1034,7 +1036,8 @@ function simulate(play, defense, opts = {}) {
         else if (carrier && d.bites && !sees && chases) { target = off[d.bites]; speed = 5.3; }
         else if (sees) {
           // run recognized: take a pursuit angle on the ball carrier
-          const ahead = ballRun.tackle ? carrier : posAt(paths[ballRun.id], t + 0.35);
+          // the spy's job is the ball carrier: it goes straight at the runner instead of leading them
+          const ahead = ballRun.tackle || d.role === 'mirror' ? carrier : posAt(paths[ballRun.id], t + 0.35);
           target = ahead; speed = d.deep ? 4.8 : 5.1;
         }
         else if (d.role === 'man') {
@@ -1072,8 +1075,11 @@ function simulate(play, defense, opts = {}) {
           else target = clampToEllipse(best, z);
           speed = d.deep ? 4.8 : 5.0;
         }
-        // 7v7 rules: only rushers may cross the line of scrimmage before a handoff
-        if (is7 && d.role !== 'rush' && !carrier && target[1] < 0) target = [target[0], 0];
+        // 7v7 rules: only rushers may cross the line of scrimmage before a handoff; a defender covering a back waits at linebacker depth
+        if (is7 && d.role !== 'rush' && !carrier) {
+          const floor = d.role === 'man' && off[d.man] && off[d.man][1] < 0 ? 3 : 0;
+          if (target[1] < floor) target = [target[0], floor];
+        }
         const dx = target[0] - d.p[0], dy = target[1] - d.p[1], m = Math.hypot(dx, dy);
         const step = speed * DT;
         if (m > 0) d.p = m <= step ? [...target] : [d.p[0] + dx / m * step, d.p[1] + dy / m * step];
