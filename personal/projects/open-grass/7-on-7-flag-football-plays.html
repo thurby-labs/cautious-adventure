@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- ga:begin (build.py copies this block into every content page) -->
+<!-- Google tag (gtag.js): loaded by the script below unless analytics is off -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  /* Google Ads (AW-18499804478) is linked to this Google tag, so it loads with GA4. privacy.html discloses ad measurement but
+     promises no ad cookies, retargeting or personalized ads, so ad cookies, ad user data and ad personalization stay denied for every visitor. GA4 still works, and sign-ups reach Ads
+     only as GA4 key events imported in Google Ads. Change this only together with privacy.html. */
+  gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'granted' });
+  gtag('set', { allow_google_signals: false, allow_ad_personalization_signals: false });
+  gtag('js', new Date());
+
+  /* page_location drops Clerk's __clerk* query params and the #fragment: it can hold the owner token (#owner=...) or a whole custom play
+     packed into a share link (#j-...), neither of which belongs in Analytics. link_type keeps what kind of link it was.
+     On anything but the live site, events go to DebugView (filter them with the Developer traffic data filter).
+     A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
+     Analytics is off when the visitor turned it off under "Your data" (og-no-analytics) or their browser sends Global Privacy Control:
+     then gtag.js never loads, so neither GA4 nor the linked Google Ads page-view ping is sent (the ga-disable flag alone only
+     stops GA4). privacy.html promises that opting out stops both. */
+  (() => {
+    let off = !!navigator.globalPrivacyControl;
+    try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
+    else {
+      const t = document.createElement('script');
+      t.async = true;
+      t.src = 'https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7';
+      document.head.appendChild(t);
+    }
+    const h = location.hash.slice(1);
+    // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
+    const q = new URLSearchParams(location.search);
+    [...q.keys()].filter(k => k.startsWith('__clerk')).forEach(k => q.delete(k));
+    const qs = q.toString();
+    let owner = h.startsWith('owner=') && h !== 'owner=off';
+    try { owner = owner || (!!localStorage.getItem('og-owner') && h !== 'owner=off'); } catch (e) {}
+    gtag('config', 'G-1T9DMC15V7', {
+      page_location: location.origin + location.pathname + (qs ? '?' + qs : ''),
+      link_type: !h ? 'none' : h.startsWith('owner=') ? 'owner' : h.startsWith('j-') ? 'custom_play' : h.startsWith('s-') ? 'legacy_share' : 'builtin_play',
+      ...(owner ? { traffic_type: 'internal' } : {}),
+      ...(/(^|\.)open-grass\.com$/.test(location.hostname) ? {} : { debug_mode: true })
+    });
+  })();
+</script>
+<!-- ga:end -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>7 on 7 Flag Football Plays, Graded vs Every Defense | Open Grass</title>
+<meta name="description" content="Four 7 on 7 flag football plays, each graded against Cover 1, 2, 3, 4, a two-rusher look and man. See what beats what, then test your own 7v7 plays.">
+<meta name="author" content="Open Grass, LLC">
+<link rel="canonical" href="https://open-grass.com/7-on-7-flag-football-plays">
+<meta name="theme-color" content="#1C5A37">
+<link rel="icon" type="image/png" sizes="48x48" href="/logo/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/logo/favicon-96.png">
+<link rel="apple-touch-icon" href="/logo/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Open Grass">
+<meta property="og:url" content="https://open-grass.com/7-on-7-flag-football-plays">
+<meta property="og:title" content="7 on 7 flag football plays, graded against every defense">
+<meta property="og:description" content="Four 7 on 7 flag football plays, each graded against Cover 1, 2, 3, 4, a two-rusher look and man. See what beats what, then test your own 7v7 plays.">
+<meta property="og:image" content="https://open-grass.com/logo/og-image.jpg?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@graph": [
+  {"@type": "WebPage", "@id": "https://open-grass.com/7-on-7-flag-football-plays#page", "url": "https://open-grass.com/7-on-7-flag-football-plays", "name": "7 on 7 flag football plays, graded against every defense", "description": "Four 7 on 7 flag football plays, each graded against Cover 1, 2, 3, 4, a two-rusher look and man. See what beats what, then test your own 7v7 plays.",
+   "isPartOf": {"@type": "WebSite", "name": "Open Grass", "url": "https://open-grass.com/"}, "about": {"@id": "https://open-grass.com/#app"},
+   "publisher": {"@type": "Organization", "@id": "https://open-grass.com/#org", "name": "Open Grass", "legalName": "Open Grass, LLC"}},
+  {"@type": "BreadcrumbList", "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Open Grass", "item": "https://open-grass.com/"},
+    {"@type": "ListItem", "position": 2, "name": "7 on 7 Flag Football Plays", "item": "https://open-grass.com/7-on-7-flag-football-plays"}]}
+]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Content pages (pages/*.html, built by build.py). Same tokens as the app and privacy.html. */
+:root {
+  --paper: #EEF2EA; --panel: #FFFFFF; --ink: #15201A; --muted: #5B6A60; --line: #D5DECF; --chip: #E3EADD;
+  --accent: #1C5A37; --accent-ink: #FFFFFF; --good: #1D8A4B; --warn: #B87D05; --bad: #C1362B;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+    --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #0E1410; --panel: #151D17; --ink: #E5ECE4; --muted: #92A196; --line: #26332A; --chip: #1D2820;
+  --accent: #79CF96; --accent-ink: #0E1410; --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--f-body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 16px 48px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+.top img { height: 60px; width: auto; display: block; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
+:root[data-theme="dark"] .top img { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
+.btn { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 700; padding: 11px 18px; border-radius: 10px; }
+.btn.ghost { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+.btn.small { padding: 8px 14px; font-size: 15px; }
+h1 { font: 900 44px/0.98 var(--f-display); text-transform: uppercase; letter-spacing: .005em; margin: 0 0 14px; max-width: 18ch; }
+h2 { font: 800 30px/1 var(--f-display); text-transform: uppercase; margin: 48px 0 14px; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.lede { font-size: 20px; max-width: 60ch; color: var(--ink); }
+.muted { color: var(--muted); }
+.ctas { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 8px; }
+figure { margin: 28px 0 0; }
+figure img { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(21,32,26,.12); }
+figcaption { color: var(--muted); font-size: 15px; margin-top: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.card p { color: var(--muted); margin: 0; font-size: 16px; }
+.step { font: 900 32px/1 var(--f-display); color: var(--accent); margin-bottom: 6px; }
+.grades { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+.grades span { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 15px; }
+.grades b { font: 900 22px/1 var(--f-display); margin-right: 6px; }
+.gA { color: var(--good); } .gB { color: var(--good); } .gC, .gD { color: var(--warn); } .gF { color: var(--bad); }
+ul.ticks { padding-left: 20px; margin: 0 0 14px; }
+ul.ticks li { margin-bottom: 6px; }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin: 8px 0 0; color: var(--muted); }
+.final { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-top: 48px; text-align: center; }
+.final h2 { margin-top: 0; }
+/* Route tree diagram (inline SVG) */
+svg.tree { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid var(--line); }
+.tree .turf { fill: #B3D7A2; } .tree .yl { stroke: #FFFFFF; stroke-opacity: .7; stroke-width: 1.5; } .tree .los { stroke: #FFFFFF; stroke-width: 3; }
+.tree .yt, .tree .dir { fill: #15201A; fill-opacity: .7; font: 600 15px var(--f-body); }
+.tree .r { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.tree .s-s { stroke: #15634F; } .tree .s-m { stroke: #E2711C; } .tree .s-d { stroke: #7B3DB6; }
+.tree .f-s { fill: #15634F; } .tree .f-m { fill: #E2711C; } .tree .f-d { fill: #7B3DB6; }
+.tree .rl { font: 800 20px var(--f-display); text-transform: uppercase; letter-spacing: .02em; paint-order: stroke; stroke: #B3D7A2; stroke-width: 4px; }
+.tree .t-s { fill: #0F4A3B; } .tree .t-m { fill: #A44E0C; } .tree .t-d { fill: #5B2A8A; }
+.tree .wr { fill: #15201A; } .tree .wrt { fill: #FFFFFF; font: 800 11px var(--f-body); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .turf { fill: #1D3A25; } :root:not([data-theme="light"]) .tree .rl { stroke: #1D3A25; }
+  :root:not([data-theme="light"]) .tree .yt, :root:not([data-theme="light"]) .tree .dir { fill: #CFE3D0; }
+  :root:not([data-theme="light"]) .tree .t-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .t-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .t-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .s-s { stroke: #3FC79C; } :root:not([data-theme="light"]) .tree .s-m { stroke: #F5953F; } :root:not([data-theme="light"]) .tree .s-d { stroke: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .f-s { fill: #3FC79C; } :root:not([data-theme="light"]) .tree .f-m { fill: #F5953F; } :root:not([data-theme="light"]) .tree .f-d { fill: #B78BF2; }
+  :root:not([data-theme="light"]) .tree .wr { fill: #E5ECE4; } :root:not([data-theme="light"]) .tree .wrt { fill: #0E1410; } }
+.key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 15px; color: var(--muted); margin-top: 10px; }
+.key i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+/* Play cards with diagrams (pages/_plays.js) */
+.plays { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; }
+.pcard p { color: var(--muted); font-size: 16px; margin: 0 0 10px; }
+.pcard .grades { margin: 0 0 12px; gap: 6px; } .pcard .grades span { padding: 4px 8px; font-size: 13px; } .pcard .grades b { font-size: 18px; margin-right: 4px; }
+.pcard .lesson { color: var(--ink); font-weight: 600; font-size: 15px; }
+.pcard .pacts { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 15px; }
+.pcard h3 { margin-top: 12px; }
+svg.pd { width: 100%; height: auto; display: block; border-radius: 10px; }
+.pd .turf { fill: #B3D7A2; } .pd .yl { stroke: #FFFFFF; stroke-opacity: .6; } .pd .los { stroke: #FFFFFF; stroke-width: 2; }
+.pd .rt { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; } .pd .da { stroke-dasharray: 5 4; } .pd .mo { stroke-dasharray: 1.5 4; stroke-width: 2.2; }
+.pd .s-o { stroke: #E2711C; } .pd .s-p { stroke: #7B3DB6; } .pd .s-g { stroke: #15634F; } .pd .s-k { stroke: #1A1A1A; } .pd .s-r { stroke: #D23229; } .pd .s-t { stroke: #0E7C86; } .pd .s-y { stroke: #A8740A; }
+.pd .f-o { fill: #E2711C; } .pd .f-p { fill: #7B3DB6; } .pd .f-g { fill: #15634F; } .pd .f-k { fill: #1A1A1A; } .pd .f-r { fill: #D23229; } .pd .f-t { fill: #0E7C86; } .pd .f-y { fill: #A8740A; }
+.pd .star { stroke: #EBF25A; stroke-width: 2.5; }
+.pd .pl { fill: #FFFFFF; font: 800 12px var(--f-body); text-anchor: middle; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pd .turf { fill: #1D3A25; }
+  :root:not([data-theme="light"]) .pd .s-o { stroke: #F5953F; } :root:not([data-theme="light"]) .pd .s-p { stroke: #B78BF2; } :root:not([data-theme="light"]) .pd .s-g { stroke: #3FC79C; } :root:not([data-theme="light"]) .pd .s-k { stroke: #F4F4F0; } :root:not([data-theme="light"]) .pd .s-r { stroke: #FF6A5C; } :root:not([data-theme="light"]) .pd .s-t { stroke: #4FC9D2; } :root:not([data-theme="light"]) .pd .s-y { stroke: #E8B33E; }
+  :root:not([data-theme="light"]) .pd .f-o { fill: #F5953F; } :root:not([data-theme="light"]) .pd .f-p { fill: #B78BF2; } :root:not([data-theme="light"]) .pd .f-g { fill: #3FC79C; } :root:not([data-theme="light"]) .pd .f-k { fill: #F4F4F0; } :root:not([data-theme="light"]) .pd .f-r { fill: #FF6A5C; } :root:not([data-theme="light"]) .pd .f-t { fill: #4FC9D2; } :root:not([data-theme="light"]) .pd .f-y { fill: #E8B33E; }
+  :root:not([data-theme="light"]) .pd .pl { fill: #0E1410; } }
+/* Coverage diagrams (pages/_coverages.js) */
+.cov .zn { fill: #1E2A46; fill-opacity: .08; stroke: #1E2A46; stroke-opacity: .35; stroke-dasharray: 3 3; } .cov .zd { fill-opacity: .12; }
+.cov .df { fill: #1E2A46; } .cov .dd { fill: #1E2A46; stroke: #EBF25A; stroke-width: 2.5; }
+.cov .dt { fill: #F3F6FB; font: 800 10px var(--f-body); text-anchor: middle; }
+.cov .deepline { stroke: #1E2A46; stroke-opacity: .5; stroke-dasharray: 6 4; } .cov .dl { fill: #1E2A46; fill-opacity: .7; font: 700 10px var(--f-body); text-anchor: end; text-transform: uppercase; letter-spacing: .08em; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cov .zn { fill: #A9BCE6; stroke: #A9BCE6; } :root:not([data-theme="light"]) .cov .df { fill: #DCE4F4; }
+  :root:not([data-theme="light"]) .cov .dt { fill: #17203A; } :root:not([data-theme="light"]) .cov .deepline { stroke: #A9BCE6; } :root:not([data-theme="light"]) .cov .dl { fill: #CFE3D0; } }
+/* Before/after fix cards (pages/_fixes.js) */
+.fix { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 0 0 18px; }
+.fix h3 { font-size: 21px; display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.fix .num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font: 900 20px var(--f-display); }
+.fix > p { margin: 0 0 8px; }
+.ba { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
+.ba figure { margin: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.ba figure svg { width: 100%; }
+.ba figcaption { margin: 0; font: 800 16px var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ba .grades { margin: 0; gap: 6px; } .ba .grades span { padding: 4px 8px; font-size: 13px; } .ba .grades b { font-size: 18px; margin-right: 4px; }
+.grades span.hl { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+/* Route vs coverage cheat sheet */
+.tbl { overflow-x: auto; margin: 0 0 10px; }
+table.cheat { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.cheat th, .cheat td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.cheat th { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 520px) { .cheat th, .cheat td { padding: 8px 5px; font-size: 13.5px; } .cheat th { letter-spacing: .02em; font-size: 11px; } }
+.cheat td.g { color: var(--good); font-weight: 700; } .cheat td.o { color: var(--muted); } .cheat td.t { color: var(--bad); font-weight: 600; }
+.route h3 { display: flex; align-items: baseline; gap: 10px; }
+.route h3 small { font-weight: 500; color: var(--muted); font-size: 14px; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px; color: var(--muted); font-size: 14px; text-align: center; }
+@media (min-width: 760px) { h1 { font-size: 64px; } h2 { font-size: 36px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="/" aria-label="Open Grass home"><img src="/logo/open-grass-logo-header.png" width="101" height="72" alt="Open Grass"></a>
+    <a class="btn small" href="/">Open the app</a>
+  </header>
+  <main>
+<!-- Search terms (Keyword Planner 2026-10-07): 7 on 7 flag football plays (~5k/mo, same bucket as 5v5), 7v7 flag football plays (~500).
+     Positioning: not a play library. These are examples of the feedback; every card points coaches to testing their own plays.
+     The cards between the plays markers are generated by pages/_plays7.js from the 7v7 sample plays in plays.js (original plays),
+     graded by the real engine: edit plays.js / the script, never the cards. Copy is our own words: no source text, no source play names. -->
+    <h1>7 on 7 flag football plays, graded against every defense</h1>
+    <p class="lede">Four example 7 on 7 plays, each run against six defenses: Cover 1, Cover 2, Cover 3, Cover 4, a two-rusher Cover 2 and man with two deep safeties. Some plays beat every zone and lose to man. Some are steady against everything. Here’s how they compare, and how to check your own.</p>
+    <p class="muted">Tap “Watch it” on any play to see it run against a 7 on 7 defense with defenders that react.</p>
+<!-- plays:begin (generated by pages/_plays7.js; don't edit by hand) -->
+    <div class="plays">
+      <article class="pcard">
+        <svg class="pd" viewBox="0 0 400 230" role="img" aria-label="Doubles, Hitch-Corner Pair diagram" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="230" rx="10" class="turf"/><line x1="0" x2="400" y1="120.0" y2="120.0" class="yl"/><line x1="0" x2="400" y1="70.0" y2="70.0" class="yl"/><line x1="0" x2="400" y1="20.0" y2="20.0" class="yl"/><line x1="0" x2="400" y1="170.0" y2="170.0" class="los"/><path d="M50.0,170.0 L50.0,115.0 L57.0,123.0" class="rt s-o" marker-end="url(#b0o)"/><path d="M100.0,170.0 L100.0,110.0 L30.0,50.0" class="rt s-t" marker-end="url(#b0t)"/><path d="M300.0,170.0 L300.0,110.0 L370.0,50.0" class="rt s-p" marker-end="url(#b0p)"/><path d="M350.0,170.0 L350.0,115.0 L343.0,123.0" class="rt s-g" marker-end="url(#b0g)"/><path d="M230.0,215.0 L240.0,180.0" class="rt s-y" marker-end="url(#b0y)"/><defs><marker id="b0o" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-o"/></marker><marker id="b0t" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-t"/></marker><marker id="b0p" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-p"/></marker><marker id="b0g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-g"/></marker><marker id="b0y" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-y"/></marker><marker id="b0k" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-k"/></marker><marker id="b0r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-r"/></marker></defs><circle cx="50.0" cy="170.0" r="10" class="f-o"/><text x="50.0" y="174.0" class="pl">X</text><circle cx="100.0" cy="170.0" r="10" class="f-t star"/><text x="100.0" y="174.0" class="pl">H</text><circle cx="200.0" cy="170.0" r="10" class="f-k"/><text x="200.0" y="174.0" class="pl">C</text><circle cx="200.0" cy="215.0" r="10" class="f-r"/><text x="200.0" y="219.0" class="pl">Q</text><circle cx="300.0" cy="170.0" r="10" class="f-p"/><text x="300.0" y="174.0" class="pl">Y</text><circle cx="350.0" cy="170.0" r="10" class="f-g"/><text x="350.0" y="174.0" class="pl">Z</text><circle cx="230.0" cy="215.0" r="10" class="f-y"/><text x="230.0" y="219.0" class="pl">R</text></svg>
+        <h3>Doubles, Hitch-Corner Pair</h3>
+        <p>The outside receivers sit down at 5 yards while the slots break to the corner behind them, so the short defender outside can’t take both. Line the slots up wide: too tight and the inside defender carries the corner route.</p>
+        <div class="grades"><span><b class="gF">F</b>Cover 1</span><span><b class="gB">B</b>Cover 2</span><span><b class="gA">A</b>Cover 3</span><span><b class="gA">A</b>Cover 4</span><span><b class="gA">A</b>Cover 2 Pressure</span><span><b class="gF">F</b>2-Man Under</span></div>
+        <p class="lesson">A zone beater. Against man coverage, call something else.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiRG91YmxlcywgSGl0Y2gtQ29ybmVyIFBhaXIiLCJjb25jZXB0IjoiSGl0Y2ggb3V0c2lkZSwgY29ybmVyIGZyb20gdGhlIHNsb3QsIGJvdGggc2lkZXMiLCJmb3JtYXQiOiI3djciLCJwbGF5ZXJzIjpbeyJpZCI6IlgiLCJzdGFydCI6WzUsMF0sInJvdXRlIjpbWzUsNS41XSxbNS43LDQuN11dLCJyb3V0ZU5hbWUiOiJIaXRjaCJ9LHsiaWQiOiJIIiwic3RhcnQiOlsxMCwwXSwicm91dGUiOltbMTAsNl0sWzMsMTJdXSwicm91dGVOYW1lIjoiQ29ybmVyIiwic3RhciI6dHJ1ZX0seyJpZCI6IkMiLCJzdGFydCI6WzIwLDBdLCJyb3V0ZSI6W1syMCwwXV0sInJvdXRlTmFtZSI6IlNuYXAsIHN0YXkgaW4ifSx7ImlkIjoiUSIsInN0YXJ0IjpbMjAsLTQuNV0sInJvdXRlIjpbWzIwLC01LjVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJZIiwic3RhcnQiOlszMCwwXSwicm91dGUiOltbMzAsNl0sWzM3LDEyXV0sInJvdXRlTmFtZSI6IkNvcm5lciJ9LHsiaWQiOiJaIiwic3RhcnQiOlszNSwwXSwicm91dGUiOltbMzUsNS41XSxbMzQuMyw0LjddXSwicm91dGVOYW1lIjoiSGl0Y2gifSx7ImlkIjoiUiIsInN0YXJ0IjpbMjMsLTQuNV0sInJvdXRlIjpbWzI0LC0xXV0sInJvdXRlTmFtZSI6IlNldHRsZSJ9XX0.c3">Watch it vs Cover 3</a><a href="/">Test your own play like this →</a></div>
+      </article>
+      <article class="pcard">
+        <svg class="pd" viewBox="0 0 400 230" role="img" aria-label="Trips Right, Three Levels diagram" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="230" rx="10" class="turf"/><line x1="0" x2="400" y1="120.0" y2="120.0" class="yl"/><line x1="0" x2="400" y1="70.0" y2="70.0" class="yl"/><line x1="0" x2="400" y1="20.0" y2="20.0" class="yl"/><line x1="0" x2="400" y1="170.0" y2="170.0" class="los"/><path d="M50.0,170.0 L50.0,150.0 L120.0,90.0 L220.0,80.0" class="rt s-o" marker-end="url(#b1o)"/><path d="M240.0,170.0 L240.0,70.0 L240.0,0.0" class="rt s-t" marker-end="url(#b1t)"/><path d="M290.0,170.0 L290.0,110.0 L350.0,100.0" class="rt s-p" marker-end="url(#b1p)"/><path d="M350.0,170.0 L350.0,0.0" class="rt s-g" marker-end="url(#b1g)"/><path d="M220.0,215.0 L280.0,190.0 L340.0,150.0" class="rt s-y" marker-end="url(#b1y)"/><defs><marker id="b1o" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-o"/></marker><marker id="b1t" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-t"/></marker><marker id="b1p" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-p"/></marker><marker id="b1g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-g"/></marker><marker id="b1y" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-y"/></marker><marker id="b1k" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-k"/></marker><marker id="b1r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-r"/></marker></defs><circle cx="50.0" cy="170.0" r="10" class="f-o"/><text x="50.0" y="174.0" class="pl">X</text><circle cx="240.0" cy="170.0" r="10" class="f-t"/><text x="240.0" y="174.0" class="pl">H</text><circle cx="200.0" cy="170.0" r="10" class="f-k"/><text x="200.0" y="174.0" class="pl">C</text><circle cx="200.0" cy="215.0" r="10" class="f-r"/><text x="200.0" y="219.0" class="pl">Q</text><circle cx="290.0" cy="170.0" r="10" class="f-p star"/><text x="290.0" y="174.0" class="pl">Y</text><circle cx="350.0" cy="170.0" r="10" class="f-g"/><text x="350.0" y="174.0" class="pl">Z</text><circle cx="220.0" cy="215.0" r="10" class="f-y"/><text x="220.0" y="219.0" class="pl">R</text></svg>
+        <h3>Trips Right, Three Levels</h3>
+        <p>Three receivers attack the right side at three depths, deep, middle and flat, while the quarterback rolls toward them. A deep drag from the left fills in behind the short defenders.</p>
+        <div class="grades"><span><b class="gC">C</b>Cover 1</span><span><b class="gA">A</b>Cover 2</span><span><b class="gA">A</b>Cover 3</span><span><b class="gB">B</b>Cover 4</span><span><b class="gA">A</b>Cover 2 Pressure</span><span><b class="gC">C</b>2-Man Under</span></div>
+        <p class="lesson">Beats every zone look. Man coverage is its weak spot.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiVHJpcHMgUmlnaHQsIFRocmVlIExldmVscyIsImNvbmNlcHQiOiJEZWVwLCBtaWRkbGUgYW5kIGZsYXQgdG8gdGhlIHJpZ2h0OyBRQiByb2xscyB0aGF0IHdheSIsImZvcm1hdCI6Ijd2NyIsInBsYXllcnMiOlt7ImlkIjoiWCIsInN0YXJ0IjpbNSwwXSwicm91dGUiOltbNSwyXSxbMTIsOF0sWzIyLDldXSwicm91dGVOYW1lIjoiRGVlcCBkcmFnIn0seyJpZCI6IkgiLCJzdGFydCI6WzI0LDBdLCJyb3V0ZSI6W1syNCwxMF0sWzI0LDE3XV0sInJvdXRlTmFtZSI6IkdvIn0seyJpZCI6IkMiLCJzdGFydCI6WzIwLDBdLCJyb3V0ZSI6W1syMCwwXV0sInJvdXRlTmFtZSI6IlNuYXAsIHN0YXkgaW4ifSx7ImlkIjoiUSIsInN0YXJ0IjpbMjAsLTQuNV0sInJvdXRlIjpbWzI2LC01XV0sInJvdXRlTmFtZSI6IlJvbGwgcmlnaHQifSx7ImlkIjoiWSIsInN0YXJ0IjpbMjksMF0sInJvdXRlIjpbWzI5LDZdLFszNSw3XV0sInJvdXRlTmFtZSI6Ik91dCIsInN0YXIiOnRydWV9LHsiaWQiOiJaIiwic3RhcnQiOlszNSwwXSwicm91dGUiOltbMzUsMTddXSwicm91dGVOYW1lIjoiR28ifSx7ImlkIjoiUiIsInN0YXJ0IjpbMjIsLTQuNV0sInJvdXRlIjpbWzI4LC0yXSxbMzQsMl1dLCJyb3V0ZU5hbWUiOiJGbGF0In1dfQ.c2">Watch it vs Cover 2</a><a href="/">Test your own play like this →</a></div>
+      </article>
+      <article class="pcard">
+        <svg class="pd" viewBox="0 0 400 230" role="img" aria-label="Spread, Slot Crossers diagram" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="230" rx="10" class="turf"/><line x1="0" x2="400" y1="120.0" y2="120.0" class="yl"/><line x1="0" x2="400" y1="70.0" y2="70.0" class="yl"/><line x1="0" x2="400" y1="20.0" y2="20.0" class="yl"/><line x1="0" x2="400" y1="170.0" y2="170.0" class="los"/><path d="M50.0,170.0 L50.0,0.0" class="rt s-o" marker-end="url(#b2o)"/><path d="M130.0,170.0 L140.0,150.0 L220.0,135.0 L320.0,130.0" class="rt s-t" marker-end="url(#b2t)"/><path d="M270.0,170.0 L260.0,150.0 L180.0,140.0 L80.0,135.0" class="rt s-p" marker-end="url(#b2p)"/><path d="M350.0,170.0 L350.0,0.0" class="rt s-g" marker-end="url(#b2g)"/><path d="M230.0,215.0 L240.0,180.0" class="rt s-y" marker-end="url(#b2y)"/><defs><marker id="b2o" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-o"/></marker><marker id="b2t" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-t"/></marker><marker id="b2p" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-p"/></marker><marker id="b2g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-g"/></marker><marker id="b2y" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-y"/></marker><marker id="b2k" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-k"/></marker><marker id="b2r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-r"/></marker></defs><circle cx="50.0" cy="170.0" r="10" class="f-o"/><text x="50.0" y="174.0" class="pl">X</text><circle cx="130.0" cy="170.0" r="10" class="f-t star"/><text x="130.0" y="174.0" class="pl">H</text><circle cx="200.0" cy="170.0" r="10" class="f-k"/><text x="200.0" y="174.0" class="pl">C</text><circle cx="200.0" cy="215.0" r="10" class="f-r"/><text x="200.0" y="219.0" class="pl">Q</text><circle cx="270.0" cy="170.0" r="10" class="f-p"/><text x="270.0" y="174.0" class="pl">Y</text><circle cx="350.0" cy="170.0" r="10" class="f-g"/><text x="350.0" y="174.0" class="pl">Z</text><circle cx="230.0" cy="215.0" r="10" class="f-y"/><text x="230.0" y="219.0" class="pl">R</text></svg>
+        <h3>Spread, Slot Crossers</h3>
+        <p>The two slots cross a few yards past the line while both outside receivers run deep to clear space. Man defenders get caught in the traffic, and zone defenders have to pass them off.</p>
+        <div class="grades"><span><b class="gB">B</b>Cover 1</span><span><b class="gB">B</b>Cover 2</span><span><b class="gB">B</b>Cover 3</span><span><b class="gB">B</b>Cover 4</span><span><b class="gB">B</b>Cover 2 Pressure</span><span><b class="gB">B</b>2-Man Under</span></div>
+        <p class="lesson">No A’s, but no bad grades: a call you can trust against anything.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiU3ByZWFkLCBTbG90IENyb3NzZXJzIiwiY29uY2VwdCI6IlNsb3RzIGNyb3NzIHVuZGVybmVhdGggd2hpbGUgdGhlIG91dHNpZGUgcmVjZWl2ZXJzIGNsZWFyIiwiZm9ybWF0IjoiN3Y3IiwicGxheWVycyI6W3siaWQiOiJYIiwic3RhcnQiOls1LDBdLCJyb3V0ZSI6W1s1LDE3XV0sInJvdXRlTmFtZSI6IkdvIn0seyJpZCI6IkgiLCJzdGFydCI6WzEzLDBdLCJyb3V0ZSI6W1sxNCwyXSxbMjIsMy41XSxbMzIsNF1dLCJyb3V0ZU5hbWUiOiJTaGFsbG93IHJpZ2h0Iiwic3RhciI6dHJ1ZX0seyJpZCI6IkMiLCJzdGFydCI6WzIwLDBdLCJyb3V0ZSI6W1syMCwwXV0sInJvdXRlTmFtZSI6IlNuYXAsIHN0YXkgaW4ifSx7ImlkIjoiUSIsInN0YXJ0IjpbMjAsLTQuNV0sInJvdXRlIjpbWzIwLC01LjVdXSwicm91dGVOYW1lIjoiRHJvcCJ9LHsiaWQiOiJZIiwic3RhcnQiOlsyNywwXSwicm91dGUiOltbMjYsMl0sWzE4LDNdLFs4LDMuNV1dLCJyb3V0ZU5hbWUiOiJTaGFsbG93IGxlZnQifSx7ImlkIjoiWiIsInN0YXJ0IjpbMzUsMF0sInJvdXRlIjpbWzM1LDE3XV0sInJvdXRlTmFtZSI6IkdvIn0seyJpZCI6IlIiLCJzdGFydCI6WzIzLC00LjVdLCJyb3V0ZSI6W1syNCwtMV1dLCJyb3V0ZU5hbWUiOiJTZXR0bGUifV19.c1">Watch it vs Cover 1</a><a href="/">Test your own play like this →</a></div>
+      </article>
+      <article class="pcard">
+        <svg class="pd" viewBox="0 0 400 230" role="img" aria-label="Doubles, Slants and Quick Outs diagram" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="230" rx="10" class="turf"/><line x1="0" x2="400" y1="120.0" y2="120.0" class="yl"/><line x1="0" x2="400" y1="70.0" y2="70.0" class="yl"/><line x1="0" x2="400" y1="20.0" y2="20.0" class="yl"/><line x1="0" x2="400" y1="170.0" y2="170.0" class="los"/><path d="M50.0,170.0 L50.0,150.0 L100.0,100.0" class="rt s-o" marker-end="url(#b3o)"/><path d="M110.0,170.0 L90.0,150.0 L40.0,130.0" class="rt s-t" marker-end="url(#b3t)"/><path d="M290.0,170.0 L310.0,150.0 L360.0,130.0" class="rt s-p" marker-end="url(#b3p)"/><path d="M350.0,170.0 L350.0,150.0 L300.0,100.0" class="rt s-g" marker-end="url(#b3g)"/><path d="M230.0,215.0 L270.0,200.0 L310.0,180.0" class="rt s-y" marker-end="url(#b3y)"/><defs><marker id="b3o" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-o"/></marker><marker id="b3t" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-t"/></marker><marker id="b3p" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-p"/></marker><marker id="b3g" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-g"/></marker><marker id="b3y" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-y"/></marker><marker id="b3k" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-k"/></marker><marker id="b3r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-r"/></marker></defs><circle cx="50.0" cy="170.0" r="10" class="f-o star"/><text x="50.0" y="174.0" class="pl">X</text><circle cx="110.0" cy="170.0" r="10" class="f-t"/><text x="110.0" y="174.0" class="pl">H</text><circle cx="200.0" cy="170.0" r="10" class="f-k"/><text x="200.0" y="174.0" class="pl">C</text><circle cx="200.0" cy="215.0" r="10" class="f-r"/><text x="200.0" y="219.0" class="pl">Q</text><circle cx="290.0" cy="170.0" r="10" class="f-p"/><text x="290.0" y="174.0" class="pl">Y</text><circle cx="350.0" cy="170.0" r="10" class="f-g"/><text x="350.0" y="174.0" class="pl">Z</text><circle cx="230.0" cy="215.0" r="10" class="f-y"/><text x="230.0" y="219.0" class="pl">R</text></svg>
+        <h3>Doubles, Slants and Quick Outs</h3>
+        <p>Slants outside and quick outs underneath cross right at the line on both sides, so man defenders run into each other. Against zone, the quick outs get to the sideline before the defense can.</p>
+        <div class="grades"><span><b class="gA">A</b>Cover 1</span><span><b class="gB">B</b>Cover 2</span><span><b class="gB">B</b>Cover 3</span><span><b class="gB">B</b>Cover 4</span><span><b class="gB">B</b>Cover 2 Pressure</span><span><b class="gA">A</b>2-Man Under</span></div>
+        <p class="lesson">Built for man coverage, and solid against zone too.</p>
+        <div class="pacts"><a class="btn small" href="/#j-eyJuYW1lIjoiRG91YmxlcywgU2xhbnRzIGFuZCBRdWljayBPdXRzIiwiY29uY2VwdCI6IlNsYW50cyBvdXRzaWRlLCBxdWljayBvdXRzIHVuZGVybmVhdGg6IGEgcnViIG9uIGJvdGggc2lkZXMiLCJmb3JtYXQiOiI3djciLCJwbGF5ZXJzIjpbeyJpZCI6IlgiLCJzdGFydCI6WzUsMF0sInJvdXRlIjpbWzUsMl0sWzEwLDddXSwicm91dGVOYW1lIjoiU2xhbnQiLCJzdGFyIjp0cnVlfSx7ImlkIjoiSCIsInN0YXJ0IjpbMTEsMF0sInJvdXRlIjpbWzksMl0sWzQsNF1dLCJyb3V0ZU5hbWUiOiJRdWljayBvdXQifSx7ImlkIjoiQyIsInN0YXJ0IjpbMjAsMF0sInJvdXRlIjpbWzIwLDBdXSwicm91dGVOYW1lIjoiU25hcCwgc3RheSBpbiJ9LHsiaWQiOiJRIiwic3RhcnQiOlsyMCwtNC41XSwicm91dGUiOltbMjAsLTUuNV1dLCJyb3V0ZU5hbWUiOiJEcm9wIn0seyJpZCI6IlkiLCJzdGFydCI6WzI5LDBdLCJyb3V0ZSI6W1szMSwyXSxbMzYsNF1dLCJyb3V0ZU5hbWUiOiJRdWljayBvdXQifSx7ImlkIjoiWiIsInN0YXJ0IjpbMzUsMF0sInJvdXRlIjpbWzM1LDJdLFszMCw3XV0sInJvdXRlTmFtZSI6IlNsYW50In0seyJpZCI6IlIiLCJzdGFydCI6WzIzLC00LjVdLCJyb3V0ZSI6W1syNywtM10sWzMxLC0xXV0sInJvdXRlTmFtZSI6IkZsYXJlIHJpZ2h0In1dfQ.c1">Watch it vs Cover 1</a><a href="/">Test your own play like this →</a></div>
+      </article>
+    </div>
+    <!-- plays:end -->
+
+    <h2>What changes in 7 on 7</h2>
+    <ul class="ticks">
+      <li><b>More receivers, more defenders.</b> Most 7 on 7 leagues use a center, a quarterback and five players who can catch the ball. The defense has seven, so there’s no free player in coverage the way there can be in 5 on 5.</li>
+      <li><b>A wider field.</b> With 40 yards sideline to sideline, the flats and the space between short defenders get bigger. Spacing your receivers matters more.</li>
+      <li><b>A rusher from 7 yards.</b> Most leagues let defenders rush from 7 yards back. The rusher rarely pulls the flag, but they hurry the throw, so the ball needs to come out on time.</li>
+      <li><b>The center usually stays in.</b> In many leagues the center snaps and isn’t a receiver, so the five other players carry the routes. Check your league’s rules.</li>
+    </ul>
+
+    <h2>What the grades tell you</h2>
+    <ul class="ticks">
+      <li><b>Zone beaters and man beaters are different plays.</b> The hitch-corner pair is an A against three zone looks and an F against man. The slants and quick outs play is the opposite.</li>
+      <li><b>Steady plays have a place.</b> The slot crossers never grade an A, but they never grade below a B either. That’s the play to call when you can’t tell what the defense is in.</li>
+      <li><b>Alignment matters.</b> Line the slots up too close to the ball and the inside defender can carry the corner route. A couple of yards of spacing changes the grade.</li>
+      <li><b>Your playbook needs an answer for each look.</b> Check that at least one of your plays grades A or B against each defense you see.</li>
+    </ul>
+
+    <h2>Test your own 7 on 7 plays</h2>
+    <div class="grid">
+      <div class="card"><div class="step">1</div><h3>Bring a play you already run</h3><p>Upload a screenshot from your play app, or a photo of your play card or whiteboard. Seven players are read automatically, including your H and running back.</p></div>
+      <div class="card"><div class="step">2</div><h3>Pick the defense you see</h3><p>Drag a 7 on 7 coverage onto the field, add a second rusher, or move defenders to match the other team.</p></div>
+      <div class="card"><div class="step">3</div><h3>Get the grade and the fix</h3><p>See the grade against every defense, who’s open and when, and route changes you can try with one tap.</p></div>
+    </div>
+    <p class="muted">Coaching 5 on 5? See the <a href="/flag-football-plays">5 on 5 example plays</a>. Not sure which coverage you’re facing? See <a href="/how-to-read-a-flag-football-defense">how to read a flag football defense</a>.</p>
+
+    <h2>Questions</h2>
+    <details><summary>How are these plays graded?</summary><p>Open Grass runs each play against six 7 on 7 defenses. Defenders react the way that coverage plays, a rusher comes from 7 yards, and the grade reflects how open the best throw is and how deep it is. An A means the quarterback has a clearly open throw; an F means the defense has it covered.</p></details>
+    <details><summary>Can I upload a 7 on 7 play diagram?</summary><p>Yes. Upload a photo or screenshot of your play, or describe it in a sentence. Open Grass reads all seven players, including an H receiver and a running back labeled R1, RB or similar, and puts them on a 7 on 7 field.</p></details>
+    <details><summary>My league’s rules are different. Does that matter?</summary><p>Rules vary a lot in 7 on 7. Open Grass uses a 40-yard-wide field and a rusher from 7 yards. A center who runs a route in your diagram is treated as a receiver; one who only snaps is not. If your league rushes from closer, expect pressure to arrive sooner than the app shows.</p></details>
+    <details><summary>Does Open Grass still work for 5 on 5?</summary><p>Yes. Plays with five players get the 5 on 5 field and defenses automatically. See the <a href="/flag-football-plays">5 on 5 example plays</a>.</p></details>
+
+    <div class="final">
+      <h2>How do your 7 on 7 plays grade?</h2>
+      <p class="muted">Bring a play you already run and see how it does against every defense.</p>
+      <a class="btn" href="/">Test your plays free</a>
+    </div>
+  </main>
+  <footer>&copy; 2026 Open Grass, LLC. All rights reserved. · <a href="/">Play tester</a> · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="/flag-football-routes">Routes</a> · <a href="/flag-football-plays">Plays</a> · <a href="/how-to-read-a-flag-football-defense">Reading defenses</a> · <a href="/why-isnt-my-flag-football-play-working">Fix a play</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+</div>
+</body>
+</html>

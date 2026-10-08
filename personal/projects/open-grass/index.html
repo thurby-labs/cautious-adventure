@@ -460,6 +460,11 @@ const X_ = (s, r, n, e) => P('X', 'orange', 'Orange', s, r, n, e);
 const Y_ = (s, r, n, e) => P('Y', 'purple', 'Purple', s, r, n, e);
 const Z_ = (s, r, n, e) => P('Z', 'green', 'Green', s, r, n, e);
 const C_ = (s, r, n, e) => P('C', 'ink', 'Center', s, r, n, e);
+// 7v7 (format: '7v7'; 40-yard field, ball at x 20). H and the back R exist only in 7v7; the center snaps and stays in.
+const H_ = (s, r, n, e) => P('H', 'teal', 'Teal', s, r, n, e);
+const R_ = (s, r, n, e) => P('R', 'gold', 'Back', s, r, n, { speed: s[1] < -1 ? 5.4 : 5.6, ...e });
+const C7 = () => ({ id: 'C', label: 'C', name: 'Center', color: 'ink', start: [20, 0], route: [[20, 0]], routeName: 'Snap, stay in', delay: 0.35, speed: 5.0, blocker: true });
+const QB7 = (route = [[20, -5.5]], routeName = 'Drop') => QB(20, -4.5, route, routeName);
 
 const PLAYS = [
 { num: 1, series: 'wristband', id: 'p6', name: 'Split T, Z Left Hustle', type: 'pass', concept: 'Fake hustle left, Y under', players: [
@@ -572,12 +577,45 @@ const PLAYS = [
   C_([15, 0], [[14.5, 3], [16, 7], [18.7, 9]], 'Seam, bend right', { shape: 'star' }),
   QB(15, -2.5, [[15, -3.2, 0.6]], 'Fake, fake, throw'),
   Z_([15, -5.9], [[15.5, -2], [16.9, 3.5]], 'Fake dive', { speed: 5.4 }),
-  X_([25.1, 0], [[20, -2.5], [15, -3.8], [10, -2.5], [7.3, -0.4]], 'Fake reverse left', { fake: true }) ] }
+  X_([25.1, 0], [[20, -2.5], [15, -3.8], [10, -2.5], [7.3, -0.4]], 'Fake reverse left', { fake: true }) ] },
+
+// 7v7 samples: original plays (never from a published playbook), the shapes the engine checks in tests/bench7.js.
+{ num: 101, series: '7v7', format: '7v7', id: 'p70', name: 'Doubles, Hitch-Corner Pair', type: 'pass', concept: 'Hitch outside, corner from the slot, both sides', players: [
+  X_([5, 0], [[5, 5.5], [5.7, 4.7]], 'Hitch'),
+  H_([10, 0], [[10, 6], [3, 12]], 'Corner', { shape: 'star' }),
+  C7(), QB7(),
+  Y_([30, 0], [[30, 6], [37, 12]], 'Corner'),
+  Z_([35, 0], [[35, 5.5], [34.3, 4.7]], 'Hitch'),
+  R_([23, -4.5], [[24, -1]], 'Settle') ] },
+
+{ num: 102, series: '7v7', format: '7v7', id: 'p71', name: 'Trips Right, Three Levels', type: 'pass', concept: 'Deep, middle and flat to the right; QB rolls that way', players: [
+  X_([5, 0], [[5, 2], [12, 8], [22, 9]], 'Deep drag'),
+  H_([24, 0], [[24, 10], [24, 17]], 'Go'),
+  C7(), QB7([[26, -5]], 'Roll right'),
+  Y_([29, 0], [[29, 6], [35, 7]], 'Out', { shape: 'star' }),
+  Z_([35, 0], [[35, 17]], 'Go'),
+  R_([22, -4.5], [[28, -2], [34, 2]], 'Flat') ] },
+
+{ num: 103, series: '7v7', format: '7v7', id: 'p72', name: 'Spread, Slot Crossers', type: 'pass', concept: 'Slots cross underneath while the outside receivers clear', players: [
+  X_([5, 0], [[5, 17]], 'Go'),
+  H_([13, 0], [[14, 2], [22, 3.5], [32, 4]], 'Shallow right', { shape: 'star' }),
+  C7(), QB7(),
+  Y_([27, 0], [[26, 2], [18, 3], [8, 3.5]], 'Shallow left'),
+  Z_([35, 0], [[35, 17]], 'Go'),
+  R_([23, -4.5], [[24, -1]], 'Settle') ] },
+
+{ num: 104, series: '7v7', format: '7v7', id: 'p73', name: 'Doubles, Slants and Quick Outs', type: 'pass', concept: 'Slants outside, quick outs underneath: a rub on both sides', players: [
+  X_([5, 0], [[5, 2], [10, 7]], 'Slant', { shape: 'star' }),
+  H_([11, 0], [[9, 2], [4, 4]], 'Quick out'),
+  C7(), QB7(),
+  Y_([29, 0], [[31, 2], [36, 4]], 'Quick out'),
+  Z_([35, 0], [[35, 2], [30, 7]], 'Slant'),
+  R_([23, -4.5], [[27, -3], [31, -1]], 'Flare right') ] }
 ];
-/* Free beta: signed out, coaches can open these three; the rest of the library needs a free account (gate in app.src.html).
+/* Free beta: signed out, coaches can open these four (three 5v5, one 7v7); the rest of the library needs a free account (gate in app.src.html).
    Picked to show the engine's range: a stack that grades well against everything, a motion flat that beats zone
    but dies against man, and a counter run that beats man but not Cover 1. The first one is the default play. */
-const STARTERS = ['p51', 'p15', 'p35'];
+const STARTERS = ['p51', 'p15', 'p35', 'p71'];   // p71: one 7v7 play open to everyone
 PLAYS.forEach(p => { if (STARTERS.includes(p.id)) p.starter = true; });
 // The flipped version of a play with an option: same id and number, the option's players and handoff, marked optionOn.
 const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept, handoff: p.option.handoff, players: p.option.players, optionOn: true });
@@ -1719,7 +1757,7 @@ function notesHtml(cov) {
 function renderHead() {
   $('playName').textContent = playLabel(state.play);
   const n = Object.keys(state.changes).length;
-  let t = `<span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
+  let t = `<span class="tag">${fmtOf(state.play).id}</span><span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
   if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
   if (state.play.draft) t = `<span class="tag mod">Draft · not saved</span>` + t;
   else if (state.play.mine) t = `<span class="tag">${state.play.group ? esc(state.play.group) : 'My play'}</span>` + t;
@@ -1848,15 +1886,22 @@ const findPlay = id => allPlays().find(p => p.id === id) || (state.basePlay && s
 const playLabel = p => (p.mine && p.num ? `${p.num} · ` : '') + p.name;
 const typeTag = p => p.type === 'pass' ? '' : p.type === 'run' ? ' (run)' : ' (trick)';
 const lockTag = p => isLocked(p) ? ' 🔒' : '';
+// A coach's own, shared or favorited 7v7 play says so in the picker; sample plays sit in one section per format instead.
+const fmtTag = p => fmtOf(p).id === '7v7' ? ' · 7v7' : '';
 function buildSelect() {
-  const opt = p => `<option value="${esc(p.id)}">${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`;
+  const opt = p => `<option value="${esc(p.id)}">${esc(playLabel(p))}${typeTag(p)}${fmtTag(p)}${lockTag(p)}</option>`;
+  const sample = p => `<option value="${esc(p.id)}">${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`;
+  const byFormat = (list, label) => ['5v5', '7v7'].map(f => {
+    const ps = list.filter(p => fmtOf(p).id === f);
+    return ps.length ? `<optgroup label="${label} · ${f}">${ps.map(sample).join('')}</optgroup>` : '';
+  }).join('');
   const gated = PLAYS.some(isLocked);
   let h = '';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
   // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
-  if (gated) h += `<optgroup label="Sample plays (free)">${PLAYS.filter(p => !isLocked(p)).map(opt).join('')}</optgroup>`;
+  if (gated) h += byFormat(PLAYS.filter(p => !isLocked(p)), 'Sample plays (free)');
   const favs = library.favs.map(findPlay).filter(Boolean);
-  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(playLabel(p))}${typeTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
+  if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(playLabel(p))}${typeTag(p)}${fmtTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;
   // My plays: one section per group (A–Z), numbered plays first in call-number order, then the ungrouped ones
   const groups = myGroups(), byNum = ps => [...ps].sort((a, b) => (a.num || 1e3) - (b.num || 1e3));
@@ -1864,7 +1909,7 @@ function buildSelect() {
   const loose = library.mine.filter(p => !p.group);
   if (loose.length || !groups.length) h += `<optgroup label="${groups.length ? 'My plays · no group' : 'My plays'}">${loose.length ? byNum(loose).map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
   const samples = PLAYS.filter(p => !(gated && !isLocked(p)));
-  if (samples.length) h += `<optgroup label="${gated ? 'More sample plays · free account' : 'Sample plays'}">${samples.map(opt).join('')}</optgroup>`;
+  if (samples.length) h += byFormat(samples, gated ? 'More sample plays (free account)' : 'Sample plays');
   $('playSel').innerHTML = h;
   $('playSel').value = state.basePlay.id;
 }
