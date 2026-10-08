@@ -663,7 +663,7 @@ const COVERAGES7 = {
   c1: {
     id: 'c1', name: 'Cover 1', short: 'C1', blitzer: 'LB',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'CBL', label: 'CB', man: true },
       { id: 'NBL', label: 'NB', man: true },
       { id: 'LB', label: 'LB', man: true },
@@ -681,7 +681,7 @@ const COVERAGES7 = {
   c2: {
     id: 'c2', name: 'Cover 2', short: 'C2', blitzer: 'LBL',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'CBL', label: 'CB', pos: [5, 5], zone: { c: [5, 5.5], rx: 4.5, ry: 3.5 } },
       { id: 'LBL', label: 'LB', pos: [14, 6], zone: { c: [14, 6.5], rx: 4.5, ry: 3.5 } },
       { id: 'LBR', label: 'LB', pos: [26, 6], zone: { c: [26, 6.5], rx: 4.5, ry: 3.5 } },
@@ -699,9 +699,9 @@ const COVERAGES7 = {
   c3: {
     id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'MLB',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'OLL', label: 'OLB', pos: [9, 6], zone: { c: [8, 6.5], rx: 5.5, ry: 3.5 } },
-      { id: 'MLB', label: 'MLB', pos: [20, 4.5], zone: { c: [20, 6.5], rx: 4.5, ry: 3.5 } },
+      { id: 'MLB', label: 'MLB', pos: [20, 6], zone: { c: [20, 6.5], rx: 4.5, ry: 3.5 } },
       { id: 'OLR', label: 'OLB', pos: [31, 6], zone: { c: [32, 6.5], rx: 5.5, ry: 3.5 } },
       { id: 'CBL', label: 'CB', pos: [6, 12], zone: { c: [6, 14], rx: 6.5, ry: 6 }, deep: true },
       { id: 'FS', label: 'FS', pos: [20, 13], zone: { c: [20, 14.5], rx: 6.5, ry: 6 }, deep: true },
@@ -717,7 +717,7 @@ const COVERAGES7 = {
   c4: {
     id: 'c4', name: 'Cover 4', short: 'C4', blitzer: 'LBL',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [20, 7], rush: true },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'LBL', label: 'LB', pos: [13, 6], zone: { c: [13, 6.5], rx: 6, ry: 3.5 } },
       { id: 'LBR', label: 'LB', pos: [27, 6], zone: { c: [27, 6.5], rx: 6, ry: 3.5 } },
       { id: 'CBL', label: 'CB', pos: [6, 11], zone: { c: [6, 13], rx: 5, ry: 6 }, deep: true },
@@ -732,23 +732,23 @@ const COVERAGES7 = {
     blitz: 'If a short defender rushes, only one is left underneath.',
     concepts: ['Quick outs and flats to both sidelines', 'Every receiver runs a 5-yard hitch', 'A drag under the deep defenders']
   },
-  c0: {
-    id: 'c0', name: 'Cover 0', short: 'C0', blitzer: 'LB',
+  p2: {
+    id: 'p2', name: 'Cover 2 Pressure', short: 'C2P', blitzer: 'LB',
     defenders: [
-      { id: 'RS1', label: 'RSH', pos: [17, 7], rush: true },
-      { id: 'RS2', label: 'RSH', pos: [23, 7], rush: true },
-      { id: 'CBL', label: 'CB', man: true },
-      { id: 'NBL', label: 'NB', man: true },
-      { id: 'LB', label: 'LB', man: true },
-      { id: 'NBR', label: 'NB', man: true },
-      { id: 'CBR', label: 'CB', man: true }
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
+      { id: 'MIR', label: 'SPY', pos: [17, 7], mirror: true },
+      { id: 'CBL', label: 'CB', pos: [6, 5], zone: { c: [6, 5.5], rx: 6, ry: 3.5 } },
+      { id: 'LB', label: 'LB', pos: [20, 6], zone: { c: [20, 6.5], rx: 6, ry: 3.5 } },
+      { id: 'CBR', label: 'CB', pos: [34, 5], zone: { c: [34, 5.5], rx: 6, ry: 3.5 } },
+      { id: 'FS', label: 'S', pos: [11, 12], zone: { c: [10.5, 14], rx: 8.5, ry: 6 }, deep: true },
+      { id: 'SS', label: 'S', pos: [29, 12], zone: { c: [29.5, 14], rx: 8.5, ry: 6 }, deep: true }
     ],
-    spot: 'Two rushers and man coverage with nobody deep.',
-    strength: 'Pressure. The QB has very little time.',
-    weakness: 'No help deep. One beaten defender is a touchdown.',
-    beat: 'Get the ball out fast: quick breaks, rubs, or a double move with nobody behind it.',
-    blitz: 'A third rusher leaves a receiver completely uncovered.',
-    concepts: ['Quick slants with a rub underneath', 'Two shallow crossers passing close to each other', 'A hitch and go against a defender jumping the short route']
+    spot: 'Two players up at the rush line, two safeties deep and only three in between.',
+    strength: 'Pressure on the QB without giving up the deep ball.',
+    weakness: 'Three short defenders leave big gaps between them.',
+    beat: 'Throw quickly into the space between the three short defenders. The second rusher hangs near the line, so avoid short throws over the middle.',
+    blitz: 'The middle defender joins the rush, leaving nobody short in the middle.',
+    concepts: ['Quick outs and hitches outside the short defenders', 'A route that settles between two short defenders', 'A seam up the middle between the two safeties']
   },
   m2: {
     id: 'm2', name: '2-Man Under', short: '2M', blitzer: 'LB',
@@ -773,15 +773,17 @@ const COVERAGES7 = {
 /* Field size and coverages per format. A play without `format` is 5v5. */
 const FORMATS = {
   '5v5': { id: '5v5', w: 30, mid: 15, order: COV_ORDER, covs: COVERAGES },
-  '7v7': { id: '7v7', w: 40, mid: 20, order: ['c1', 'c2', 'c3', 'c4', 'c0', 'm2'], covs: COVERAGES7 }
+  '7v7': { id: '7v7', w: 40, mid: 20, order: ['c1', 'c2', 'c3', 'c4', 'p2', 'm2'], covs: COVERAGES7 }
 };
 const fmtOf = play => FORMATS[play && play.format === '7v7' ? '7v7' : '5v5'];
 const covsFor = play => fmtOf(play).covs;
 const covOrder = play => fmtOf(play).order;
 // Keep a coverage choice when switching between a 5v5 and a 7v7 play
 function fitCov(cov, play) {
-  if (!cov || covsFor(play)[cov]) return cov;
-  return { man: 'c1', c4: 'c2', c0: 'man', m2: 'man' }[cov] || 'c2';
+  const covs = covsFor(play);
+  if (!cov || covs[cov]) return cov;
+  const alt = { man: 'c1', c4: 'c2', p2: 'c2', c0: 'c1', m2: 'man' }[cov];
+  return covs[alt] ? alt : 'c2';
 }
 
 /* Coaching tips used to explain suggested adjustments, by coverage and route family. */
@@ -813,9 +815,9 @@ const TIPS7 = {
   c4: { deep: 'Four deep defenders sit on vertical routes. Deep routes mostly clear space underneath.',
         short: 'Cover 4 leaves the flats almost empty. Quick outs and flats win.',
         middle: 'Two short defenders guard the middle. A route between them, under the safeties, is open.' },
-  c0: { deep: 'Nobody is deep. A clean release or a double move is a touchdown.',
-        short: 'Two rushers are coming, so the ball has to come out fast. Quick, short routes win.',
-        middle: 'Rubs and crossers beat tight man coverage with no help behind it.' },
+  p2: { deep: 'Two safeties still split the deep field, so deep routes need to attack the middle between them.',
+        short: 'Only three short defenders, so quick throws outside them are open.',
+        middle: 'Settle in the gap between two short defenders, but watch the second rusher sitting near the line.' },
   m2: { deep: 'Two safeties help over the top, so deep routes get double coverage.',
         short: 'Man defenders trail from underneath. Breaking away from the defender gets space.',
         middle: 'Crossers win: the trailing defender can’t undercut them and the safeties sit deep.' }
@@ -882,7 +884,7 @@ function clampToEllipse(p, z) {
 
 function buildDefense(covId, play, opts = {}) {
   const F = fmtOf(play), T = F.covs[covId];
-  const defs = T.defenders.map(d => ({ ...clone(d), role: d.rush ? 'rush' : d.man ? 'man' : 'zone' }));
+  const defs = T.defenders.map(d => ({ ...clone(d), role: d.rush ? 'rush' : d.mirror ? 'mirror' : d.man ? 'man' : 'zone' }));
   if (F.id === '7v7') assignMan7(defs, play, F.mid);
   else if (covId === 'man') {
     const elig = play.players.filter(p => p.eligible).slice().sort((a, b) => a.start[0] - b.start[0] || b.start[1] - a.start[1]);
@@ -898,7 +900,7 @@ function buildDefense(covId, play, opts = {}) {
   }
   if (opts.blitz) {
     const b = defs.find(d => d.id === T.blitzer);
-    if (b) { b.role = 'rush'; b.pos = F.id === '7v7' ? [F.mid + 3, 7] : [MID, 7]; }
+    if (b) { b.role = 'rush'; b.pos = F.id === '7v7' ? [F.mid, 7] : [MID, 7]; }
   }
   const nudges = opts.nudges || {};
   defs.forEach(d => {
@@ -957,7 +959,10 @@ function simulate(play, defense, opts = {}) {
   // fakes and decoys: players drawn dashed or marked fake, other than the ball carrier
   const fakers = ho ? play.players.filter(p => (p.dashed || p.fake) && p.id !== ho.to) : [];
   const defs = defense.defenders.map(d => ({ ...d, p: [...d.pos], cushion: null, rubbed: new Set(), rubLag: 0 }));
-  const rushRead = fmtOf(play).id === '7v7' ? 0.45 : 0;
+  // 7v7 (calibrated to coaching consensus): the rusher reacts to the snap, runs at youth defender speed, and takes a beat
+  // to find a ball carrier after a handoff. Reaching the QB hurries the throw rather than ending the play (see evaluate).
+  const is7 = fmtOf(play).id === '7v7';
+  const rushRead = is7 ? 0.45 : 0, rushStart = is7 ? 0.3 : 0, rushSpeed = is7 ? 5.0 : 5.4;
   const frames = [];
   const steps = Math.round(playTime(play) / DT);
   let pressure = null;
@@ -981,8 +986,13 @@ function simulate(play, defense, opts = {}) {
         const chases = !ballRun || !ballRun.thenPass || d.role === 'rush' || (d.role === 'zone' && !d.deep);
         const sees = carrier && chases && t >= ballRun.th + read;
         // a 7v7 rusher's job is the QB: after a handoff he takes a beat to find the ball carrier
-        if (d.role === 'rush') { target = carrier && t >= ballRun.th + rushRead ? carrier : off[qb.id]; speed = 5.4; }
-        else if (t < 0.25) { /* reading the snap */ }
+        if (d.role === 'rush') { target = carrier && t >= ballRun.th + rushRead ? carrier : off[qb.id]; speed = t < rushStart ? 0 : rushSpeed; }
+        else if (d.role === 'mirror' && !sees) {
+          // contain: shadow the QB side to side just past the line, arms up in the throwing lane
+          const q = off[(carrier && ballRun.id) || qb.id];
+          target = [q[0], Math.max(2, Math.min(d.pos[1], q[1] + 6))]; speed = 5.0;
+        }
+        else if (t < 0.25 || (is7 && d.deep && d.role === 'zone' && t < 0.7)) { /* reading the snap; 7v7 deep defenders read the QB's eyes a beat longer */ }
         else if (carrier && d.bites && !sees && chases) { target = off[d.bites]; speed = 5.3; }
         else if (sees) {
           // run recognized: take a pursuit angle on the ball carrier
@@ -994,6 +1004,11 @@ function simulate(play, defense, opts = {}) {
           for (const o of play.players) {
             if (o.id === d.man || o.qb || d.rubbed.has(o.id)) continue;
             if (dist(off[o.id], d.p) < 1.3) { d.rubbed.add(o.id); d.rubLag += 0.45; }
+          }
+          // 7v7 traffic: two man defenders chasing crossing receivers run into each other
+          if (is7) for (const e of defs) {
+            if (e === d || e.role !== 'man' || d.rubbed.has(e.id)) continue;
+            if (dist(e.p, d.p) < 1.5) { d.rubbed.add(e.id); d.rubLag += 0.35; }
           }
           const cutsPassed = rp.cuts.filter(c => c <= t).length;
           const lag = Math.min(1.3, 0.28 + 0.32 * cutsPassed + d.rubLag);
@@ -1019,6 +1034,8 @@ function simulate(play, defense, opts = {}) {
           else target = clampToEllipse(best, z);
           speed = d.deep ? 4.8 : 5.0;
         }
+        // 7v7 rules: only rushers may cross the line of scrimmage before a handoff
+        if (is7 && d.role !== 'rush' && !carrier && target[1] < 0) target = [target[0], 0];
         const dx = target[0] - d.p[0], dy = target[1] - d.p[1], m = Math.hypot(dx, dy);
         const step = speed * DT;
         if (m > 0) d.p = m <= step ? [...target] : [d.p[0] + dx / m * step, d.p[1] + dy / m * step];
@@ -1031,10 +1048,13 @@ function simulate(play, defense, opts = {}) {
     frames.push({ t, off, def: defs.map(d => [...d.p]) });
     if (!ballRun && pressure === null && defs.some(d => d.role === 'rush' && dist(d.p, off[qb.id]) < 1.2)) pressure = t;
   }
-  const throwBy = opts.throwBy || 3.0;
-  let deadline = pressure !== null ? Math.min(throwBy, pressure) : throwBy;
+  // 7v7 with nobody rushing: the pass clock leaves time to the end of the sim. A 7v7 rusher hurries the QB: one more beat to throw.
+  const rushers = defs.some(d => d.role === 'rush');
+  const throwBy = opts.throwBy || (is7 && !rushers ? TMAX : 3.0);
+  const hurry = is7 && pressure !== null ? pressure : null;
+  let deadline = pressure !== null ? Math.min(throwBy, pressure + (is7 ? 0.4 : 0)) : throwBy;
   if (ballRun && ballRun.thenPass) deadline = ballRun.tackle ? ballRun.tackle.t : Math.min(playTime(play), ballRun.th + 2.2);
-  return { frames, pressure, deadline, roles: defs.map(d => d.role), paths, ballRun };
+  return { frames, pressure, hurry, deadline, roles: defs.map(d => d.role), paths, ballRun };
 }
 
 /* How open is a receiver at one moment: space to the nearest cover defender, minus anyone sitting in the throwing lane. */
@@ -1081,7 +1101,7 @@ function evaluate(play, sim) {
     const series = sim.frames.map(f => {
       const o = openness(f.off[r.id], f.off[passer], f.def, sim.roles);
       if (f.t >= Math.max(tMin, sim.paths[r.id].window) && f.t <= sim.deadline + 1e-6) {
-        const v = throwValue(o.eff, f.off[r.id][1]);
+        const v = throwValue(o.eff, f.off[r.id][1]) * (sim.hurry !== null && sim.hurry !== undefined && f.t > sim.hurry ? 0.75 : 1);
         if (v > best.v) best = { v, t: f.t, eff: o.eff, pos: f.off[r.id], lane: o.lane };
       }
       return o.eff;
@@ -1504,7 +1524,7 @@ function fieldMarkup(t) {
   }
   if (run && !run.ev.run && run.sim.pressure !== null && t >= run.sim.pressure) {
     const q = f.off[qb.id];
-    s += `<text x="${X(q[0])}" y="${Y(q[1]) + 24}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED</text>`;
+    s += `<text x="${X(q[0])}" y="${Y(q[1]) + 24}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">${run.sim.hurry != null ? 'HURRIED' : 'FLAG PULLED'}</text>`;
   }
 
   // defense
@@ -1620,6 +1640,7 @@ function renderRead() {
     const st = r.yards >= 5 ? 'open' : r.yards >= 2.5 ? 'tight' : 'covered';
     h += `<div class="card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${esc(tp.routeName)}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
       <p class="src">Gain is measured to where the first defender reaches the ball carrier. Tap to jump there.</p></div>`;
+    h += pitchNote();
     h += sugsHtml(g, cov) + notesHtml(cov);
     $('read').innerHTML = h; return;
   }
@@ -1631,7 +1652,8 @@ function renderRead() {
     sum = `<b>${tp2.label}</b> gets the ball at ${fmtT(ev.trick.th)} and throws. ` + sum.replace('Best throw:', 'Best target:');
     if (sim.ballRun.tackle) sum += ` The flag gets pulled on ${tp2.label} at ${fmtT(sim.ballRun.tackle.t)}, so the throw has to be out first.`;
   }
-  if (sim.pressure !== null) sum += ` The rusher gets home at ${fmtT(sim.pressure)}, so the ball has to be out before then.`;
+  if (sim.hurry !== null && sim.hurry !== undefined) sum += ` The rusher reaches the QB at ${fmtT(sim.hurry)}. Throws after that are hurried, and the QB has about half a second left.`;
+  else if (sim.pressure !== null) sum += ` The rusher gets home at ${fmtT(sim.pressure)}, so the ball has to be out before then.`;
   h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">vs ${cov.name}${state.blitz ? ' + blitz' : ''}</div><h2>${head}</h2><p>${sum}</p></div></div></div>`;
 
   h += `<div class="card"><h3>QB read progression</h3><ol class="reads">`;
@@ -1643,11 +1665,17 @@ function renderRead() {
     h += `<li><button data-jump="${b.t ?? ''}"><span class="num">${i + 1}</span>${dotFor(pl)}<span class="rname"><b>${esc(pl.routeName)}</b>${pl.shape === 'star' ? ' <small style="display:inline">★ designed</small>' : ''} <small>${when}</small><span class="bar"><i style="width:${pct}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st}</span></button></li>`;
   });
   h += `</ol><p class="src">Tap a receiver to jump to their best moment.</p></div>`;
+  h += pitchNote();
 
   h += sugsHtml(g, cov) + notesHtml(cov);
   $('read').innerHTML = h;
 }
 
+// Many 7v7 leagues allow only direct handoffs behind the line: point it out, don't block it (rules vary by league)
+function pitchNote() {
+  if (fmtOf(state.play).id !== '7v7' || !state.ball || !state.ball.legs.some(L => L.kind === 'pitch' || L.kind === 'lateral')) return '';
+  return `<div class="card"><p class="src">Heads up: this play tosses the ball to the runner. Many 7v7 leagues only allow a direct handoff behind the line, so check your league's rules.</p></div>`;
+}
 function sugsHtml(g, cov) {
   let h = `<div class="card"><h3>Coach's adjustments</h3>`;
   if (!state.sugs.length) {
@@ -1721,7 +1749,7 @@ function miniCov(id, F = fmtOf(state.play)) {
   const mx = x => 2 + x / w * 60, my = y => 38 - y / 16 * 34;
   let s = `<svg viewBox="0 4 64 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="64" height="42" style="fill:var(--turf)"/><line x1="0" x2="64" y1="${my(0)}" y2="${my(0)}" style="stroke:var(--chalk)" stroke-width="1"/>`;
   const holes = F.id === '7v7'
-    ? { c1: [[20, 4]], c2: [[20, 15], [2, 11], [38, 11]], c3: [[14.5, 8], [25.5, 8]], c4: [[3, 4], [37, 4]], c0: [[20, 14]], m2: [[20, 2]] }[id]
+    ? { c1: [[20, 4]], c2: [[20, 15], [2, 11], [38, 11]], c3: [[14.5, 8], [25.5, 8]], c4: [[3, 4], [37, 4]], p2: [[13, 6], [27, 6]], m2: [[20, 2]] }[id]
     : { c1: [[3, 14], [27, 14]], c2: [[9.5, 8], [20.5, 8]], c3: [[2, 6], [28, 6]], man: [] }[id];
   holes.forEach(([x, y]) => { s += `<ellipse cx="${mx(x)}" cy="${my(y)}" rx="8" ry="4.5" style="fill:var(--hole);stroke:var(--hole-edge)" stroke-width=".6"/>`; });
   const defs = F.id === '7v7' ? buildDefense(id, MINI7).defenders.map(d => d.pos)
@@ -1731,7 +1759,7 @@ function miniCov(id, F = fmtOf(state.play)) {
   return s + `</svg>`;
 }
 const COV_SUB = { c1: '1 deep, 4 under', c2: '2 deep halves', c3: '3 deep thirds', man: 'Man + deep FS' };
-const COV_SUB7 = { c1: 'Man, 1 deep, rusher', c2: '2 deep, 4 under', c3: '3 deep, 3 under', c4: '4 deep, 2 under', c0: 'Man, 2 rushers', m2: 'Man, 2 deep, no rush' };
+const COV_SUB7 = { c1: 'Man, 1 deep, rusher', c2: '2 deep, 4 under', c3: '3 deep, 3 under', c4: '4 deep, 2 under', p2: '2 rushers, 2 deep', m2: 'Man, 2 deep, no rush' };
 let cardsFmt = null;
 function buildCards() {
   const F = fmtOf(state.play), sub = F.id === '7v7' ? COV_SUB7 : COV_SUB;
@@ -2981,7 +3009,7 @@ $('exportBtn').addEventListener('click', () => {
   $('expCsv').addEventListener('click', async () => {
     const q = v => `"${String(v).replace(/"/g, '""')}"`;
     // one column per coverage across both formats; a play's cells are blank for the other format's coverages
-    const cols = ['c1', 'c2', 'c3', 'c4', 'c0', 'm2', 'man'], cname = c => (COVERAGES[c] || COVERAGES7[c]).name;
+    const cols = ['c1', 'c2', 'c3', 'c4', 'p2', 'm2', 'man'], cname = c => (COVERAGES[c] || COVERAGES7[c]).name;
     const grade = (p, c, o) => covsFor(p)[c] ? runPlay(p, c, o).ev.grade : '';
     const rows = [['#', 'Play', 'Group', 'Format', 'Type', 'Concept', ...cols.map(cname), ...cols.map(c => cname(c) + ' + blitz')]];
     favs.forEach(p => rows.push([p.mine && p.num || '', p.name, p.mine && p.group || '', fmtOf(p).id, p.type, p.concept,
@@ -3066,7 +3094,7 @@ $('dataBtn').addEventListener('click', openYourData);
 
 /* ---------- startup: links, then the coach's saved plays and favorites ---------- */
 function parseHash() {
-  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|c4|c0|m2|man|none))?$/.exec((location.hash || '').slice(1));
+  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|c4|c0|p2|m2|man|none))?$/.exec((location.hash || '').slice(1));
   return m ? { shared: !!m[1], packed: m[1] === 'j-', id: m[2], cov: m[3] === 'none' ? null : m[3] } : null;
 }
 const link = parseHash();
