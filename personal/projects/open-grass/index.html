@@ -1128,11 +1128,13 @@ function simulate(play, defense, opts = {}) {
             // read the route: a receiver already near the zone, or one whose stem (where he's heading now, not his
             // next break, which the defender can't see coming) takes him there in a beat
             // deep defenders read the QB instead, and the ball carrier isn't a route: recognizing the run takes the read time above.
-            // 7v7 (calibrated separately): only a crossing route is read, so a linebacker walls a crosser instead of watching him go by
+            // 7v7 (calibrated separately): only a crossing route, or an angled one coming at him, is read, so a linebacker walls
+            // crossers and drags; vertical stems and routes angling away (a corner over a hitch) are left to the zones behind him
             const now = off[r.id], was = posAt(paths[r.id], t - DT), k = ZONE_READ / DT;
             const soon = [now[0] + (now[0] - was[0]) * k, now[1] + (now[1] - was[1]) * k];
-            const crossing = Math.abs(now[0] - was[0]) > 2 * Math.abs(now[1] - was[1]);
-            const readAhead = !d.deep && !(ballRun && r.id === ballRun.id) && (!is7 || crossing);
+            const vx = Math.abs(now[0] - was[0]), vy = Math.abs(now[1] - was[1]);
+            const inbound = dist([2 * now[0] - was[0], 2 * now[1] - was[1]], z.c) < dist(now, z.c);
+            const readAhead = !d.deep && !(ballRun && r.id === ballRun.id) && (!is7 || vx > 2 * vy || (vx > vy && inbound));
                         for (const [rp, reach] of readAhead ? [[now, 1.7], [soon, ZONE_EYES]] : [[now, 1.7]]) {
               if (rp[1] < -0.5) continue;
               const nd = ((rp[0] - z.c[0]) / z.rx) ** 2 + ((rp[1] - z.c[1]) / z.ry) ** 2;
