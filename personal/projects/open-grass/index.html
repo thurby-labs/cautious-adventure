@@ -645,6 +645,9 @@ const withOption = p => ({ ...p, name: p.option.name, concept: p.option.concept,
 const DT = 0.05, TMAX = 4.0, TMAX_RUN = 6.0, FIELD_W = 30, MID = 15;
 const playTime = play => play.handoff && !play.handoff.thenPass ? TMAX_RUN : TMAX;
 
+// 5v5 underneath zones (7v7 is calibrated separately): a defender reads a route's stem ZONE_READ s ahead and sees it coming
+// from ZONE_EYES (squared zone radii) away; with no route near, he creeps toward the nearest receiver within NO_WORK yards
+const ZONE_READ = 0.4, ZONE_EYES = 3.5, NO_WORK = 12;
 const SNAP_T = 0.2, PASS_SPEED = 13, PITCH_SPEED = 8;
 
 const COVERAGES = {
@@ -1122,14 +1125,28 @@ function simulate(play, defense, opts = {}) {
           const z = d.zone;
           let best = null, bd = Infinity;
           for (const r of elig) {
-            const rp = off[r.id];
-            if (rp[1] < -0.5) continue;
-            const nd = ((rp[0] - z.c[0]) / z.rx) ** 2 + ((rp[1] - z.c[1]) / z.ry) ** 2;
-            if (nd > 1.7) continue;
-            const s = d.deep ? -rp[1] : dist(rp, d.p);
-            if (s < bd) { bd = s; best = rp; }
+            // read the route: a receiver already near the zone, or one whose stem (where he's heading now, not his
+            // next break, which the defender can't see coming) takes him there in a beat
+            // deep defenders read the QB instead, and the ball carrier isn't a route: recognizing the run takes the read time above
+            const now = off[r.id], was = posAt(paths[r.id], t - DT), k = ZONE_READ / DT;
+            const readAhead = !is7 && !d.deep && !(ballRun && r.id === ballRun.id);
+            const soon = [now[0] + (now[0] - was[0]) * k, now[1] + (now[1] - was[1]) * k];
+            for (const [rp, reach] of readAhead ? [[now, 1.7], [soon, ZONE_EYES]] : [[now, 1.7]]) {
+              if (rp[1] < -0.5) continue;
+              const nd = ((rp[0] - z.c[0]) / z.rx) ** 2 + ((rp[1] - z.c[1]) / z.ry) ** 2;
+              if (nd > reach) continue;
+              // seeing him coming (not in the area yet), the defender slides over at his own depth
+              const s = d.deep ? -rp[1] : dist(rp, d.p);
+              if (s < bd) { bd = s; best = rp === now ? now : [now[0], z.c[1]]; }
+            }
           }
-          if (!best) target = z.c;
+          if (!best && !is7 && !d.deep) {
+            // 5v5: an underneath defender with no route in his area creeps sideways toward the nearest threat, staying inside his zone
+            let near = null, nn = Infinity;
+            for (const r of elig) { const q = dist(off[r.id], z.c); if (off[r.id][1] >= -0.5 && !(ballRun && r.id === ballRun.id) && q < nn) { nn = q; near = off[r.id]; } }
+            target = near && nn < NO_WORK ? clampToEllipse([near[0], z.c[1]], { c: z.c, rx: z.rx * 0.6, ry: z.ry * 0.6 }) : z.c;
+          }
+          else if (!best) target = z.c;
           else if (d.deep) target = [clamp(best[0], z.c[0] - z.rx, z.c[0] + z.rx), Math.max(best[1] + 2.2, z.c[1] - z.ry * 0.5)];
           else target = clampToEllipse(best, z);
           speed = d.deep ? 4.8 : 5.0;
