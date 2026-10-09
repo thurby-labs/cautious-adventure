@@ -394,7 +394,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <div class="tray-head">
           <span class="eyebrow" id="trayLbl">Defense · tap or drag onto the field</span>
           <div class="toggles">
-            <label class="tog" title="Where the rusher lines up, 7 yards off the ball. With no rusher, that player plays an extra safety">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="none">No rusher</option></select></label>
+            <label class="tog" title="Where the rusher lines up, 7 yards off the ball. He can also show rush and drop into the short middle at the snap. With no rusher, that player plays an extra safety">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="drop">Shows rush, then drops</option><option value="none">No rusher</option></select></label>
             <label class="tog" id="c1Tog" title="Cover 1: short defenders follow a receiver (Man) or guard an area (Zone)">Cover 1 <select id="c1Sel"><option value="man">Man</option><option value="zone">Zone</option></select></label>
             <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">Extra rusher</span></label>
             <label class="tog"><input type="checkbox" id="holesT" checked> Show holes</label>
@@ -694,7 +694,7 @@ const COVERAGES = {
     id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'FS',
     defenders: [
       { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
-      { id: 'CB', label: 'CB', pos: [15, 5], zone: { c: [15, 5.5], rx: 6, ry: 4 } },
+      { id: 'CB', label: 'CB', pos: [15, 5], zone: { c: [15, 5.5], rx: 6, ry: 4 }, ifDrop: { pos: [10, 5], zone: { c: [10, 5.5], rx: 5, ry: 4 } } },
       { id: 'WS', label: 'WS', pos: [4.5, 12], zone: { c: [4.5, 14], rx: 5, ry: 6 }, deep: true },
       { id: 'FS', label: 'FS', pos: [15, 12.5], zone: { c: [15, 14], rx: 5, ry: 6 }, deep: true },
       { id: 'SS', label: 'SS', pos: [25.5, 12], zone: { c: [25.5, 14], rx: 5, ry: 6 }, deep: true }
@@ -997,13 +997,19 @@ const noRushSafety = F => ({ label: 'S', pos: [F.mid, 8], zone: { c: [F.mid, 9],
 function buildDefense(covId, play, opts = {}) {
   const F = fmtOf(play), T = F.covs[covId];
   // the card's rusher (and a 7v7 spy beside him) lines up on the right, the QB's arm side, unless the coach picks the left.
-  // No rusher ('none'; old links say 'drop'): he plays an extra safety in the middle from the start, in every coverage.
-  const side = opts.rusher === 'L' ? -1 : 1, none = opts.rusher === 'none' || opts.rusher === 'drop';
+  // No rusher ('none'): he plays an extra safety in the middle from the start, in every coverage.
+  // Shows rush, then drops ('drop'): he lines up as the rusher (7 yds, hand up) and drops into a short zone over his spot at the snap.
+  // Both major rulebooks allow it (he just loses right of way); it's the common 7v7 disguise (7V7_DEFENSE_RESEARCH.md, rusher pass).
+  const side = opts.rusher === 'L' ? -1 : 1, none = opts.rusher === 'none', drop = opts.rusher === 'drop';
   const flipX = x => side > 0 ? x : 2 * F.mid - x;
   const defs = T.defenders.map(d0 => {
     const d = clone(d0);
     if (d.rush || d.mirror) d.pos = [flipX(d.pos[0]), d.pos[1]];
     if (none && d.rush) Object.assign(d, { rush: false }, noRushSafety(F));
+    if (drop && d.rush) Object.assign(d, { rush: false, dropper: true, zone: { c: [d.pos[0], 6], rx: 4.5, ry: 3.5 } });
+    // `ifDrop`: where a short defender slides when the rusher drops beside him (written for a rusher on the right)
+    if (drop && d.ifDrop) Object.assign(d, { pos: [flipX(d.ifDrop.pos[0]), d.ifDrop.pos[1]], zone: { ...d.ifDrop.zone, c: [flipX(d.ifDrop.zone.c[0]), d.ifDrop.zone.c[1]] } });
+    delete d.ifDrop;
     return { ...d, role: d.rush ? 'rush' : d.mirror ? 'mirror' : d.man ? 'man' : 'zone' };
   });
   if (F.id === '7v7') assignMan7(defs, play, F.mid);
@@ -1469,7 +1475,7 @@ const opts = () => ({ blitz: state.blitz, rusher: state.rusher, nudges: state.nu
 // the defense settings without the coach's dragged defenders: the scouting report and best plays use these
 const look = () => ({ blitz: state.blitz, rusher: state.rusher });
 // "right side" is the default (the QB's arm side); the others are named in report headings
-const rushNote = () => state.rusher === 'none' ? ' + no rusher' : state.rusher === 'L' ? ' + rusher left' : '';
+const rushNote = () => state.rusher === 'none' ? ' + no rusher' : state.rusher === 'drop' ? ' + rusher drops' : state.rusher === 'L' ? ' + rusher left' : '';
 const fmtT = t => t.toFixed(1) + 's';
 const fmtY = n => Math.max(0, n).toFixed(1);
 const playerById = id => state.play.players.find(p => p.id === id);
@@ -1683,7 +1689,7 @@ function fieldMarkup(t) {
   const f = run ? frameAt(t) : null;
   const def = run ? run.def : null, roles = run ? run.sim.roles : [];
 
-  if (run && def.defenders.some(d => d.role === 'rush')) {
+  if (run && def.defenders.some(d => d.role === 'rush' || d.dropper)) {
     s += `<line x1="0" x2="${w * S}" y1="${Y(7)}" y2="${Y(7)}" style="stroke:var(--bad)" stroke-width="1.2" stroke-dasharray="4 4" stroke-opacity=".7"/>`;
     s += `<text x="${X(w - 0.4)}" y="${Y(7) - 4}" text-anchor="end" class="lbl" font-size="9" letter-spacing="1" style="fill:var(--bad)">7-YD RUSH LINE</text>`;
   }
@@ -1845,7 +1851,7 @@ function dotFor(pl) {
 }
 function renderRead() {
   const covs = covsFor(state.play), cov = state.cov ? covs[state.cov] : null;
-  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'none' ? ' (no rusher)' : ''}</div><div class="scout-row">`;
+  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'none' ? ' (no rusher)' : state.rusher === 'drop' ? ' (rusher drops)' : ''}</div><div class="scout-row">`;
   tiles().forEach(c => {
     const g = state.scout[c].grade;
     h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${tileName(covs, c)}</span></button>`;
@@ -1952,7 +1958,8 @@ function notesHtml(cov) {
     <details class="more" id="moreNotes"${glanceOpen ? ' open' : ''}><summary>More on ${cov.name}</summary><dl class="notes">
     <dt>Strength</dt><dd>${cov.strength}</dd>
     <dt>Weakness</dt><dd>${cov.weakness}</dd>
-    ${cov.defenders.some(d => d.rush) ? `<dt>No rusher</dt><dd>A player who shows rush has to rush, so a team that won’t rush lines that player up as an extra safety, about 8 yards deep in the middle. The QB has time, but deep throws get harder: attack underneath.</dd>` : ''}
+    ${cov.defenders.some(d => d.rush) ? `<dt>No rusher</dt><dd>A player who shows rush has to rush, so a team that won’t rush lines that player up as an extra safety, about 8 yards deep in the middle. The QB has time, but deep throws get harder: attack underneath.</dd>
+    <dt>Rusher drops</dt><dd>He lines up at 7 yards with a hand up like a rusher, then drops into the short middle at the snap. Nobody hurries the QB, but quick throws over the middle run into him: throw outside.</dd>` : ''}
     <dt>Extra rusher</dt><dd>${cov.blitz}</dd>
     <dt>Concepts that work</dt><dd><ul class="concepts">${cov.concepts.map(c => `<li>${c}</li>`).join('')}</ul></dd>
     <dt>Your best plays</dt><dd>${bestPlaysFor(cov.id)}</dd></dl></details></div>`;
@@ -2013,7 +2020,7 @@ function covSub(F, id) {
   const under = defs.filter(d => !d.deep && d.role !== 'mirror').length;
   const rush = all.length - defs.length;
   const shape = man ? (deep ? `Man, ${deep} deep` : 'Man, no deep help') : `${deep} deep` + (under ? `, ${under} under` : '');
-  const r = (rush ? `${rush} rusher${rush > 1 ? 's' : ''}` : 'No rush') + (defs.some(d => d.mirror) ? ' + spy' : '');
+  const r = (rush ? `${rush} rusher${rush > 1 ? 's' : ''}` : all.some(d => d.dropper) ? 'Rusher drops' : 'No rush') + (defs.some(d => d.mirror) ? ' + spy' : '');
   return `${shape}<br>${r}`;
 }
 let cardsFmt = null;
@@ -2189,7 +2196,7 @@ $('c1Sel').addEventListener('change', e => {
   if (state.cov === 'man' || state.cov === 'c1') { state.cov = state.c1 === 'man' ? 'man' : 'c1'; state.nudges = {}; }
   stop(); recompute(); setT(0); track('toggle_setting', { setting: 'cover1', value: state.c1, ...covInfo() });
 });
-function setRusher(v) { state.rusher = v === 'drop' ? 'none' : v || 'R'; $('rushSel').value = state.rusher; }   // 'drop' from links made before 2026-10-09's change
+function setRusher(v) { state.rusher = v || 'R'; $('rushSel').value = state.rusher; }
 $('rushSel').addEventListener('change', e => { setRusher(e.target.value); stop(); recompute(); setT(0); track('toggle_setting', { setting: 'rusher', value: state.rusher, ...covInfo() }); });
 $('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); track('toggle_setting', { setting: 'blitz', value: state.blitz, ...covInfo() }); });
 $('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); track('toggle_setting', { setting: 'holes', value: state.holes }); });
@@ -3089,7 +3096,7 @@ $('favBtn').addEventListener('click', async () => {
 /* ---------- share links ---------- */
 // Only a plain #token reaches the page from a link, so the token is "<playId>.<coverage>" for a built-in play,
 // or "j-<packed play>.<coverage>" for a custom, edited or draft play (the whole play rides in the link).
-// A built-in play with its option toggled on uses "<playId>~opt". A rusher that isn't on the right adds ".L" or ".none" after the coverage (".drop" from older links means none).
+// A built-in play with its option toggled on uses "<playId>~opt". A rusher that isn't on the right adds ".L", ".drop" (shows rush, then drops) or ".none" after the coverage.
 function openShare() {
   const custom = state.play.draft || state.play.mine || state.play.shared || Object.keys(state.changes).length > 0;
   const covTok = state.cov || 'none', rushTok = state.rusher !== 'R' ? '.' + state.rusher : '';
