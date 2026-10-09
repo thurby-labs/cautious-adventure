@@ -394,7 +394,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
         <div class="tray-head">
           <span class="eyebrow" id="trayLbl">Defense · tap or drag onto the field</span>
           <div class="toggles">
-            <label class="tog" title="Where the rusher lines up, 7 yards off the ball, or whether he drops into coverage">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="drop">Drops back</option></select></label>
+            <label class="tog" title="Where the rusher lines up, 7 yards off the ball. With no rusher, that player plays an extra safety">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="none">No rusher</option></select></label>
             <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">Extra rusher</span></label>
             <label class="tog"><input type="checkbox" id="holesT" checked> Show holes</label>
           </div>
@@ -435,7 +435,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
     <p class="lede">Open Grass tests the flag football plays you already have. Put a defense on your play, watch it run, and see exactly where the open grass is against Cover 1, Cover 2, Cover 3, Cover 4 and man coverage.</p>
     <div class="about-grid">
       <div><h3>Bring your own playbook</h3><p>Keep drawing plays wherever you do now. Upload a screenshot from your play app or a photo of your play card or whiteboard, or just describe the play, and Open Grass puts it on the field. Sample plays are there to try it out.</p></div>
-      <div><h3>Watch the defense react</h3><p>Drag a coverage onto the field or move single defenders to match what the other team runs. Zone defenders guard their areas, man defenders chase their receiver, and a rusher comes after the QB from either side, or drops back into coverage.</p></div>
+      <div><h3>Watch the defense react</h3><p>Drag a coverage onto the field or move single defenders to match what the other team runs. Zone defenders guard their areas, man defenders chase their receiver, and a rusher comes after the QB from either side (or plays an extra safety when nobody rushes).</p></div>
       <div><h3>Find the hole</h3><p>A heatmap shows open grass before the snap and while the play runs, so you can see why a route is open, not just that it is.</p></div>
       <div><h3>Get a grade and a fix</h3><p>Every play gets an A–F grade against each coverage, a QB read order, and route changes you can try with one tap. Runs are graded too.</p></div>
     </div>
@@ -443,7 +443,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
     <h2>Coach questions</h2>
     <details><summary>Is Open Grass free?</summary><p>Yes, while it is in beta. A free account saves your plays, favorites and share links. Early coaches get founding-coach perks.</p></details>
     <details><summary>What kind of flag football does it support?</summary><p>Open Grass handles 5-on-5 and 7-on-7 flag football. A 7-on-7 play gets a 40-yard-wide field and seven defenders, including a rusher from 7 yards.</p></details>
-    <details><summary>Which defenses can I test against?</summary><p>For 5v5: Cover 1, Cover 2, Cover 3, Cover 4 and man to man, each with a rusher 7 yards off the ball. Line him up on either side, have him drop into coverage instead, or add a second rusher. 7v7 plays get six seven-defender looks, including a two-rusher Cover 2 and man with two deep. The scouting report grades your play against every look at once. If the other team lines up differently, drag any defender to match what you see.</p></details>
+    <details><summary>Which defenses can I test against?</summary><p>For 5v5: Cover 1 Man, Cover 1 Zone, Cover 2, Cover 3 and Cover 4, each with a rusher 7 yards off the ball. Line him up on either side, play with no rusher (he becomes an extra safety), or add a second rusher. 7v7 plays get six seven-defender looks, including a two-rusher Cover 2 and man with two deep. The scouting report grades your play against every look at once. If the other team lines up differently, drag any defender to match what you see.</p></details>
     <details><summary>Does it work on a phone?</summary><p>Yes. Open Grass runs in any browser on a phone, tablet or computer, with nothing to install.</p></details>
     <details><summary>Can I share plays with my team?</summary><p>Yes. Send a share link that opens the play and coverage, or save an animated GIF for your team chat.</p></details>
   </section>
@@ -653,16 +653,16 @@ const ZONE_READ = 0.4, ZONE_EYES = 3.5, NO_WORK = 12;
 const SNAP_T = 0.2, PASS_SPEED = 13, PITCH_SPEED = 8;
 
 /* 5v5: every card has its own rusher (RSH), 7 yards off beside the middle of the defense, separate from the LB and corners.
-   He rushes by default; `opts.rusher` puts him on the left, or has him drop at the snap ('drop'). `ifDrop` is where a defender
-   goes when the rusher drops, written for a rusher on the right (the QB's arm side) and mirrored for the left. The blitz toggle sends
-   the card's `blitzer` as a second rusher; `ifBlitz` is where a defender shifts when that happens. */
+   He rushes by default from the right (the QB's arm side); `opts.rusher` puts him on the left, or takes the rush away ('none'):
+   a player who shows rush must rush, so with no rusher he lines up as an extra safety in the middle (`noRushSafety`). The blitz toggle
+   sends the card's `blitzer` as a second rusher; `ifBlitz` is where a defender shifts when that happens. */
 const COVERAGES = {
   c1: {
-    id: 'c1', name: 'Cover 1', short: 'C1', blitzer: 'LB',
+    id: 'c1', name: 'Cover 1 Zone', short: 'C1Z', blitzer: 'LB',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true, ifDrop: { label: 'S', zone: { c: [19.5, 6.5], rx: 3.5, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
       { id: 'CBL', label: 'CB', pos: [5, 5], zone: { c: [5, 6], rx: 4.5, ry: 3.5 } },
-      { id: 'LB', label: 'LB', pos: [15, 5], zone: { c: [15, 6.5], rx: 4, ry: 3.5 }, ifDrop: { pos: [13, 5], zone: { c: [12.5, 6.5], rx: 3.5, ry: 3.5 } } },
+      { id: 'LB', label: 'LB', pos: [15, 5], zone: { c: [15, 6.5], rx: 4, ry: 3.5 } },
       { id: 'CBR', label: 'CB', pos: [25, 5], zone: { c: [25, 6], rx: 4.5, ry: 3.5 } },
       { id: 'FS', label: 'FS', pos: [15, 12], zone: { c: [15, 14], rx: 9, ry: 6 }, deep: true }
     ],
@@ -671,13 +671,12 @@ const COVERAGES = {
     weakness: 'Covering more than one deep route.',
     beat: 'Throw quickly into the gaps between the three short defenders, or send two deep routes so the lone safety has to pick one.',
     blitz: 'When the LB rushes too, nobody guards the short middle. Throw there, and throw fast.',
-    dropNote: 'When the rusher drops, he takes the short area on his side, so four defenders sit underneath.',
     concepts: ['Three receivers vertical to outnumber the lone safety', 'Two deep routes with a crosser underneath', 'A post with a wheel up the sideline behind it']
   },
   c2: {
     id: 'c2', name: 'Cover 2', short: 'C2', blitzer: 'FS',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true, ifDrop: { label: 'LB', zone: { c: [15, 6.5], rx: 3.5, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
       { id: 'CBL', label: 'CB', pos: [4.5, 5], zone: { c: [4.5, 5.5], rx: 3.5, ry: 3.5 } },
       { id: 'CBR', label: 'CB', pos: [25.5, 5], zone: { c: [25.5, 5.5], rx: 3.5, ry: 3.5 } },
       { id: 'FS', label: 'FS', pos: [9, 12], zone: { c: [8.5, 14], rx: 6.5, ry: 6 }, deep: true },
@@ -688,14 +687,13 @@ const COVERAGES = {
     weakness: 'The short middle: with the fifth defender rushing, nobody sits there.',
     beat: 'Throw short into the middle or the holes beside the corners, then run after the catch.',
     blitz: 'A second rusher leaves one safety in the middle, so the deep sidelines open up.',
-    dropNote: 'When the rusher drops, he guards the short middle like a linebacker.',
     concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Every receiver runs a 5-yard hitch', 'Flood one side with a go, a crosser and a flat']
   },
   c3: {
     id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'FS',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true, ifDrop: { label: 'CB', zone: { c: [20, 6.5], rx: 4.5, ry: 3.5 } } },
-      { id: 'CB', label: 'CB', pos: [15, 5], zone: { c: [15, 5.5], rx: 6, ry: 4 }, ifDrop: { pos: [10, 6], zone: { c: [10, 6.5], rx: 4.5, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
+      { id: 'CB', label: 'CB', pos: [15, 5], zone: { c: [15, 5.5], rx: 6, ry: 4 } },
       { id: 'WS', label: 'WS', pos: [4.5, 12], zone: { c: [4.5, 14], rx: 5, ry: 6 }, deep: true },
       { id: 'FS', label: 'FS', pos: [15, 12.5], zone: { c: [15, 14], rx: 5, ry: 6 }, deep: true },
       { id: 'SS', label: 'SS', pos: [25.5, 12], zone: { c: [25.5, 14], rx: 5, ry: 6 }, deep: true }
@@ -705,13 +703,12 @@ const COVERAGES = {
     weakness: 'Large holes in the short zones, especially the flats.',
     beat: 'Throw short to players who can make a defender miss.',
     blitz: 'If the middle safety rushes too, the deep middle is empty.',
-    dropNote: 'Many teams play Cover 3 with no rush: the rusher drops and two defenders split the short area.',
     concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Quick hitches into the flats', 'Flood one side with a go, a crosser and a flat']
   },
   man: {
-    id: 'man', name: 'Man to Man', short: 'Man', blitzer: 'FS',
+    id: 'man', name: 'Cover 1 Man', short: 'C1M', blitzer: 'FS',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true, ifDrop: { label: 'SS', man: true } },
+      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
       { id: 'CBL', label: 'CB', man: true },
       { id: 'LB', label: 'LB', man: true },
       { id: 'CBR', label: 'CB', man: true },
@@ -722,13 +719,12 @@ const COVERAGES = {
     weakness: 'One receiver has no defender of his own; the safety has to help on him and stay deep.',
     beat: 'Crossing and rub routes free a receiver in space, and the uncovered receiver is open early.',
     blitz: 'When the safety rushes too, there is no deep help and one receiver is left uncovered.',
-    dropNote: 'When the rusher drops, he takes the fourth receiver, so everyone is covered.',
     concepts: ['Slant-flat with the two routes crossing close (a rub)', 'Two shallow crossers passing close to each other', 'A post with a wheel up the sideline behind it']
   },
   c4: {
     id: 'c4', name: 'Cover 4', short: 'C4', blitzer: 'SL',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true, ifDrop: { label: 'LB', zone: { c: [15, 6], rx: 5, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
       { id: 'CBL', label: 'CB', pos: [4, 9], zone: { c: [4, 11], rx: 4.5, ry: 4.5 }, deep: true },
       { id: 'SL', label: 'S', pos: [11.5, 9], zone: { c: [11.5, 11], rx: 4.5, ry: 4.5 }, deep: true },
       { id: 'SR', label: 'S', pos: [18.5, 9], zone: { c: [18.5, 11], rx: 4.5, ry: 4.5 }, deep: true },
@@ -739,21 +735,21 @@ const COVERAGES = {
     weakness: 'Everything short. The rusher is the only thing hurrying the throw.',
     beat: 'Throw short and quick, before the rusher gets there, and let your receiver run at the deep defenders.',
     blitz: 'A second rusher leaves three deep and makes the quick throw even more important.',
-    dropNote: 'When the rusher drops, he sits in the short middle, so throw outside him.',
     concepts: ['Every receiver runs a 5-yard hitch', 'Quick outs and flats to both sidelines', 'A shallow crosser under the deep defenders']
   }
 };
 // every card's grades (rusher, extra rusher and rusher dropping) are frozen by tests/grades5.json; refreshed on purpose 2026-10-09 when the rusher became its own defender
-const COV_ORDER = ['c1', 'c2', 'c3', 'c4', 'man'];
+// Cover 1 Zone and Cover 1 Man (named 2026-10-09; ids unchanged so links keep working) sit side by side: both have one deep safety
+const COV_ORDER = ['c1', 'man', 'c2', 'c3', 'c4'];
 
 /* 7v7: seven defenders on a 40-yard field (ball at x = 20). A rusher (rush: true) comes from the 7-yard line on the QB's arm side
-   unless the coach moves him to the left or has him drop (`ifDrop`, as in 5v5); the blitz toggle sends the coverage's blitzer as well.
+   unless the coach moves him to the left or picks no rusher (an extra safety, as in 5v5); the blitz toggle sends the coverage's blitzer as well.
    Man defenders are listed left to right. */
 const COVERAGES7 = {
   c1: {
     id: 'c1', name: 'Cover 1', short: 'C1', blitzer: 'LB',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true, ifDrop: { label: 'S', zone: { c: [20, 9], rx: 6, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'CBL', label: 'CB', man: true },
       { id: 'NBL', label: 'NB', man: true },
       { id: 'LB', label: 'LB', man: true },
@@ -771,7 +767,7 @@ const COVERAGES7 = {
   c2: {
     id: 'c2', name: 'Cover 2', short: 'C2', blitzer: 'LBL',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true, ifDrop: { label: 'LB', zone: { c: [20, 7], rx: 4, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'CBL', label: 'CB', pos: [5, 5], zone: { c: [5, 5.5], rx: 4.5, ry: 3.5 } },
       { id: 'LBL', label: 'LB', pos: [14, 6], zone: { c: [14, 6.5], rx: 4.5, ry: 3.5 } },
       { id: 'LBR', label: 'LB', pos: [26, 6], zone: { c: [26, 6.5], rx: 4.5, ry: 3.5 } },
@@ -789,7 +785,7 @@ const COVERAGES7 = {
   c3: {
     id: 'c3', name: 'Cover 3', short: 'C3', blitzer: 'MLB',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true, ifDrop: { label: 'S', zone: { c: [20, 9.5], rx: 6, ry: 3 } } },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'OLL', label: 'OLB', pos: [9, 6], zone: { c: [8, 6.5], rx: 5.5, ry: 3.5 } },
       { id: 'MLB', label: 'MLB', pos: [20, 6], zone: { c: [20, 6.5], rx: 4.5, ry: 3.5 } },
       { id: 'OLR', label: 'OLB', pos: [31, 6], zone: { c: [32, 6.5], rx: 5.5, ry: 3.5 } },
@@ -807,7 +803,7 @@ const COVERAGES7 = {
   c4: {
     id: 'c4', name: 'Cover 4', short: 'C4', blitzer: 'LBL',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true, ifDrop: { label: 'LB', zone: { c: [20, 7], rx: 4, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'LBL', label: 'LB', pos: [13, 6], zone: { c: [13, 6.5], rx: 6, ry: 3.5 } },
       { id: 'LBR', label: 'LB', pos: [27, 6], zone: { c: [27, 6.5], rx: 6, ry: 3.5 } },
       { id: 'CBL', label: 'CB', pos: [6, 11], zone: { c: [6, 13], rx: 5, ry: 6 }, deep: true },
@@ -825,7 +821,7 @@ const COVERAGES7 = {
   p2: {
     id: 'p2', name: 'Cover 2 Pressure', short: 'C2P', blitzer: 'LB',
     defenders: [
-      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true, ifDrop: { label: 'S', zone: { c: [20, 9], rx: 6, ry: 3.5 } } },
+      { id: 'RSH', label: 'RSH', pos: [23, 7], rush: true },
       { id: 'MIR', label: 'SPY', pos: [17, 7], mirror: true },
       { id: 'CBL', label: 'CB', pos: [6, 5], zone: { c: [6, 5.5], rx: 6, ry: 3.5 } },
       { id: 'LB', label: 'LB', pos: [20, 6], zone: { c: [20, 6.5], rx: 6, ry: 3.5 } },
@@ -878,8 +874,8 @@ function fitCov(cov, play) {
 
 /* Coaching tips used to explain suggested adjustments, by coverage and route family. */
 const TIPS = {
-  c1: { deep: 'Cover 1 has a single safety. A second deep route on the other side forces him to pick one.',
-        short: 'Cover 1 has three short defenders across the whole field. A quick throw into a gap between them beats it.',
+  c1: { deep: 'Cover 1 Zone has a single safety. A second deep route on the other side forces him to pick one.',
+        short: 'Cover 1 Zone has three short defenders across the whole field. A quick throw into a gap between them beats it.',
         middle: 'A route that breaks behind the underneath layer gets in front of the lone safety.' },
   c2: { deep: 'The two safeties split the deep field. The seam between them is open when nobody in the middle carries the route.',
         short: 'Cover 2 corners sit in the flats, so quick outside throws need the corner to bite inside.',
@@ -920,7 +916,7 @@ const tipsFor = play => fmtOf(play).id === '7v7' ? TIPS7 : TIPS;
 /* The QB's read against each coverage: what to look at after the snap, in one or two lines (5V5_RESEARCH.md). */
 const READS = {
   c1: 'Find the lone safety. If the safety leans toward one deep route, throw the other one. If not, throw to whoever settles in front of the short defenders.',
-  c2: 'Find the rusher. If he comes, nobody is in the short middle: throw there fast. If he drops into the middle, throw short outside or up the seam between the safeties.',
+  c2: 'Find the rusher. If he comes, nobody is in the short middle: throw there fast. With no rusher, he plays a safety in the middle: throw short outside, under him.',
   c3: 'Read the short defender on the side you’re throwing to. If they widen to the flat, throw inside behind them. If they stay inside, throw the flat.',
   c4: 'Find the rusher, then throw the first short route that’s open. Don’t wait on the deep routes: four defenders are already back there.',
   man: 'With a rusher coming, one receiver has no defender of his own: find him first. Otherwise pick the matchup before the snap, and throw as the receiver breaks, not before.'
@@ -993,41 +989,39 @@ function clampToEllipse(p, z) {
   return n <= 1 ? [...p] : [z.c[0] + dx / n, z.c[1] + dy / n];
 }
 
+// with no rusher, the card's rusher is an extra safety over the middle at 8 yards: a deep defender, so he stays on top and reads the QB
+const noRushSafety = F => ({ label: 'S', pos: [F.mid, 8], zone: { c: [F.mid, 9], rx: F.id === '7v7' ? 7 : 6, ry: 4 }, deep: true });
+
 function buildDefense(covId, play, opts = {}) {
   const F = fmtOf(play), T = F.covs[covId];
-  // the card's rusher (and a 7v7 spy beside him) lines up on the right, the QB's arm side, unless the coach picks the left;
-  // with the rusher dropping, he and anyone with an `ifDrop` take those spots (written for the right side, mirrored for the left)
-  const side = opts.rusher === 'L' ? -1 : 1, drops = opts.rusher === 'drop';
+  // the card's rusher (and a 7v7 spy beside him) lines up on the right, the QB's arm side, unless the coach picks the left.
+  // No rusher ('none'; old links say 'drop'): he plays an extra safety in the middle from the start, in every coverage.
+  const side = opts.rusher === 'L' ? -1 : 1, none = opts.rusher === 'none' || opts.rusher === 'drop';
   const flipX = x => side > 0 ? x : 2 * F.mid - x;
-  const flipZ = z => z && { ...z, c: [flipX(z.c[0]), z.c[1]] };
   const defs = T.defenders.map(d0 => {
-    const d = clone(d0), alt = drops && d.ifDrop;
-    delete d.ifDrop;
+    const d = clone(d0);
     if (d.rush || d.mirror) d.pos = [flipX(d.pos[0]), d.pos[1]];
-    if (alt) {
-      if (d.rush) { d.rush = false; d.dropped = true; }
-      Object.assign(d, alt, alt.pos ? { pos: [flipX(alt.pos[0]), alt.pos[1]] } : {}, alt.zone ? { zone: flipZ(alt.zone) } : {});
-    }
+    if (none && d.rush) Object.assign(d, { rush: false }, noRushSafety(F));
     return { ...d, role: d.rush ? 'rush' : d.mirror ? 'mirror' : d.man ? 'man' : 'zone' };
   });
   if (F.id === '7v7') assignMan7(defs, play, F.mid);
   else if (covId === 'man') {
     const elig = play.players.filter(p => p.eligible).slice().sort((a, b) => a.start[0] - b.start[0] || b.start[1] - a.start[1]);
     const mids = elig.slice(1, -1).sort((a, b) => b.start[1] - a.start[1]);
-    // the rusher, when he drops, takes the receiver nobody else has; while he rushes that receiver is the free safety's problem
-    const assign = { CBL: elig[0], CBR: elig[elig.length - 1], LB: mids[0], RSH: mids[1] };
+    // three man defenders: the fourth receiver is the free safety's problem (and the extra safety's, when nobody rushes)
+    const assign = { CBL: elig[0], CBR: elig[elig.length - 1], LB: mids[0] };
     defs.forEach(d => {
       if (d.role !== 'man') return;
       const r = assign[d.id];
       if (!r) { d.role = 'zone'; d.pos = [MID, 8]; d.zone = { c: [MID, 8], rx: 5, ry: 4 }; return; }
       d.man = r.id;
-      if (!d.dropped) d.pos = r.start[1] >= -0.5 ? [r.start[0], 4.5] : [r.start[0] + (r.start[0] <= MID ? -3 : 3), 5];
+      d.pos = r.start[1] >= -0.5 ? [r.start[0], 4.5] : [r.start[0] + (r.start[0] <= MID ? -3 : 3), 5];
     });
   }
   if (opts.blitz) {
     const b = defs.find(d => d.id === T.blitzer);
     if (b) {
-      // 5v5: the second rusher lines up on the other side from the first, who is still standing there when he drops; `ifBlitz` shifts the rest
+      // 5v5: the second rusher lines up on the other side from the first; `ifBlitz` shifts the rest
       b.role = 'rush'; b.man = false;
       b.pos = F.id === '7v7' ? [F.mid, 7] : [F.mid - 3 * side, 7];
       defs.forEach(d => {
@@ -1471,7 +1465,7 @@ const opts = () => ({ blitz: state.blitz, rusher: state.rusher, nudges: state.nu
 // the defense settings without the coach's dragged defenders: the scouting report and best plays use these
 const look = () => ({ blitz: state.blitz, rusher: state.rusher });
 // "right side" is the default (the QB's arm side); the others are named in report headings
-const rushNote = () => state.rusher === 'drop' ? ' + rusher drops' : state.rusher === 'L' ? ' + rusher left' : '';
+const rushNote = () => state.rusher === 'none' ? ' + no rusher' : state.rusher === 'L' ? ' + rusher left' : '';
 const fmtT = t => t.toFixed(1) + 's';
 const fmtY = n => Math.max(0, n).toFixed(1);
 const playerById = id => state.play.players.find(p => p.id === id);
@@ -1841,7 +1835,7 @@ function dotFor(pl) {
 }
 function renderRead() {
   const covs = covsFor(state.play), cov = state.cov ? covs[state.cov] : null;
-  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'drop' ? ' (rusher drops)' : ''}</div><div class="scout-row">`;
+  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'none' ? ' (no rusher)' : ''}</div><div class="scout-row">`;
   covOrder(state.play).forEach(c => {
     const g = state.scout[c].grade;
     h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${covs[c].name}</span></button>`;
@@ -1948,7 +1942,7 @@ function notesHtml(cov) {
     <details class="more" id="moreNotes"${glanceOpen ? ' open' : ''}><summary>More on ${cov.name}</summary><dl class="notes">
     <dt>Strength</dt><dd>${cov.strength}</dd>
     <dt>Weakness</dt><dd>${cov.weakness}</dd>
-    ${cov.defenders.some(d => d.ifDrop) ? `<dt>Rusher drops</dt><dd>${cov.dropNote || 'He drops into the short middle as one more defender in coverage, so nobody hurries the throw.'}</dd>` : ''}
+    ${cov.defenders.some(d => d.rush) ? `<dt>No rusher</dt><dd>A player who shows rush has to rush, so a team that won’t rush lines that player up as an extra safety, about 8 yards deep in the middle. The QB has time, but deep throws get harder: attack underneath.</dd>` : ''}
     <dt>Extra rusher</dt><dd>${cov.blitz}</dd>
     <dt>Concepts that work</dt><dd><ul class="concepts">${cov.concepts.map(c => `<li>${c}</li>`).join('')}</ul></dd>
     <dt>Your best plays</dt><dd>${bestPlaysFor(cov.id)}</dd></dl></details></div>`;
@@ -1992,7 +1986,7 @@ function miniCov(id, F = fmtOf(state.play)) {
   let s = `<svg viewBox="0 4 64 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="64" height="42" style="fill:var(--turf)"/><line x1="0" x2="64" y1="${my(0)}" y2="${my(0)}" style="stroke:var(--chalk)" stroke-width="1"/>`;
   const holes = F.id === '7v7'
     ? { c1: [[20, 4]], c2: [[20, 15], [2, 11], [38, 11]], c3: [[14.5, 8], [25.5, 8]], c4: [[3, 4], [37, 4]], p2: [[13, 6], [27, 6]], m2: [[20, 2]] }[id]
-    : { c1: [[3, 14], [27, 14]], c2: state.rusher === 'drop' ? [[9.5, 8], [20.5, 8]] : [[15, 6]], c3: [[2, 6], [28, 6]], c4: [[8, 4], [22, 4]], man: [] }[id];
+    : { c1: [[3, 14], [27, 14]], c2: [[15, 6]], c3: [[2, 6], [28, 6]], c4: [[8, 4], [22, 4]], man: [] }[id];
   holes.forEach(([x, y]) => { s += `<ellipse cx="${mx(x)}" cy="${my(y)}" rx="8" ry="4.5" style="fill:var(--hole);stroke:var(--hole-edge)" stroke-width=".6"/>`; });
   // drawn from the defense the field would show, so the card follows the rusher control (rushers in red)
   buildDefense(id, F.id === '7v7' ? MINI7 : MINI5, look()).defenders.forEach(({ pos: [x, y], role }) => {
@@ -2178,7 +2172,7 @@ $('optBtn').addEventListener('click', () => {
 $('playTags').addEventListener('click', e => {
   if (e.target.id === 'resetPlay') { track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
 });
-function setRusher(v) { state.rusher = v || 'R'; $('rushSel').value = state.rusher; }
+function setRusher(v) { state.rusher = v === 'drop' ? 'none' : v || 'R'; $('rushSel').value = state.rusher; }   // 'drop' from links made before 2026-10-09's change
 $('rushSel').addEventListener('change', e => { setRusher(e.target.value); stop(); recompute(); setT(0); track('toggle_setting', { setting: 'rusher', value: state.rusher, ...covInfo() }); });
 $('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); track('toggle_setting', { setting: 'blitz', value: state.blitz, ...covInfo() }); });
 $('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); track('toggle_setting', { setting: 'holes', value: state.holes }); });
@@ -3078,7 +3072,7 @@ $('favBtn').addEventListener('click', async () => {
 /* ---------- share links ---------- */
 // Only a plain #token reaches the page from a link, so the token is "<playId>.<coverage>" for a built-in play,
 // or "j-<packed play>.<coverage>" for a custom, edited or draft play (the whole play rides in the link).
-// A built-in play with its option toggled on uses "<playId>~opt". A rusher that isn't on the right adds ".L" or ".drop" after the coverage.
+// A built-in play with its option toggled on uses "<playId>~opt". A rusher that isn't on the right adds ".L" or ".none" after the coverage (".drop" from older links means none).
 function openShare() {
   const custom = state.play.draft || state.play.mine || state.play.shared || Object.keys(state.changes).length > 0;
   const covTok = state.cov || 'none', rushTok = state.rusher !== 'R' ? '.' + state.rusher : '';
@@ -3367,7 +3361,7 @@ $('dataBtn').addEventListener('click', openYourData);
 
 /* ---------- startup: links, then the coach's saved plays and favorites ---------- */
 function parseHash() {
-  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|c4|c0|p2|m2|man|none))?(?:\.(L|R|drop))?$/.exec((location.hash || '').slice(1));
+  const m = /^(s-|j-)?([A-Za-z0-9_~-]+)(?:\.(c1|c2|c3|c4|c0|p2|m2|man|none))?(?:\.(L|R|none|drop))?$/.exec((location.hash || '').slice(1));
   return m ? { shared: !!m[1], packed: m[1] === 'j-', id: m[2], cov: m[3] === 'none' ? null : m[3], rusher: m[4] } : null;
 }
 const link = parseHash();
