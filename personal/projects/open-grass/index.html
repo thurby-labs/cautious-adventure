@@ -395,6 +395,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
           <span class="eyebrow" id="trayLbl">Defense · tap or drag onto the field</span>
           <div class="toggles">
             <label class="tog" title="Where the rusher lines up, 7 yards off the ball. With no rusher, that player plays an extra safety">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="none">No rusher</option></select></label>
+            <label class="tog" id="c1Tog" title="Cover 1: short defenders follow a receiver (Man) or guard an area (Zone)">Cover 1 <select id="c1Sel"><option value="man">Man</option><option value="zone">Zone</option></select></label>
             <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">Extra rusher</span></label>
             <label class="tog"><input type="checkbox" id="holesT" checked> Show holes</label>
           </div>
@@ -658,7 +659,7 @@ const SNAP_T = 0.2, PASS_SPEED = 13, PITCH_SPEED = 8;
    sends the card's `blitzer` as a second rusher; `ifBlitz` is where a defender shifts when that happens. */
 const COVERAGES = {
   c1: {
-    id: 'c1', name: 'Cover 1 Zone', short: 'C1Z', blitzer: 'LB',
+    id: 'c1', name: 'Cover 1 Zone', tile: 'Cover 1', short: 'C1Z', blitzer: 'LB',
     defenders: [
       { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
       { id: 'CBL', label: 'CB', pos: [5, 5], zone: { c: [5, 6], rx: 4.5, ry: 3.5 } },
@@ -706,7 +707,7 @@ const COVERAGES = {
     concepts: ['Split field: slant-flat on one side, hitch-corner on the other', 'Quick hitches into the flats', 'Flood one side with a go, a crosser and a flat']
   },
   man: {
-    id: 'man', name: 'Cover 1 Man', short: 'C1M', blitzer: 'FS',
+    id: 'man', name: 'Cover 1 Man', tile: 'Cover 1', short: 'C1M', blitzer: 'FS',
     defenders: [
       { id: 'RSH', label: 'RSH', pos: [18, 7], rush: true },
       { id: 'CBL', label: 'CB', man: true },
@@ -739,7 +740,8 @@ const COVERAGES = {
   }
 };
 // every card's grades (rusher, extra rusher and rusher dropping) are frozen by tests/grades5.json; refreshed on purpose 2026-10-09 when the rusher became its own defender
-// Cover 1 Zone and Cover 1 Man (named 2026-10-09; ids unchanged so links keep working) sit side by side: both have one deep safety
+// Cover 1 Zone and Cover 1 Man (named 2026-10-09; ids unchanged so links keep working): both have one deep safety. The app shows them as
+// one "Cover 1" tile (`tile`) with a Man / Zone switch; the engine, tests and pages keep both
 const COV_ORDER = ['c1', 'man', 'c2', 'c3', 'c4'];
 
 /* 7v7: seven defenders on a 40-yard field (ball at x = 20). A rusher (rush: true) comes from the 7-yard line on the QB's arm side
@@ -1456,7 +1458,7 @@ try {
 } catch (e) {}
 const state = {
   basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
-  cov: 'c2', blitz: false, rusher: 'R', holes: true, t: 0, playing: false, speed: 0.5, loop: false, nudges: {},
+  cov: 'c2', blitz: false, rusher: 'R', c1: 'man', holes: true, t: 0, playing: false, speed: 0.5, loop: false, nudges: {},
   run: null, scout: {}, sugs: []
 };
 const $ = id => document.getElementById(id);
@@ -1486,12 +1488,18 @@ const playInfo = (p = state.basePlay) => ({
 const covInfo = () => ({ coverage: state.cov || 'none', blitz: state.blitz, rusher: state.rusher, ...(state.run ? { grade: state.run.ev.grade } : {}) });
 
 /* ---------- compute ---------- */
+// 5v5 shows Cover 1 Man and Cover 1 Zone as one "Cover 1" tile: the Man / Zone switch picks which one the tile (and scouting report) uses
+const tiles = (play = state.play) => covOrder(play).filter(c => fmtOf(play).id === '7v7' || c !== (state.c1 === 'man' ? 'c1' : 'man'));
+const tileName = (covs, c) => covs[c].tile || covs[c].name;
 function recompute(full = true) {
+  // a link or a scouting-report tap can land on either Cover 1: keep the switch in step
+  if (fmtOf(state.play).id === '5v5' && (state.cov === 'man' || state.cov === 'c1')) state.c1 = state.cov === 'man' ? 'man' : 'zone';
+  $('c1Sel').value = state.c1;
   state.run = state.cov ? runPlay(state.play, state.cov, opts()) : null;
   state.ball = planBall();
   if (full) {
     state.scout = {};
-    covOrder(state.play).forEach(c => { state.scout[c] = runPlay(state.play, c, look()).ev; });
+    tiles().forEach(c => { state.scout[c] = runPlay(state.play, c, look()).ev; });
     state.sugs = state.run ? suggest(state.play, state.cov, opts(), state.run.ev.score) : [];
     renderRead();
     renderHead();
@@ -1836,9 +1844,9 @@ function dotFor(pl) {
 function renderRead() {
   const covs = covsFor(state.play), cov = state.cov ? covs[state.cov] : null;
   let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'none' ? ' (no rusher)' : ''}</div><div class="scout-row">`;
-  covOrder(state.play).forEach(c => {
+  tiles().forEach(c => {
     const g = state.scout[c].grade;
-    h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${covs[c].name}</span></button>`;
+    h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${tileName(covs, c)}</span></button>`;
   });
   h += `</div></div>`;
 
@@ -2009,10 +2017,11 @@ function covSub(F, id) {
 let cardsFmt = null;
 function buildCards() {
   const F = fmtOf(state.play);
-  if (cardsFmt === F.id) return;
-  cardsFmt = F.id;
+  if (cardsFmt === F.id + state.c1) return;
+  cardsFmt = F.id + state.c1;
+  $('c1Tog').hidden = F.id !== '5v5';
   $('trayLbl').textContent = `Defense · ${F.id} · tap or drag onto the field`;
-  $('cards').innerHTML = F.order.map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id, F)}<span><b>${F.covs[id].name}</b><small></small></span></button>`).join('');
+  $('cards').innerHTML = tiles().map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id, F)}<span><b>${tileName(F.covs, id)}</b><small></small></span></button>`).join('');
   document.querySelectorAll('.cov').forEach(card => card.addEventListener('pointerdown', startCardDrag));
 }
 // Selected state and subtitle per card, in place, so a card keeps focus while the coach works with the keyboard
@@ -2171,6 +2180,12 @@ $('optBtn').addEventListener('click', () => {
 });
 $('playTags').addEventListener('click', e => {
   if (e.target.id === 'resetPlay') { track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
+});
+$('c1Sel').addEventListener('change', e => {
+  state.c1 = e.target.value;
+  // on the field already: swap to the other Cover 1 (dragged defenders belong to the old one)
+  if (state.cov === 'man' || state.cov === 'c1') { state.cov = state.c1 === 'man' ? 'man' : 'c1'; state.nudges = {}; }
+  stop(); recompute(); setT(0); track('toggle_setting', { setting: 'cover1', value: state.c1, ...covInfo() });
 });
 function setRusher(v) { state.rusher = v === 'drop' ? 'none' : v || 'R'; $('rushSel').value = state.rusher; }   // 'drop' from links made before 2026-10-09's change
 $('rushSel').addEventListener('change', e => { setRusher(e.target.value); stop(); recompute(); setT(0); track('toggle_setting', { setting: 'rusher', value: state.rusher, ...covInfo() }); });
