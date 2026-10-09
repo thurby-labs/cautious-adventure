@@ -461,7 +461,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
-/* Play library: 15 sample plays (names are the coach's own). `num` and `series` are the coach's original numbering and
+/* Play library: 15 sample plays (names describe the formation and the key route). `num` and `series` are the coach's original numbering and
    wristband/alternates split; they're kept for analytics but never shown. Coaches number and group their own plays (studio.js).
    Units: yards. x 0..30 sideline to sideline (ball usually at 15), y = yards past the line of scrimmage.
    Route points are [x, y] or [x, y, holdSeconds]. A star (shape: 'star') marks the player the diagram highlights.
@@ -545,7 +545,7 @@ const PLAYS = [
   Z_([10.3, -5.5], [[15.4, -5.3], [21, -3.5], [23.5, -1.2]], 'Pitch sweep right', { shape: 'star', dashed: true, speed: 5.4 }),
   Y_([21.5, 0], [[22, 8], [23.3, 17]], 'Go') ] },
 
-{ num: 9, series: 'alternates', id: 'p35', name: 'Countertop', type: 'run', concept: 'Counter right', handoff: { to: 'X', at: 1 }, players: [
+{ num: 9, series: 'alternates', id: 'p35', name: 'Split T, Z Motion, X Counter Right', type: 'run', concept: 'Counter right', handoff: { to: 'X', at: 1 }, players: [
   Y_([7.8, 0], [[6.5, 4], [5, 11.3], [5, 17]], 'Go'),
   C_([15, 0], [[14, 4], [10.5, 11.3]], 'Bend left'),
   QB(15, -3, [[15.2, -3.3]], 'Hand off'),
@@ -559,7 +559,7 @@ const PLAYS = [
   X_([12, -1.7], [[11, -0.5], [8.5, 2.2], [6.5, 5], [4.9, 12], [4.6, 17]], 'Wheel left', { shape: 'star', motion: [[26.6, 0], [25, -1.7]] }),
   QB(15, -4.3, [[15, -4.8]], 'Drop') ] },
 
-{ num: 11, series: 'alternates', id: 'p51', name: 'Bad Habit', type: 'pass', concept: 'Three-level stack left', players: [
+{ num: 11, series: 'alternates', id: 'p51', name: 'Bunch Left, Y Post', type: 'pass', concept: 'Three-level stack left', players: [
   Y_([3.7, 0], [[3.7, 7.2], [14.1, 9.7]], 'Post (7)'),
   Z_([6.3, 0], [[6.3, 5.5], [0.8, 5.5]], 'Out left (5)'),
   X_([8.5, 0], [[8.5, 5.5], [15.1, 5.5]], 'In right (5)'),
@@ -573,7 +573,7 @@ const PLAYS = [
   Z_([15.5, -5.6], [[16.5, -2], [18.5, 4.2]], 'Fake dive', { speed: 5.4, fake: true }),
   X_([24, 0], [[20, -2.2], [15.8, -2.8], [11, -2], [7, 0.5], [5.8, 7]], 'Reverse left', { shape: 'star', speed: 5.6 }) ] },
 
-{ num: 13, series: 'alternates', id: 'p36', name: '3D', type: 'pass', concept: 'Levels: sit, cross, swing', players: [
+{ num: 13, series: 'alternates', id: 'p36', name: 'Twins Left, Y Sit', type: 'pass', concept: 'Levels: sit, cross, swing', players: [
   X_([8.4, 0], [[8.4, 9.6], [15.2, 13], [26, 17]], 'Crosser (deep) right'),
   Y_([12.3, 0], [[12.3, 8.3]], 'Sit (8)', { shape: 'star' }),
   C_([15, 0], [[16, 2.5], [18.5, 4], [23.4, 5.5]], 'Out right'),
