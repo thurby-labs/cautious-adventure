@@ -1023,9 +1023,11 @@ function buildDefense(covId, play, opts = {}) {
   if (opts.blitz) {
     const b = defs.find(d => d.id === T.blitzer);
     if (b) {
-      // 5v5: the second rusher lines up on the other side from the first; `ifBlitz` shifts the rest
+      // the second rusher comes off the other edge from the first (coaches pair a push rusher on the arm side with one on the weak
+      // side; 7v7 since 2026-10-09), or over the ball when a 7v7 spy already holds that edge; `ifBlitz` shifts the rest
       b.role = 'rush'; b.man = false;
-      b.pos = F.id === '7v7' ? [F.mid, 7] : [F.mid - 3 * side, 7];
+      const edge = [F.mid - 3 * side, 7];
+      b.pos = defs.some(d => d.role === 'mirror' && Math.abs(d.pos[0] - edge[0]) < 2) ? [F.mid, 7] : edge;
       defs.forEach(d => {
         const s = d.ifBlitz;
         if (s) Object.assign(d, s.pos ? { pos: [...s.pos] } : {}, s.zone ? { zone: clone(s.zone) } : {});
