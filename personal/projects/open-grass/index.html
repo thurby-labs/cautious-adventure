@@ -2539,7 +2539,16 @@ async function startAccounts(onChange) {
       gtag('set', { user_id: id });
       gtag('set', 'user_properties', { signed_in: u ? 'yes' : 'no' });
     } catch (e) {}
-    if (u && !first) track(Date.now() - new Date(u.createdAt).getTime() < 10 * 60 * 1000 ? 'sign_up' : 'login', { method: 'clerk' });
+    // sign_up (the Ads conversion) once per new account, even when Google sign-in came back through a page reload (then the
+    // session looks restored, `first` is true); og-signup-sent remembers that this browser already reported it
+    let sent = null;
+    try { sent = localStorage.getItem('og-signup-sent'); } catch (e) {}
+    const fresh = u && Date.now() - new Date(u.createdAt).getTime() < 10 * 60 * 1000;
+    if (fresh && sent !== u.id) {
+      track('sign_up', { method: 'clerk' });
+      try { localStorage.setItem('og-signup-sent', u.id); } catch (e) {}
+    }
+    else if (u && !first) track('login', { method: 'clerk' });
     else if (!u && lastId) track('logout');
     first = false;
     lastId = id;
@@ -3375,7 +3384,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
       } catch (e) {}
       location.replace(location.pathname);
     });
