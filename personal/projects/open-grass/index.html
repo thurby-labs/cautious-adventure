@@ -111,7 +111,8 @@
   --good: #1D8A4B; --warn: #B87D05; --bad: #C1362B;
   --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
-  --radius: 10px;
+  --radius: 10px; --on-grade: #FFFFFF;
+  --dock-h: 0px; --peek-h: 0px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -120,7 +121,7 @@
     --turf: #1D3A25; --turf-2: #21412A; --chalk: #CFE3D0; --hole: #E2EA45; --hole-edge: #E2EA45;
     --def: #DCE4F4; --def-ink: #17203A; --zone: #A9BCE6;
     --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --r-teal: #4FC9D2; --r-gold: #E8B33E; --ball: #C98A57;
-    --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E;
+    --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; --on-grade: #0E1410;
     color-scheme: dark;
   }
 }
@@ -130,64 +131,125 @@
   --turf: #1D3A25; --turf-2: #21412A; --chalk: #CFE3D0; --hole: #E2EA45; --hole-edge: #E2EA45;
   --def: #DCE4F4; --def-ink: #17203A; --zone: #A9BCE6;
   --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --r-teal: #4FC9D2; --r-gold: #E8B33E; --ball: #C98A57;
-  --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E;
+  --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; --on-grade: #0E1410;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; }
 body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
-.app { max-width: 1320px; margin: 0 auto; padding-inline: 20px; padding-block: 16px 40px; display: grid; gap: 16px; }
+/* Breakpoints: phone < 700 px (full-width field, playback dock, results sheet), tablet portrait 700–979 px (playback floats on the
+   field, results sheet resting with the verdict beside the scouting report), 980 px and up the two-column layout. */
+.app { max-width: 1320px; margin: 0 auto; padding-inline: 20px; padding-block: 12px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 button, select, input { font: inherit; color: inherit; }
 button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Header */
-.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand h1 { font-family: var(--f-display); font-weight: 900; font-size: 34px; line-height: .9; letter-spacing: .01em; margin: 0; text-transform: uppercase; }
-.brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; letter-spacing: .02em; }
-.mark { height: 72px; width: auto; flex: none; display: block; }
+/* Header: a full-width bar. Phones show the icon and the wordmark; tablet and desktop the full logo and Tour. */
+.top { background: var(--panel); border-bottom: 1px solid var(--line); }
+/* One bar from 700 px up: logo, play picker, Test a play, Tour, Sign in, Sign up free. Phones wrap the play row under the logo line. */
+.top-in { max-width: 1320px; margin: 0 auto; padding: 8px 20px; min-height: 60px; display: flex; align-items: center; gap: 8px 12px; }
+.top-in .playrow { flex: 1; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mark { height: 48px; width: auto; flex: none; display: block; }
+.mark-sm { display: none; width: 36px; height: 36px; flex: none; }
+.wordmark { display: none; font-family: var(--f-display); font-weight: 900; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; line-height: 1; white-space: nowrap; }
 /* The wordmark's navy "OPEN" vanishes on the dark theme, so seat the logo on a light badge there. */
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mark { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
-:root[data-theme="dark"] .mark { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } :root:not([data-theme="light"]) .mark-sm { padding: 2px; border-radius: 9px; } }
+:root[data-theme="dark"] :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+:root[data-theme="dark"] .mark-sm { padding: 2px; border-radius: 9px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.play-pick { display: flex; align-items: center; gap: 8px; }
-.play-pick label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.play-pick select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; max-width: 70vw; }
+.head-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+.hbtn { height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.hbtn:hover { background: var(--chip); }
+.hbtn.cta { background: var(--hole); color: #1d2208; padding: 0 14px; }
+.hbtn.cta:hover { filter: brightness(1.05); }
+.acct { display: flex; align-items: center; gap: 4px; min-height: 44px; }
+.acct #userBtn { display: flex; align-items: center; padding-inline: 6px; }
+.acct #userBtn[hidden] { display: none; }
+/* narrow tablets: Test a play shrinks to its + icon so the picker keeps room */
+@media (min-width: 700px) and (max-width: 899px) {
+  .testbtn { width: 52px; padding: 0; justify-content: center; }
+  .testbtn .tlabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 699px) {
+  .top-in { flex-wrap: wrap; padding: 0 8px 10px 12px; column-gap: 8px; }
+  .brand { min-height: 60px; }
+  .head-actions { margin-left: auto; }
+  .top-in .playrow { order: 3; flex-basis: 100%; padding-right: 4px; }
+  /* phones: Sign in takes Tour's place (Tour stays in the footer) */
+  .mark, #tourBtn { display: none; }
+  .mark-sm, .wordmark { display: block; }
+  .hbtn { padding: 0 10px; }
+}
+/* small phones: a tighter wordmark and buttons keep Sign in and Create account on the logo line */
+@media (max-width: 389px) { .wordmark { font-size: 19px; } .hbtn { padding: 0 8px; } .hbtn.cta { padding: 0 10px; } .top-in { column-gap: 6px; } }
+@media (max-width: 339px) { .wordmark { display: none; } }
+
+/* Play row: the play picker (a native select laid over a big button) and Test a play */
+.playrow { display: flex; align-items: center; gap: 8px; }
+.pickbtn { position: relative; flex: 1; min-width: 0; min-height: 52px; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 4px 36px 4px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.top .pickbtn { background: var(--paper); }
+.pickbtn:hover { border-color: var(--muted); }
+.pickbtn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pickbtn .eyebrow { font-size: 10px; }
+.pickbtn h2 { font-family: var(--f-display); font-weight: 800; font-size: 20px; line-height: 1.05; margin: 0; text-transform: uppercase; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pickbtn .chev { position: absolute; right: 12px; top: 50%; width: 16px; height: 16px; margin-top: -8px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+.pickbtn select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; border: 0; }
+.testbtn { flex: none; min-height: 52px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 10px; background: var(--ink); color: var(--paper); font-weight: 700; cursor: pointer; white-space: nowrap; }
+.testbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.testbtn:hover { filter: brightness(1.15); }
 
 /* Main grid */
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 20px; align-items: start; }
-@media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 979px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 .stage { display: grid; gap: 12px; min-width: 0; }
 
 .eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.playhead { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 16px; }
-.playhead h2 { font-family: var(--f-display); font-weight: 800; font-size: 28px; line-height: 1; margin: 2px 0 0; text-wrap: balance; text-transform: uppercase; letter-spacing: .01em; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tag { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--chip); color: var(--ink); font-weight: 500; }
 .tag.mod { background: var(--hole); color: #1d2208; font-weight: 700; }
 .linkbtn { background: none; border: 0; padding: 3px 4px; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
 
-/* Coverage tray */
-.tray { display: grid; gap: 8px; }
-.tray-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
-/* One row of defenses (5 or 6); scrolls sideways when it doesn't fit. pan-x keeps the sideways swipe, a drag down still reaches the field. */
-.cards { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(118px, 1fr); gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
-.cov { display: grid; grid-template-columns: minmax(0,1fr); align-content: start; gap: 5px; padding: 7px; border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--panel); cursor: grab; touch-action: pan-x; user-select: none; -webkit-user-select: none; text-align: left; }
+/* Defense row: one row of pill chips (coverage name only), scrolls sideways. pan-x keeps the sideways swipe; a drag up still reaches the field. */
+.tray { position: relative; display: grid; gap: 6px; }
+.cards { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
+.cards::-webkit-scrollbar { display: none; }
+.cov { flex: none; height: 48px; padding: 0 16px; border-radius: 99px; border: 1.5px solid var(--line); background: var(--panel); cursor: grab; touch-action: pan-x; user-select: none; -webkit-user-select: none; font-family: var(--f-display); font-size: 18px; font-weight: 800; line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .cov:hover { border-color: var(--muted); }
-.cov[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.cov svg { width: 100%; height: auto; aspect-ratio: 64 / 26; border-radius: 5px; display: block; }
-.cov b { display: block; font-family: var(--f-display); font-size: 17px; font-weight: 800; line-height: 1; text-transform: uppercase; }
-.cov small { color: var(--muted); font-size: 11.5px; line-height: 1.25; display: block; margin-top: 2px; }
-.ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -50%) rotate(-3deg); box-shadow: 0 10px 28px rgba(0,0,0,.25); width: 170px; opacity: .95; }
-.toggles { display: flex; flex-wrap: wrap; gap: 6px; }
-.tog { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 600; cursor: pointer; }
-.tog input { accent-color: var(--accent); margin: 0; }
-.tog select { font: inherit; font-weight: 600; color: inherit; background: transparent; border: 0; padding: 0 2px; cursor: pointer; }
+.cov[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -50%) rotate(-3deg); box-shadow: 0 10px 28px rgba(0,0,0,.25); opacity: .95; }
+.defline { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; color: var(--muted); }
+.defline > span { min-width: 0; }
+.optbtn { margin-left: auto; flex: none; height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel); color: var(--ink); font-size: 13px; font-weight: 700; cursor: pointer; }
+.optbtn:hover, .optbtn[aria-expanded="true"] { border-color: var(--muted); }
+.optbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+/* Field options: a small popover above its button on wide screens (the row sits near the bottom of the screen), a bottom sheet on phones and tablets */
+.optsheet { position: absolute; right: 0; bottom: 50px; z-index: 40; width: min(340px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.22); padding: 14px; display: grid; gap: 12px; }
+.optsheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.optsheet-head b { font-family: var(--f-display); font-weight: 800; font-size: 20px; text-transform: uppercase; line-height: 1; }
+.optscrim { position: fixed; inset: 0; z-index: 39; background: transparent; }
+.toggles { display: grid; gap: 8px; }
+.tog { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 4px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-size: 15px; font-weight: 600; cursor: pointer; }
+.tog input { accent-color: var(--accent); margin: 0; width: 20px; height: 20px; order: 2; }
+.tog select { font: inherit; font-weight: 600; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+#speedSlot:empty { display: none; }
+#speedSlot { display: grid; gap: 6px; }
+#speedSlot .speed { display: flex; gap: 6px; flex-wrap: wrap; }
+#speedSlot .speed button { min-height: 44px; min-width: 52px; padding: 0 12px; border-radius: 10px; font-size: 15px; }
+#speedSlot .speed .loop { margin-left: auto; }
 
 /* Field */
+.player { position: relative; display: grid; gap: 12px; }
 .field-wrap { position: relative; border-radius: 14px; overflow: hidden; background: var(--turf); border: 1px solid var(--line); }
-.field-wrap svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 150px); margin: 0 auto; touch-action: pan-y; }
+/* wide screens: the header bar (logo, play picker, sign-in) ≈ 80 px above, timeline + defense row + its line ≈ 190 below, so the chips stay on screen */
+.field-wrap svg { display: block; width: 100%; height: auto; max-height: max(360px, calc(100svh - 290px)); margin: 0 auto; touch-action: pan-y; }
+/* Grade badge, top right of the field: opens the results */
+.gbadge { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border: 0; border-radius: 12px; background: var(--panel); color: var(--ink); box-shadow: 0 6px 18px rgba(14,21,17,.28); cursor: pointer; text-align: left; }
+.gbadge .gl { width: 40px; height: 40px; border-radius: 9px; display: grid; place-items: center; font-family: var(--f-display); font-weight: 900; font-size: 30px; line-height: 1; color: var(--on-grade); background: var(--muted); }
+.gbadge .gl.gA, .gbadge .gl.gB { background: var(--good); } .gbadge .gl.gC { background: var(--warn); } .gbadge .gl.gD, .gbadge .gl.gF { background: var(--bad); }
+.gbadge .gt { display: grid; line-height: 1.15; }
+.gbadge small { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.gbadge b { font-size: 14px; }
 .field-wrap.drop-ready::after { content: "Drop to overlay this coverage"; position: absolute; inset: 10px; border: 2.5px dashed var(--chalk); border-radius: 10px; display: grid; place-items: center; font-family: var(--f-display); font-size: 24px; font-weight: 800; text-transform: uppercase; color: var(--chalk); background: color-mix(in srgb, var(--turf) 40%, transparent); pointer-events: none; }
 .field-wrap.drop-over::after { background: color-mix(in srgb, var(--hole) 30%, transparent); }
 .def { cursor: grab; }
@@ -226,7 +288,9 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 
 /* Read panel */
+.sheet { min-width: 0; }
 .read { display: grid; gap: 14px; min-width: 0; }
+.sheet-grip { display: none; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
 .card h3 { font-family: var(--f-display); font-weight: 800; font-size: 20px; text-transform: uppercase; margin: 0; letter-spacing: .01em; line-height: 1; }
 .g { font-family: var(--f-display); font-weight: 900; line-height: 1; }
@@ -279,20 +343,17 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .src { font-size: 12px; color: var(--muted); margin: 0; }
 .empty { color: var(--muted); margin: 0; }
 /* Play actions, studio dialog, toast */
-.head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.playmeta { display: grid; gap: 8px; }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .act { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .act:hover { border-color: var(--muted); }
 .act[aria-pressed="true"] { background: var(--hole); color: #1d2208; border-color: var(--hole-edge); }
 .act.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .act.danger { color: var(--bad); }
-.acct { display: flex; align-items: center; min-height: 32px; }
-.acct #userBtn { display: flex; align-items: center; }
-.acct #userBtn[hidden] { display: none; }
 .act:disabled { opacity: .55; cursor: progress; }
 .act svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .scrim { position: fixed; inset: 0; z-index: 60; background: rgba(10, 16, 12, .55); display: grid; place-items: center; padding-inline: 16px; padding-block: 16px; }
-.dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 18px; display: grid; gap: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; width: min(560px, 100%); max-height: calc(100svh - 32px); overflow: auto; padding: 18px; display: grid; gap: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
 .dialog h3 { font-family: var(--f-display); font-weight: 800; font-size: 24px; text-transform: uppercase; margin: 0; line-height: 1; }
 .dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -324,7 +385,8 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 /* Beta pill and the free-account prompt (gate) */
 .beta { font-family: var(--f-body); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--hole-edge); background: var(--hole); color: #1d2208; cursor: pointer; vertical-align: middle; }
 .beta:hover { filter: brightness(1.05); }
-.brand .tagline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+span.beta { cursor: default; margin-left: 4px; }
+.foot .beta { margin-right: 4px; }
 .sketch { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--turf); }
 .sketch svg { display: block; width: 100%; height: auto; max-height: 220px; filter: blur(5px); transform: scale(1.06); }
 .sketch .lockmsg { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 22px; text-transform: uppercase; color: var(--ink); }
@@ -344,78 +406,166 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .about > p { margin: 0; }
 .about a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
 .about details p { margin-top: 6px; }
+/* Below-the-field copy is long and off screen at first: let the browser skip laying it out until it's near */
+.about { content-visibility: auto; contain-intrinsic-size: auto 1100px; }
+
+/* ---------- Phones and tablets (< 980 px): results sheet, bigger tap targets, 16 px inputs (no iOS zoom) ---------- */
+@media (max-width: 979px) {
+  body { padding-bottom: calc(var(--dock-h) + var(--peek-h) + 16px); }
+  input, select, textarea, .pane textarea, .details input, .sharebox input { font-size: 16px; }
+  .act, .btn, .chipbtn, .tab, .linkbtn, .reads li button, .speed button { min-height: 44px; }
+  .foot .linkbtn, dl.notes .linkbtn, .about .linkbtn { min-height: 0; }
+  .act { padding-inline: 13px; }
+  /* Results sheet: peek (verdict line), half, full. Drag the handle, tap it, or Escape / back to close. */
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--dock-h); z-index: 30; height: var(--sheet-h, var(--peek-h)); display: flex; flex-direction: column; background: var(--panel); border-radius: 18px 18px 0 0; box-shadow: 0 -8px 28px rgba(14,21,17,.18); transition: height .25s ease; }
+  .sheet[data-h="half"] { --sheet-h: 55svh; }
+  .sheet[data-h="full"] { --sheet-h: calc(100svh - var(--dock-h) - 56px); }
+  .sheet.dragging { transition: none; }
+  .sheet-grip { display: grid; flex: none; touch-action: none; cursor: grab; padding: 8px 16px 0; user-select: none; -webkit-user-select: none; }
+  .sheet-grip .grip { justify-self: center; width: 40px; height: 5px; border-radius: 99px; background: var(--line); margin-bottom: 4px; }
+  .peek { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 2px 0 10px; border: 0; background: none; text-align: left; cursor: pointer; }
+  .peek .g { font-size: 34px; width: 34px; text-align: center; }
+  .peek b { display: block; font-family: var(--f-display); font-weight: 800; font-size: 21px; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .peek small { display: block; font-size: 13px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .peek svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; transition: transform .25s; }
+  .sheet:not([data-h="peek"]) .peek { display: none; }
+  .sheet:not([data-h="peek"]) .sheet-grip { padding-block: 12px 14px; }
+  .sheet .read { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 12px calc(16px + env(safe-area-inset-bottom, 0px)); gap: 10px; align-content: start; }
+  .sheet[data-h="peek"] .read { overflow: hidden; }
+  @media (max-width: 699px) { .sheet[data-h="peek"] .read { visibility: hidden; } }
+  .sheet .card { padding: 14px; }
+  /* Field options sheet */
+  .optsheet { position: fixed; left: 0; right: 0; bottom: 0; width: auto; margin: 0; z-index: 46; border-radius: 18px 18px 0 0; border-width: 1px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .optscrim { z-index: 45; background: rgba(10, 16, 12, .45); }
+}
+
+/* ---------- Phones (< 700 px): full-width field, playback dock pinned to the bottom ---------- */
+@media (max-width: 699px) {
+  :root { --peek-h: 82px; }
+  .app { padding-inline: 12px; padding-top: 8px; gap: 10px; }
+  .stage { gap: 10px; }
+  .player { gap: 0; margin-inline: -12px; }
+  .field-wrap { border-radius: 0; border-width: 0; }
+  /* keep the defense row above the results sheet on short phones: header with its play row, chips and line ≈ 250 px */
+  .field-wrap svg { max-height: calc(100svh - 250px - var(--peek-h) - var(--dock-h)); }
+  .pickbtn h2 { font-size: 18px; }
+  .testbtn { padding: 0 14px; }
+  .timeline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; padding: 6px 16px calc(8px + env(safe-area-inset-bottom, 0px)); border-radius: 0; border-width: 1px 0 0; }
+  .timeline .playbtn { width: 52px; height: 52px; }
+  .timeline .playbtn svg { width: 18px; height: 18px; }
+  .timeline .clock { min-width: 58px; }
+  .timeline .track { padding-block: 6px 8px; }
+  .timeline .track input { height: 44px; display: block; }
+  .hint { font-size: 12px; }
+}
+
+/* ---------- Tablet portrait (700–979 px): playback floats on the field; the sheet rests with verdict beside the scouting report ---------- */
+@media (min-width: 700px) and (max-width: 979px) {
+  :root { --peek-h: 176px; }
+  .app { padding-inline: 24px; }
+  .player { gap: 0; }
+  /* above the field ≈ 80 px, the turf strip under it for the dock 56, the chips and their line ≈ 125 */
+  .field-wrap svg { max-height: calc(100svh - 265px - var(--peek-h)); }
+  .timeline { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2; border: 0; border-radius: 16px; background: color-mix(in srgb, var(--panel) 95%, transparent); box-shadow: 0 8px 24px rgba(14,21,17,.22); }
+  .timeline .playbtn { width: 52px; height: 52px; }
+  .timeline .speed { display: flex; flex-direction: row; gap: 4px; }
+  .timeline .speed .loop { margin-left: 4px; }
+  .field-wrap { padding-bottom: 56px; }
+  .sheet[data-h="peek"] .read { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); padding-top: 0; }
+  .sheet[data-h="peek"] .read > .card:nth-child(n+3) { display: none; }
+  .sheet[data-h="peek"] .read > .card { border: 0; padding: 4px 0; }
+  .sheet .peek { display: none; }
+  .sheet-grip { padding-bottom: 4px; }
+}
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<div class="app">
-  <header class="top">
+<header class="top">
+  <div class="top-in">
     <div class="brand">
-      <img class="mark" src="logo/open-grass-logo-header.png" width="101" height="72" alt="">
-      <div><h1 class="sr-only">Open Grass: flag football play tester</h1><p class="tagline">Find the hole. Beat the coverage. <button class="beta" id="betaBtn" title="Free while in beta">Beta</button></p></div>
+      <img class="mark" src="logo/open-grass-logo-header.png" width="79" height="56" alt="">
+      <img class="mark-sm" src="logo/open-grass-icon.png" width="36" height="36" alt="">
+      <span class="wordmark" aria-hidden="true">Open Grass</span>
+      <h1 class="sr-only">Open Grass: flag football play tester</h1>
+    </div>
+    <div class="playrow">
+      <div class="pickbtn">
+        <span class="eyebrow" id="playEyebrow">Play</span>
+        <h2 id="playName"></h2>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        <select id="playSel" aria-label="Play"></select>
+      </div>
+      <button class="testbtn" id="newPlayBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="tlabel">Test a play</span></button>
     </div>
     <div class="head-actions">
-      <div class="play-pick">
-        <label for="playSel">Play</label>
-        <select id="playSel"></select>
-      </div>
-      <button class="act primary" id="newPlayBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New play</button>
-      <button class="act" id="tourBtn" title="Take the tour"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6M12 17h.01"/></svg>Tour</button>
+      <button class="hbtn" id="tourBtn" title="Take the tour">Tour</button>
       <div class="acct" id="acctBox" hidden>
-        <button class="act" id="acctBtn" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Sign in</button>
+        <button class="hbtn" id="signInBtn" hidden>Sign in</button>
+        <button class="hbtn cta" id="acctBtn" hidden>Create account</button>
         <div id="userBtn" hidden></div>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
+<div class="app">
   <main class="layout">
     <section class="stage">
-      <div class="playhead">
-        <div>
-          <div class="eyebrow">On the field</div>
-          <h2 id="playName"></h2>
+      <div class="player" id="player">
+        <div class="field-wrap" id="fieldWrap">
+          <svg id="field" viewBox="0 0 360 336" role="img" aria-label="Field diagram of the play against the selected coverage"></svg>
+          <button class="gbadge" id="gradeBadge" hidden></button>
         </div>
-        <div class="tags" id="playTags"></div>
-      </div>
-      <div class="actions" id="actions">
-        <button class="act" id="favBtn" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Favorite</span></button>
-        <button class="act" id="optBtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg><span>Option</span></button>
-        <button class="act" id="shareBtn"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share link</button>
-        <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
-        <button class="act" id="exportBtn" hidden title="Save your favorite plays as a playbook file or a scouting sheet"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export</button>
-        <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
-        <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
-        <button class="act" id="detailsBtn" hidden><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Number &amp; group</button>
-        <button class="act danger" id="deletePlayBtn" hidden>Delete play</button>
+
+        <div class="timeline">
+          <button class="playbtn" id="playBtn" aria-label="Run the play" aria-keyshortcuts="Space" title="Play / pause (Space). Step with ← →"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></button>
+          <div class="track">
+            <input type="range" id="scrub" min="0" max="4" step="0.05" value="0" aria-label="Time after the snap">
+            <div class="marks" id="marks"></div>
+          </div>
+          <div class="clock"><b id="clockT">0.0s</b><span id="clockL">Pre-snap</span></div>
+          <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
+        </div>
       </div>
 
       <div class="tray">
-        <div class="tray-head">
-          <span class="eyebrow" id="trayLbl">Defense · tap or drag onto the field</span>
+        <span class="sr-only" id="trayLbl">Defense</span>
+        <div class="cards" id="cards" role="group" aria-labelledby="trayLbl"></div>
+        <div class="defline">
+          <span id="covLine"></span>
+          <button class="optbtn" id="fieldOptBtn" aria-expanded="false" aria-controls="optSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Field options</button>
+        </div>
+        <div class="optscrim" id="optScrim" hidden></div>
+        <div class="optsheet" id="optSheet" role="dialog" aria-labelledby="optTitle" hidden>
+          <div class="optsheet-head"><b id="optTitle">Field options</b><button class="act" id="optDone">Done</button></div>
           <div class="toggles">
             <label class="tog" title="Where the rusher lines up, 7 yards off the ball. A player who shows rush must rush. With no rusher, that player plays an extra safety">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="none">No rusher</option></select></label>
             <label class="tog" id="c1Tog" title="Cover 1: short defenders follow a receiver (Man) or guard an area (Zone)">Cover 1 <select id="c1Sel"><option value="man">Man</option><option value="zone">Zone</option></select></label>
-            <label class="tog"><input type="checkbox" id="blitzT"> <span id="blitzL">Extra rusher</span></label>
-            <label class="tog"><input type="checkbox" id="holesT" checked> Show holes</label>
+            <label class="tog"><span id="blitzL">Extra rusher</span> <input type="checkbox" id="blitzT"></label>
+            <label class="tog">Show holes <input type="checkbox" id="holesT" checked></label>
           </div>
+          <div id="speedSlot"></div>
         </div>
-        <div class="cards" id="cards" role="group" aria-label="Defenses"></div>
       </div>
 
-      <div class="field-wrap" id="fieldWrap">
-        <svg id="field" viewBox="0 0 360 336" role="img" aria-label="Field diagram of the play against the selected coverage"></svg>
+      <div class="playmeta">
+        <div class="tags" id="playTags"></div>
+        <div class="actions" id="actions">
+          <button class="act" id="favBtn" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Favorite</span></button>
+          <button class="act" id="optBtn" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg><span>Option</span></button>
+          <button class="act" id="shareBtn"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share link</button>
+          <button class="act" id="gifBtn"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Save GIF</button>
+          <button class="act" id="exportBtn" hidden title="Save your favorite plays as a playbook file or a scouting sheet"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export</button>
+          <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
+          <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
+          <button class="act" id="detailsBtn" hidden><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Number &amp; group</button>
+          <button class="act danger" id="deletePlayBtn" hidden>Delete play</button>
+        </div>
       </div>
 
-      <div class="timeline">
-        <button class="playbtn" id="playBtn" aria-label="Run the play" aria-keyshortcuts="Space" title="Play / pause (Space). Step with ← →"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></button>
-        <div class="track">
-          <input type="range" id="scrub" min="0" max="4" step="0.05" value="0" aria-label="Time after the snap">
-          <div class="marks" id="marks"></div>
-        </div>
-        <div class="clock"><b id="clockT">0.0s</b><span id="clockL">Pre-snap</span></div>
-        <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
-      </div>
       <p class="hint">
         <span class="key"><i class="sw" style="background:var(--hole);outline:1px solid var(--hole-edge)"></i>Open grass</span>
         <span class="key"><i class="sw" style="background:var(--zone);opacity:.35"></i>Zone</span>
@@ -426,7 +576,13 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
       </p>
     </section>
 
-    <aside class="read" id="read"></aside>
+    <aside class="sheet" id="readSheet" data-h="peek" aria-label="Results">
+      <div class="sheet-grip" id="sheetGrip">
+        <span class="grip" aria-hidden="true"></span>
+        <button class="peek" id="sheetPeek" aria-expanded="false" aria-controls="read"></button>
+      </div>
+      <div class="read" id="read"></div>
+    </aside>
   </main>
 
   <!-- What Google reads: the app itself is drawn by script. Keep this honest to what the app does today, say "flag football" (not only 5v5),
@@ -451,7 +607,7 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 
   <footer class="foot">
     <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <button class="linkbtn" id="dataBtn">Your data</button> · <button class="linkbtn" id="tourLink">Take the tour</button></p>
-    <p>Free while in beta. Early coaches get founding-coach perks. · <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">Send feedback</a></p>
+    <p><button class="beta" id="betaBtn" title="Free while in beta">Beta</button> Free while in beta. Early coaches get founding-coach perks. · <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">Send feedback</a></p>
   </footer>
 </div>
 
@@ -1844,35 +2000,39 @@ const recLabel = id => { const p = playerById(id); return `${p.label} · ${p.nam
 function dotFor(pl) {
   return `<span class="dot" style="background:${COLOR[pl.color]};${pl.color === 'ink' ? 'color:var(--panel)' : ''}">${pl.label}</span>`;
 }
+/* Order (phones read it top down in the results sheet): verdict, scouting report, Coach's adjustments, the QB read, then the rest. */
 function renderRead() {
   const covs = covsFor(state.play), cov = state.cov ? covs[state.cov] : null;
-  let h = `<div class="card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'none' ? ' (no rusher)' : ''}</div><div class="scout-row">`;
+  let scout = `<div class="card scout-card"><div class="eyebrow">Scouting report · this play vs each look${state.blitz ? ' (with extra rusher)' : ''}${state.rusher === 'none' ? ' (no rusher)' : ''}</div><div class="scout-row">`;
   tiles().forEach(c => {
     const g = state.scout[c].grade;
-    h += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${tileName(covs, c)}</span></button>`;
+    scout += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${tileName(covs, c)}</span></button>`;
   });
-  h += `</div></div>`;
+  scout += `</div></div>`;
 
   if (!cov) {
-    h += `<div class="card"><p class="empty">Drop a coverage on the field to see where this play wins and where it gets covered.</p></div>`;
-    $('read').innerHTML = h; return;
+    $('read').innerHTML = `<div class="card verdict-card"><p class="empty">Drop a coverage on the field to see where this play wins and where it gets covered.</p></div>` + scout;
+    renderPeek(null); return;
   }
   const ev = state.run.ev, sim = state.run.sim;
   const top = ev.order[0], tb = ev.receivers[top].best, tp = playerById(top);
   const g = ev.grade;
   const head = g === 'A' || g === 'B' ? `Beats ${cov.name}` : g === 'C' ? `Works, but it's tight` : `${cov.name} takes this away`;
+  let h = '';
   if (ev.run) {
     const r = ev.run;
     let rs = `<b>${tp.label}</b> gets the ball at ${fmtT(r.th)} and ` + (r.t !== null
       ? `gains <b>${r.yards.toFixed(1)} yds</b> before the ${r.by} pulls the flag at ${fmtT(r.t)}.`
       : `is still running at ${fmtT(tEnd())}, <b>${r.yards.toFixed(1)} yds</b> downfield.`);
-    h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
+    h += `<div class="card verdict-card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
+    h += scout + sugsHtml(g, cov);
+    renderPeek({ g, cov, head, sub: `${tp.label} gains ${r.yards.toFixed(1)} yds` });
     const st = r.yards >= 5 ? 'open' : r.yards >= 2.5 ? 'tight' : 'covered';
-    h += `<div class="card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${esc(tp.routeName)}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
+    h += `<div class="card reads-card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${esc(tp.routeName)}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
       <p class="src">Gain is measured to where the first defender reaches the ball carrier. Tap to jump there.</p>
       <p class="src">Near the goal line and midfield most leagues have a no-run zone, so have a pass ready for those downs.</p></div>`;
     h += pitchNote();
-    h += sugsHtml(g, cov) + notesHtml(cov);
+    h += notesHtml(cov);
     $('read').innerHTML = h; return;
   }
   const why = tb.t !== null && (g === 'A' || g === 'B' || g === 'C') ? whyOpen(state.play, state.run, top) : '';
@@ -1886,9 +2046,11 @@ function renderRead() {
   }
   if (sim.hurry !== null && sim.hurry !== undefined) sum += ` The rusher reaches the QB at ${fmtT(sim.hurry)}. Throws after that are hurried, and the QB has about half a second left.`;
   else if (sim.pressure !== null) sum += ` The rusher gets home at ${fmtT(sim.pressure)}, so the ball has to be out before then.`;
-  h += `<div class="card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${sum}</p></div></div></div>`;
+  h += `<div class="card verdict-card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${sum}</p></div></div></div>`;
+  h += scout + sugsHtml(g, cov);
+  renderPeek({ g, cov, head, sub: tb.t !== null ? `${tp.label} has ${tb.eff.toFixed(1)} yds of space at ${fmtT(tb.t)}` : `Nobody gets open before ${fmtT(sim.deadline)}` });
 
-  h += `<div class="card"><h3>QB read progression</h3><ol class="reads">`;
+  h += `<div class="card reads-card"><h3>QB read progression</h3><ol class="reads">`;
   ev.order.forEach((id, i) => {
     const pl = playerById(id), b = ev.receivers[id].best;
     const st = b.t === null ? 'covered' : statusFor(b.eff);
@@ -1901,11 +2063,23 @@ function renderRead() {
   if (read && !ev.trick) h += `<p class="qbread"><b>The read vs ${cov.name}:</b> ${read}</p>`;
   h += `</div>`;
   const checks = playChecks(state.play, state.run);
-  if (checks.length) h += `<div class="card"><h3>Check your play</h3><ul class="checks">${checks.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`;
+  if (checks.length) h += `<div class="card checks-card"><h3>Check your play</h3><ul class="checks">${checks.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`;
   h += pitchNote();
 
-  h += sugsHtml(g, cov) + notesHtml(cov);
+  h += notesHtml(cov);
   $('read').innerHTML = h;
+}
+// The grade badge on the field and the results sheet's peek line (phones). info: null when no coverage is on the field.
+function renderPeek(info) {
+  const b = $('gradeBadge'), pk = $('sheetPeek');
+  const up = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
+  b.hidden = !info;
+  if (!info) { pk.innerHTML = `<span></span><span><b>Pick a defense</b><small>Tap a coverage under the field to grade this play</small></span>`; return; }
+  const { g, cov, head, sub } = info, n = state.sugs.length;
+  const fixes = n ? `${n} fix${n > 1 ? 'es' : ''}` : g === 'A' ? 'Run it as drawn' : 'No quick fix';
+  b.innerHTML = `<span class="gl g${g}">${g}</span><span class="gt"><small>vs ${esc(cov.name)}</small><b>${fixes}</b></span>`;
+  b.setAttribute('aria-label', `Grade ${g} against ${cov.name}, ${fixes}. Open the results`);
+  pk.innerHTML = `<span class="g g${g}">${g}</span><span><b>${head}</b><small>${esc(sub)} · swipe up for ${n ? 'fixes' : 'the read'}</small></span>${up}`;
 }
 
 // Many 7v7 leagues allow only direct handoffs behind the line: point it out, don't block it (rules vary by league)
@@ -1914,7 +2088,7 @@ function pitchNote() {
   return `<div class="card"><p class="src">Heads up: this play tosses the ball to the runner. Many 7v7 leagues only allow a direct handoff behind the line, so check your league's rules.</p></div>`;
 }
 function sugsHtml(g, cov) {
-  let h = `<div class="card"><h3>Coach's adjustments</h3>`;
+  let h = `<div class="card sug-card"><h3>Coach's adjustments</h3>`;
   if (!state.sugs.length) {
     h += g === 'A'
       ? `<p class="empty">This play already beats ${cov.name}. Run it as drawn.</p>`
@@ -1962,8 +2136,11 @@ function notesHtml(cov) {
 
 function renderHead() {
   $('playName').textContent = playLabel(state.play);
+  // eyebrow on the play picker: format and where the play comes from (a coach's group name is their own text: textContent)
+  const p = state.play, src = p.draft ? 'Draft' : p.mine ? (p.group || 'My play') : p.shared ? 'Shared with you' : 'Sample';
+  $('playEyebrow').textContent = `Play · ${fmtOf(p).id} · ${src}`;
   const n = Object.keys(state.changes).length;
-  let t = `<span class="tag">${fmtOf(state.play).id}</span><span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
+  let t = `<span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
   if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
   if (state.play.draft) t = `<span class="tag mod">Draft · not saved</span>` + t;
   else if (state.play.mine) t = `<span class="tag">${state.play.group ? esc(state.play.group) : 'My play'}</span>` + t;
@@ -1991,21 +2168,6 @@ const MINI5 = { id: 'mini5', players: [[5, 0], [11, 0], [15, 0], [24, 0]].map(([
   .concat([{ id: 'Q', start: [15, -4], route: [[15, -5]], qb: true }]) };
 const MINI7 = { id: 'mini7', format: '7v7', players: [[5, 0], [13, 0], [27, 0], [35, 0], [23, -4.5]].map(([x, y], i) => ({ id: 'XHYZR'[i], start: [x, y], route: [[x, y + 5]], eligible: true }))
   .concat([{ id: 'Q', start: [20, -4.5], route: [[20, -5]], qb: true }]) };
-function miniCov(id, F = fmtOf(state.play)) {
-  const c = F.covs[id], w = F.w;
-  const mx = x => 2 + x / w * 60, my = y => 38 - y / 16 * 34;
-  let s = `<svg viewBox="0 4 64 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="64" height="42" style="fill:var(--turf)"/><line x1="0" x2="64" y1="${my(0)}" y2="${my(0)}" style="stroke:var(--chalk)" stroke-width="1"/>`;
-  const holes = F.id === '7v7'
-    ? { c1: [[20, 4]], c2: [[20, 15], [2, 11], [38, 11]], c3: [[14.5, 8], [25.5, 8]], c4: [[3, 4], [37, 4]], p2: [[13, 6], [27, 6]], m2: [[20, 2]] }[id]
-    : { c1: [[3, 14], [27, 14]], c2: [[15, 6]], c3: [[2, 6], [28, 6]], c4: [[8, 4], [22, 4]], man: [] }[id];
-  holes.forEach(([x, y]) => { s += `<ellipse cx="${mx(x)}" cy="${my(y)}" rx="8" ry="4.5" style="fill:var(--hole);stroke:var(--hole-edge)" stroke-width=".6"/>`; });
-  // drawn from the defense the field would show, so the card follows the rusher control (rushers in red)
-  buildDefense(id, F.id === '7v7' ? MINI7 : MINI5, look()).defenders.forEach(({ pos: [x, y], role }) => {
-    s += `<rect x="${mx(x) - 3}" y="${my(y) - 2.5}" width="6" height="5" rx="1.2" style="fill:var(${role === 'rush' ? '--bad' : '--def'})"/>`;
-  });
-  (F.id === '7v7' ? [5, 13, 20, 27, 35] : [5, 11, 15, 24]).forEach(x => { s += `<circle cx="${mx(x)}" cy="${my(0)}" r="1.8" style="fill:var(--chalk)"/>`; });
-  return s + `</svg>`;
-}
 /* Subtitle, same pattern in both formats: the shape ("2 deep, 3 under" or "Man, 1 deep"), then the rush ("no rush", "1 rusher + spy").
    Read from the defense the field would show, so the rusher control and the extra-rusher toggle update it. */
 function covSub(F, id) {
@@ -2024,18 +2186,21 @@ function buildCards() {
   cardsFmt = F.id + state.c1;
   $('c1Tog').hidden = F.id !== '5v5';
   $('trayLbl').textContent = `Defense · ${F.id} · tap or drag onto the field`;
-  $('cards').innerHTML = tiles().map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${miniCov(id, F)}<span><b>${tileName(F.covs, id)}</b><small></small></span></button>`).join('');
+  $('cards').innerHTML = tiles().map(id => `<button class="cov" data-cov="${id}" aria-pressed="false">${tileName(F.covs, id)}</button>`).join('');
   document.querySelectorAll('.cov').forEach(card => card.addEventListener('pointerdown', startCardDrag));
 }
-// Selected state and subtitle per card, in place, so a card keeps focus while the coach works with the keyboard
+// Selected state per chip, in place, so a chip keeps focus while the coach works with the keyboard. The line under the row
+// describes the defense on the field: shape and rush, plus the rusher's side.
 function updateCards() {
   buildCards();
   const F = fmtOf(state.play);
   document.querySelectorAll('.cov').forEach(card => {
     card.setAttribute('aria-pressed', card.dataset.cov === state.cov);
-    card.querySelector('small').innerHTML = covSub(F, card.dataset.cov);
-    card.querySelector('svg').outerHTML = miniCov(card.dataset.cov, F);
+    card.title = covSub(F, card.dataset.cov).replace('<br>', ' · ');
   });
+  const side = state.rusher === 'L' ? ' · left side' : state.rusher === 'R' ? ' · right side' : '';
+  const sub = state.cov ? covSub(F, state.cov).split('<br>') : null;
+  $('covLine').textContent = sub ? `${sub[0]} · ${sub[1].toLowerCase()}${/^no rush/i.test(sub[1]) ? '' : side}` : 'Tap a defense to put it on the field';
 }
 function setCoverage(id, method) {
   if (state.cov !== id) state.nudges = {};
@@ -2051,7 +2216,7 @@ function startCardDrag(e) {
   const over = ev => { const r = wrap.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom; };
   const move = ev => {
     if (!ghost && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) {
-      ghost = card.cloneNode(true); ghost.classList.add('ghost'); document.body.appendChild(ghost);
+      ghost = card.cloneNode(true); ghost.classList.add('ghost'); ghost.removeAttribute('title'); document.body.appendChild(ghost);
       wrap.classList.add('drop-ready');
     }
     if (ghost) {
@@ -2150,6 +2315,7 @@ function loadPlay(pl, cov, optionOn = false) {
   if (cov !== undefined) state.cov = cov;
   state.cov = fitCov(state.cov, state.play);
   stop(); buildSelect(); buildCards(); recompute(); setT(0);
+  sheetTo('peek');
 }
 buildSelect();
 function pickPlay(id, method) {
@@ -2175,6 +2341,7 @@ $('read').addEventListener('click', e => {
     state.changes[sg.id].to = sg.to;
     pl.route = clone(sg.route); pl.routeName = sg.to;
     stop(); recompute(); setT(0);
+    showPlayer();
   }
 });
 $('optBtn').addEventListener('click', () => {
@@ -2237,6 +2404,105 @@ document.querySelectorAll('.speed button[data-sp]').forEach(b => b.addEventListe
   track('change_speed', { speed: state.speed });
   document.querySelectorAll('.speed button[data-sp]').forEach(x => x.setAttribute('aria-pressed', x === b));
 }));
+
+/* ---------- results sheet (phones and tablets, < 980 px) ----------
+   The read panel is a bottom sheet with three heights: peek (the verdict line), half and full. Drag the handle, tap it,
+   or tap the grade badge on the field. Escape and the phone's back gesture bring it down to peek: opening it pushes one
+   history entry (same URL, so share-link hashes are untouched), and back pops it. On wide screens it's the right-hand column. */
+const mqSheet = matchMedia('(max-width: 979px)'), mqPhone = matchMedia('(max-width: 699px)');
+const sheet = { h: 'peek', pushed: false };
+function sheetTo(h, method) {
+  if (!mqSheet.matches || h === sheet.h) return;
+  sheet.h = h;
+  $('readSheet').dataset.h = h;
+  $('sheetPeek').setAttribute('aria-expanded', h !== 'peek');
+  if (h === 'peek') $('read').scrollTop = 0;
+  // the tour moves the sheet itself: keep history out of it so a quick back-and-forth can't pop the wrong entry
+  const inTour = (() => { try { return tour.on; } catch (e) { return false; } })();
+  if (h !== 'peek' && !sheet.pushed && !inTour) { history.pushState({ ogSheet: 1 }, ''); sheet.pushed = true; }
+  else if (h === 'peek' && sheet.pushed) { sheet.pushed = false; if (method !== 'back') history.back(); }
+  if (method) track('results_sheet', { height: h, method });
+}
+addEventListener('popstate', () => { if (sheet.pushed) { sheet.pushed = false; sheetTo('peek', 'back'); } });
+mqSheet.addEventListener('change', () => { if (!mqSheet.matches) { sheet.h = 'peek'; $('readSheet').dataset.h = 'peek'; } });
+$('gradeBadge').addEventListener('click', () => {
+  if (mqSheet.matches) sheetTo(sheet.h === 'peek' ? 'half' : sheet.h, 'badge');
+  else {
+    const r = $('readSheet').getBoundingClientRect();
+    if (r.top < 0 || r.top > innerHeight - 120) $('readSheet').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  track('grade_badge', covInfo());
+});
+// Drag the handle (or the peek line) to resize; a tap or click (keyboard too: the peek line is a button) toggles peek ↔ half
+$('sheetGrip').addEventListener('pointerdown', e => {
+  if (!mqSheet.matches || e.button > 0) return;
+  const el = $('readSheet'), y0 = e.clientY, h0 = el.getBoundingClientRect().height;
+  const peekH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--peek-h')) || 80;
+  let moved = false, last = y0, lastT = e.timeStamp, v = 0;
+  try { $('sheetGrip').setPointerCapture(e.pointerId); } catch (err) {}
+  const move = ev => {
+    if (!moved && Math.abs(ev.clientY - y0) < 6) return;
+    moved = true; el.classList.add('dragging');
+    el.style.height = clamp(h0 + y0 - ev.clientY, peekH, el.getBoundingClientRect().bottom - 8) + 'px';
+    const dt = ev.timeStamp - lastT; if (dt > 0) v = (last - ev.clientY) / dt; last = ev.clientY; lastT = ev.timeStamp;
+  };
+  const up = ev => {
+    $('sheetGrip').removeEventListener('pointermove', move); $('sheetGrip').removeEventListener('pointerup', up); $('sheetGrip').removeEventListener('pointercancel', up);
+    el.classList.remove('dragging');
+    if (!moved) return;   // a tap: the click handler below toggles
+    sheet.dragged = true; setTimeout(() => { sheet.dragged = false; }, 0);
+    const h = el.getBoundingClientRect().height, bottom = el.getBoundingClientRect().bottom;
+    el.style.height = '';
+    // snap to the nearest height, or follow a quick flick
+    const stops = { peek: peekH, half: innerHeight * 0.55, full: bottom - 56 };
+    let to = Object.keys(stops).reduce((a, k) => Math.abs(stops[k] - h) < Math.abs(stops[a] - h) ? k : a, 'peek');
+    if (Math.abs(v) > 0.6) to = v > 0 ? (h > stops.half ? 'full' : 'half') : (h < stops.half ? 'peek' : 'half');
+    sheetTo(to, 'drag');
+  };
+  $('sheetGrip').addEventListener('pointermove', move); $('sheetGrip').addEventListener('pointerup', up); $('sheetGrip').addEventListener('pointercancel', up);
+});
+$('sheetGrip').addEventListener('click', () => { if (!sheet.dragged) sheetTo(sheet.h === 'peek' ? 'half' : 'peek', 'tap'); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !$('scrim').hidden || !$('optSheet').hidden || sheet.h === 'peek') return;
+  try { if (tour.on) return; } catch (err) {}
+  sheetTo('peek', 'escape');
+});
+// A sheet left open stays put while the coach changes coverage or tries a fix; it closes when the play changes (loadPlay).
+
+// After "Try it": bring the coach back to the field and the play button to watch the change. The results sheet drops to
+// peek (its line shows the new grade) and the page scrolls back if the field is off screen. Not during the tour: its step 4 waits on the sheet.
+function showPlayer() {
+  try { if (tour.on) return; } catch (e) {}
+  sheetTo('peek', 'try_it');
+  const r = $('fieldWrap').getBoundingClientRect();
+  if (r.top < 0 || r.bottom > innerHeight) scrollTo({ top: Math.max(0, scrollY + r.top - 12), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+/* ---------- field options: rusher, Cover 1 Man/Zone, extra rusher, holes (and speed + loop on phones) ---------- */
+function fieldOptions(open) {
+  $('optSheet').hidden = $('optScrim').hidden = !open;
+  $('fieldOptBtn').setAttribute('aria-expanded', open);
+  if (open) { (($('optSheet').querySelector('select:not([hidden])')) || $('optDone')).focus({ preventScroll: true }); track('field_options_open', covInfo()); }
+}
+$('fieldOptBtn').addEventListener('click', () => fieldOptions($('optSheet').hidden));
+$('optDone').addEventListener('click', () => { fieldOptions(false); $('fieldOptBtn').focus({ preventScroll: true }); });
+$('optScrim').addEventListener('click', () => fieldOptions(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('optSheet').hidden) { e.stopPropagation(); fieldOptions(false); $('fieldOptBtn').focus({ preventScroll: true }); } });
+
+// Phones: speed and Loop live in the Field options sheet; tablet and desktop keep them in the timeline bar
+const speedEl = document.querySelector('.timeline .speed');
+function placeSpeed() { (mqPhone.matches ? $('speedSlot') : document.querySelector('.timeline')).appendChild(speedEl); }
+mqPhone.addEventListener('change', placeSpeed);
+placeSpeed();
+// The pinned playback dock's height (it grows with the safe-area inset) sets where the results sheet sits
+function sizeDock() {
+  const h = mqPhone.matches ? document.querySelector('.timeline').offsetHeight : 0;
+  document.documentElement.style.setProperty('--dock-h', h + 'px');
+}
+sizeDock();
+mqPhone.addEventListener('change', sizeDock);
+addEventListener('resize', sizeDock);
+if (window.ResizeObserver) new ResizeObserver(sizeDock).observe(document.querySelector('.timeline'));   // fonts loading, marks wrapping
 
 document.getElementById('year').textContent = new Date().getFullYear();
 buildCards();
@@ -2556,13 +2822,13 @@ async function startAccounts(onChange) {
     else if (!u && lastId) track('logout');
     first = false;
     lastId = id;
-    $('acctBtn').hidden = !!u;
+    $('acctBtn').hidden = $('signInBtn').hidden = !!u;
     const ub = $('userBtn');
     ub.hidden = !u;
     if (u) Clerk.mountUserButton(ub); else { try { Clerk.unmountUserButton(ub); } catch (e) {} }
     onChange(u ? { id: u.id, label: (u.primaryEmailAddress && u.primaryEmailAddress.emailAddress) || u.fullName || 'your account' } : null);
   };
-  $('acctBtn').hidden = false;
+  $('acctBtn').hidden = $('signInBtn').hidden = false;
   Clerk.addListener(sync);
   sync();
 }
@@ -2574,7 +2840,8 @@ function openClerk(mode, from) {
   if (typeof closeDialog === 'function' && !$('scrim').hidden) closeDialog();
   mode === 'sign_up' ? Clerk.openSignUp() : Clerk.openSignIn();
 }
-$('acctBtn').addEventListener('click', () => openClerk('sign_in', 'header'));
+$('signInBtn').addEventListener('click', () => openClerk('sign_in', 'header'));
+$('acctBtn').addEventListener('click', () => openClerk('sign_up', 'header'));
 
 /* Sign in: move this browser's plays into the account (first sign-in only), then load the account.
    Sign out: back to this browser's own plays. Resolves to a toast message, or ''. */
@@ -2843,7 +3110,7 @@ function showGate(reason, play) {
     ${locked ? `<div class="sketch">${playSketch(play)}<div class="lockmsg"><span>🔒 ${esc(play.name)}</span></div></div>` : ''}
     <p>${GATE_COPY[reason] || GATE_COPY.play}</p>
     <div class="pane">
-      <div class="eyebrow">Free during the beta</div>
+      <div class="eyebrow">Free during the beta <span class="beta">Beta</span></div>
       ${perksHtml()}
       <p class="muted">Coaches who join during the beta become founding coaches, with perks when paid plans arrive.</p>
     </div>
@@ -3482,24 +3749,26 @@ const TOUR_DEMO = { name: 'Trips Right, Z Out', concept: 'Trips right, out under
 
 const tour = { on: false, i: 0, prev: null, el: null, poll: null };
 const readCards = () => [...$('read').querySelectorAll('.card')];
+const readCard = cls => $('read').querySelector('.' + cls);
+// On phones and tablets the read panel is a bottom sheet (sheetTo in app.src.html): each step says how open it should be.
 const TOUR_STEPS = [
   { target: () => document.querySelector('.cov[data-cov="c3"]'), title: 'Pick a defense',
     body: 'Tap <b>Cover 3</b> to put it on the field and see how this play holds up against it.',
-    wait: 'Tap Cover 3 to continue', done: () => state.cov === TOUR_COV },
+    wait: 'Tap Cover 3 to continue', done: () => state.cov === TOUR_COV, sheet: 'peek' },
   { target: () => [$('fieldWrap'), document.querySelector('.timeline')], title: 'Run the play',
     body: 'Press <b>play</b> and watch the defenders react. Drag the slider to step through it. Before the snap, you can drag any defender to match what you see on game day.',
-    wait: 'Press play to continue', done: () => state.t > 0 && !state.playing, avoid: () => document.querySelector('.timeline') },
-  { target: () => readCards().slice(1, 3), title: 'Read the verdict',
-    body: 'Every play gets a grade against the defense. The QB reads show each receiver as <b>open</b>, <b>tight</b> or <b>covered</b>. Tap one to jump to their best moment.' },
-  { target: () => readCards().find(c => c.querySelector('[data-sug]')) || readCards()[3], title: 'Fix what isn’t working',
+    wait: 'Press play to continue', done: () => state.t > 0 && !state.playing, avoid: () => document.querySelector('.timeline'), sheet: 'peek' },
+  { target: () => readCard('verdict-card'), title: 'Read the verdict', sheet: 'full',
+    body: 'Every play gets a grade against the defense, with the best throw and when it’s open. Further down, the QB read shows each receiver as <b>open</b>, <b>tight</b> or <b>covered</b>.' },
+  { target: () => readCards().find(c => c.querySelector('[data-sug]')) || readCard('sug-card'), title: 'Fix what isn’t working', sheet: 'full',
     body: () => `${state.run ? `${/^[AF]/.test(state.run.ev.grade) ? 'An' : 'A'} ${state.run.ev.grade} won’t cut it. ` : ''}These route changes would beat Cover 3. Tap <b>Try it</b> and watch the grade change.`,
     wait: 'Tap Try it to continue', done: () => Object.keys(state.changes).length > 0,
     after: () => { if (state.run) toast(`Now it’s ${/^[AF]/.test(state.run.ev.grade) ? 'an' : 'a'} ${state.run.ev.grade} against Cover 3.`); } },
-  { target: () => $('newPlayBtn'), title: 'Now bring your own plays',
+  { target: () => $('newPlayBtn'), title: 'Now bring your own plays', sheet: 'peek',
     body: 'That’s the real point of Open Grass: test <b>your</b> playbook. Describe a play or snap a photo of a play card, and it’s drawn for you. Here’s how.',
     next: 'Show me', action: () => tourDemo() },
   // Side by side (wide screens) light up the field and the grades; stacked, just the grades so they fit on screen
-  { target: () => [...(innerWidth > 980 ? [$('fieldWrap')] : []), ...readCards().slice(0, 2)], title: 'Drawn and graded', count: 5,
+  { target: () => [...(innerWidth >= 980 ? [$('fieldWrap')] : []), readCard('verdict-card'), readCard('scout-card')], title: 'Drawn and graded', count: 5, sheet: 'full',
     body: () => (account.user || gate.open)
       ? 'That’s it: your play, on the field, graded against every defense. Try it with one of your own plays.'
       : 'That’s it: your play, on the field, graded against every defense. Create a free account to save your playbook and test every play. Free while in beta.',
@@ -3523,7 +3792,7 @@ function tourCss() {
 .tour .dots { display: flex; gap: 5px; }
 .tour .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
 .tour .dots i.on { background: var(--accent); }
-@media (max-width: 640px) { .tour .tcard { left: 16px !important; right: 16px; top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: auto; } }
+@media (max-width: 640px) { .tour .tcard { left: 16px !important; right: 16px; top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: auto; } .tour .linkbtn { min-height: 44px; } }
 .tour-demo-note { background: var(--hole); color: #1d2208; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; margin: 0; }`;
   document.head.appendChild(s);
 }
@@ -3545,6 +3814,8 @@ function startTour(trigger) {
   // Clicks outside the spotlight land on the shade: they end the tour instead of reaching the page
   el.querySelector('path').addEventListener('click', () => endTour('skip'));
   addEventListener('scroll', tourPlace, { passive: true });
+  $('read').addEventListener('scroll', tourPlace, { passive: true });   // the results sheet scrolls on its own
+  $('readSheet').addEventListener('transitionend', tourSheetMoved);      // and grows or shrinks between steps
   addEventListener('resize', tourPlace);
   document.addEventListener('click', tourWatch, true);
   track('tour_start', { trigger, signed_in: !!account.user });
@@ -3558,6 +3829,7 @@ function tourShow(i) {
   // Steps 2–4 need Cover 3 on the field (the coach may have pressed Next on step 1 instead of tapping it).
   // Set directly, not through setCoverage, so it isn't tracked as the coach's own pick.
   if (i >= 1 && i <= 3 && state.cov !== TOUR_COV) { state.cov = TOUR_COV; state.nudges = {}; stop(); recompute(); setT(0); }
+  sheetTo(s.sheet || 'peek');
   tour.el.hidden = false;
   const n = TOUR_STEPS.length - 1, num = s.count || i + 1;
   const body = typeof s.body === 'function' ? s.body() : s.body;
@@ -3610,15 +3882,25 @@ function tourWatch(e) {
 // Tapping a coverage card goes through pointer events; catch those too.
 document.addEventListener('pointerup', e => { if (tour.on && tour.i === 0) tourWatch(e); }, true);
 
-function tourRect() {
+function tourSheetMoved(e) { if (e.target === $('readSheet') && tour.on && !tour.el.hidden) { tourScroll(); tourPlace(); } }
+function tourEls() {
   const t = TOUR_STEPS[tour.i].target();
-  const els = (Array.isArray(t) ? t : [t]).filter(Boolean);
+  return (Array.isArray(t) ? t : [t]).filter(Boolean);
+}
+function tourRect(els = tourEls()) {
   if (!els.length) return null;
   const rs = els.map(e => e.getBoundingClientRect());
   return { left: Math.min(...rs.map(r => r.left)), top: Math.min(...rs.map(r => r.top)), right: Math.max(...rs.map(r => r.right)), bottom: Math.max(...rs.map(r => r.bottom)) };
 }
 function tourScroll() {
-  const r = tourRect();
+  const t = TOUR_STEPS[tour.i].target(), first = (Array.isArray(t) ? t : [t]).find(Boolean);
+  if (first && mqSheet.matches && $('read').contains(first)) {
+    $('read').scrollTop += first.getBoundingClientRect().top - $('read').getBoundingClientRect().top - 8;
+    return;
+  }
+  // scroll for what moves with the page: the pinned playback dock (phones) is always on screen
+  const els = tourEls(), inFlow = els.filter(e => getComputedStyle(e).position !== 'fixed');
+  const r = tourRect(inFlow.length ? inFlow : els);
   if (!r) return;
   const phone = innerWidth <= 640, room = innerHeight - (phone ? 260 : 0);
   const h = r.bottom - r.top;
@@ -3637,7 +3919,21 @@ function tourPlace() {
     Object.assign(ring.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', display: '' });
   } else ring.style.display = 'none';
   path.setAttribute('d', d);
-  if (W <= 640) return;   // phones: the card is a bottom sheet (CSS)
+  // Phones: the card is a bottom sheet (CSS). When the spotlight reaches down there (the playback dock), it moves to the
+  // lowest open band between the lit-up parts (between the field and the dock), or the top of the screen.
+  if (W <= 640) {
+    const ch = card.offsetHeight;
+    card.style.removeProperty('top'); card.style.removeProperty('bottom');
+    if (r && r.bottom > H - ch - 24) {
+      const rs = tourEls().map(e => e.getBoundingClientRect()).sort((a, b) => a.top - b.top);
+      let edge = 0, best = null;
+      rs.forEach(q => { if (q.top - edge >= ch + 16) best = [edge, q.top]; edge = Math.max(edge, q.bottom); });
+      if (H - edge >= ch + 16) best = [edge, H];
+      const y = best ? best[0] + (best[1] - best[0] - ch) / 2 : 12;
+      card.style.setProperty('top', y + 'px', 'important'); card.style.setProperty('bottom', 'auto');
+    }
+    return;
+  }
   const cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
   let left, top;
   if (!r) { left = (W - cw) / 2; top = (H - ch) / 2; }
@@ -3706,7 +4002,8 @@ function endTour(how) {
   clearInterval(tour.poll);
   if (!$('scrim').hidden) { openDialog.onClose = null; closeDialog(); }
   tour.el.remove(); tour.el = null;
-  removeEventListener('scroll', tourPlace); removeEventListener('resize', tourPlace);
+  sheetTo('peek');
+  removeEventListener('scroll', tourPlace); removeEventListener('resize', tourPlace); $('read').removeEventListener('scroll', tourPlace); $('readSheet').removeEventListener('transitionend', tourSheetMoved);
   document.removeEventListener('click', tourWatch, true);
   try { localStorage.setItem('og-tour-done', '1'); } catch (e) {}
   // Put back what the coach had before the tour
