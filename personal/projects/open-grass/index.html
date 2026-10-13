@@ -262,7 +262,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .playbtn:hover { filter: brightness(1.12); }
 .playbtn:focus-visible { outline: 3px solid var(--hole); outline-offset: 2px; }
 .playbtn svg { width: 18px; height: 18px; fill: currentColor; flex: none; }
-/* Big Run play button on the field until the first run, like a video poster */
+/* Big Run play button on the field whenever the play is stopped at the snap, like a video poster */
 .fieldplay { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 8px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; font-family: var(--f-display); font-size: 18px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .fieldplay[hidden] { display: none; }
 .fieldplay .ring { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent), 0 10px 28px rgba(14,21,17,.35); }
@@ -1960,7 +1960,7 @@ function setT(t) {
   $('clockT').textContent = fmtT(state.t);
   $('clockL').textContent = state.t === 0 ? 'Pre-snap' : 'After snap';
   $('dragHint').style.visibility = state.t === 0 ? 'visible' : 'hidden';
-  if (state.t > 0) $('fieldPlay').hidden = true;
+  $('fieldPlay').hidden = state.t > 0 || state.playing;   // back whenever the play sits at the snap: after Try it, a new play, Reset
   renderField();
 }
 function renderMarks() {
@@ -2002,13 +2002,14 @@ function tick(ts) {
 function play() {
   if (state.t >= tEnd() - 0.01) setT(0);
   state.playing = true; last = 0; holdUntil = 0; completed = false;
-  $('fieldPlay').hidden = true;   // gone for good once a play has run
+  $('fieldPlay').hidden = true;
   $('playBtn').innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"/></svg><span class="pl">Pause</span>';
   $('playBtn').setAttribute('aria-label', 'Pause');
   raf = requestAnimationFrame(tick);
 }
 function stop() {
   state.playing = false; cancelAnimationFrame(raf);
+  $('fieldPlay').hidden = state.t > 0;
   $('playBtn').innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg><span class="pl">Run play</span>';
   $('playBtn').setAttribute('aria-label', 'Run the play');
 }
