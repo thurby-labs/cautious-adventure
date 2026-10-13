@@ -2459,7 +2459,25 @@ async function authToken() {
 }
 async function authHeaders() {
   const t = await authToken();
-  return t ? { Authorization: 'Bearer ' + t } : {};
+  return t ? { Authorization: 'Bearer ' + t, ...(await gaHeader()) } : {};
+}
+// The Worker sends the sign_up event to GA itself (Measurement Protocol) when it creates a new account's row, so ad blockers,
+// the Internal traffic filter and sign-in redirects can't lose it. It needs this browser's GA client and session ids to tie the
+// sign-up to the visit (and the ad click). No header when analytics is off (og-no-analytics, GPC) or gtag.js didn't load: then
+// the Worker sends nothing.
+// After a Google sign-up redirect the first account call can beat gtag.js, so wait up to 3 s for the ids.
+const ga = { cid: '', sid: '' };
+const gaReady = new Promise(resolve => {
+  if (window['ga-disable-G-1T9DMC15V7']) return resolve();
+  setTimeout(resolve, 3000);
+  try {
+    gtag('get', 'G-1T9DMC15V7', 'session_id', v => { ga.sid = v ? String(v) : ''; });
+    gtag('get', 'G-1T9DMC15V7', 'client_id', v => { ga.cid = v ? String(v) : ''; resolve(); });
+  } catch (e) { resolve(); }
+});
+async function gaHeader() {
+  await gaReady;
+  return ga.cid && !window['ga-disable-G-1T9DMC15V7'] ? { 'X-OG-GA': ga.cid + (ga.sid ? '|' + ga.sid : '') } : {};
 }
 
 // Call the Worker's account routes. Resolves to the JSON reply (or a Response for raw=true); throws { code }.
@@ -2533,16 +2551,8 @@ async function startAccounts(onChange) {
       gtag('set', { user_id: id });
       gtag('set', 'user_properties', { signed_in: u ? 'yes' : 'no' });
     } catch (e) {}
-    // sign_up (the Ads conversion) once per new account, even when Google sign-in came back through a page reload (then the
-    // session looks restored, `first` is true); og-signup-sent remembers that this browser already reported it
-    let sent = null;
-    try { sent = localStorage.getItem('og-signup-sent'); } catch (e) {}
-    const fresh = u && Date.now() - new Date(u.createdAt).getTime() < 10 * 60 * 1000;
-    if (fresh && sent !== u.id) {
-      track('sign_up', { method: 'clerk' });
-      try { localStorage.setItem('og-signup-sent', u.id); } catch (e) {}
-    }
-    else if (u && !first) track('login', { method: 'clerk' });
+    // sign_up (the Ads conversion) is sent by the Worker when it creates the account (see gaHeader), not from here.
+    if (u && !first) track('login', { method: 'clerk' });
     else if (!u && lastId) track('logout');
     first = false;
     lastId = id;
