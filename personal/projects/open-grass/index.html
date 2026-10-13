@@ -258,8 +258,22 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 
 /* Timeline */
 .timeline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
-.playbtn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; }
-.playbtn svg { width: 16px; height: 16px; fill: currentColor; }
+.playbtn { height: 48px; min-width: 128px; padding: 0 20px 0 16px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-family: var(--f-display); font-size: 18px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 4px 12px rgba(14,21,17,.22); }
+.playbtn:hover { filter: brightness(1.12); }
+.playbtn:focus-visible { outline: 3px solid var(--hole); outline-offset: 2px; }
+.playbtn svg { width: 18px; height: 18px; fill: currentColor; flex: none; }
+/* Big Run play button on the field until the first run, like a video poster */
+.fieldplay { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 8px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; font-family: var(--f-display); font-size: 18px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.fieldplay[hidden] { display: none; }
+.fieldplay .ring { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent), 0 10px 28px rgba(14,21,17,.35); }
+.fieldplay .ring svg { width: 34px; height: 34px; fill: currentColor; margin-left: 5px; }
+.fieldplay .cap { padding: 3px 12px; border-radius: 999px; background: var(--panel); box-shadow: 0 4px 12px rgba(14,21,17,.22); }
+.fieldplay:hover .ring { filter: brightness(1.12); }
+.fieldplay:focus-visible .ring { outline: 3px solid var(--hole); outline-offset: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .fieldplay .ring { animation: fp-pulse 1.8s ease-in-out infinite; }
+  @keyframes fp-pulse { 50% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--accent) 12%, transparent), 0 10px 28px rgba(14,21,17,.35); } }
+}
 .track { position: relative; padding-block: 14px 16px; }
 .track input { width: 100%; margin: 0; accent-color: var(--accent); }
 .marks { position: absolute; left: 9px; right: 9px; top: 0; bottom: 0; pointer-events: none; }
@@ -451,8 +465,10 @@ span.beta { cursor: default; margin-left: 4px; }
   .pickbtn h2 { font-size: 18px; }
   .testbtn { padding: 0 14px; }
   .timeline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; padding: 6px 16px calc(8px + env(safe-area-inset-bottom, 0px)); border-radius: 0; border-width: 1px 0 0; }
-  .timeline .playbtn { width: 52px; height: 52px; }
-  .timeline .playbtn svg { width: 18px; height: 18px; }
+  .timeline .playbtn { width: 56px; min-width: 0; height: 56px; padding: 0; }
+  .timeline .playbtn svg { width: 22px; height: 22px; }
+  .timeline .playbtn .pl { display: none; }
+  .fieldplay .ring { width: 72px; height: 72px; }
   .timeline .clock { min-width: 58px; }
   .timeline .track { padding-block: 6px 8px; }
   .timeline .track input { height: 44px; display: block; }
@@ -467,7 +483,6 @@ span.beta { cursor: default; margin-left: 4px; }
   /* above the field ≈ 80 px, the turf strip under it for the dock 56, the chips and their line ≈ 125 */
   .field-wrap svg { max-height: calc(100svh - 265px - var(--peek-h)); }
   .timeline { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2; border: 0; border-radius: 16px; background: color-mix(in srgb, var(--panel) 95%, transparent); box-shadow: 0 8px 24px rgba(14,21,17,.22); }
-  .timeline .playbtn { width: 52px; height: 52px; }
   .timeline .speed { display: flex; flex-direction: row; gap: 4px; }
   .timeline .speed .loop { margin-left: 4px; }
   .field-wrap { padding-bottom: 56px; }
@@ -518,10 +533,11 @@ span.beta { cursor: default; margin-left: 4px; }
         <div class="field-wrap" id="fieldWrap">
           <svg id="field" viewBox="0 0 360 336" role="img" aria-label="Field diagram of the play against the selected coverage"></svg>
           <button class="gbadge" id="gradeBadge" hidden></button>
+          <button class="fieldplay" id="fieldPlay" aria-label="Run the play"><span class="ring"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg></span><span class="cap">Run play</span></button>
         </div>
 
         <div class="timeline">
-          <button class="playbtn" id="playBtn" aria-label="Run the play" aria-keyshortcuts="Space" title="Play / pause (Space). Step with ← →"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></button>
+          <button class="playbtn" id="playBtn" aria-label="Run the play" aria-keyshortcuts="Space" title="Play / pause (Space). Step with ← →"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg><span class="pl">Run play</span></button>
           <div class="track">
             <input type="range" id="scrub" min="0" max="4" step="0.05" value="0" aria-label="Time after the snap">
             <div class="marks" id="marks"></div>
@@ -1944,6 +1960,7 @@ function setT(t) {
   $('clockT').textContent = fmtT(state.t);
   $('clockL').textContent = state.t === 0 ? 'Pre-snap' : 'After snap';
   $('dragHint').style.visibility = state.t === 0 ? 'visible' : 'hidden';
+  if (state.t > 0) $('fieldPlay').hidden = true;
   renderField();
 }
 function renderMarks() {
@@ -1985,13 +2002,14 @@ function tick(ts) {
 function play() {
   if (state.t >= tEnd() - 0.01) setT(0);
   state.playing = true; last = 0; holdUntil = 0; completed = false;
-  $('playBtn').innerHTML = '<svg viewBox="0 0 16 16"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"/></svg>';
+  $('fieldPlay').hidden = true;   // gone for good once a play has run
+  $('playBtn').innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"/></svg><span class="pl">Pause</span>';
   $('playBtn').setAttribute('aria-label', 'Pause');
   raf = requestAnimationFrame(tick);
 }
 function stop() {
   state.playing = false; cancelAnimationFrame(raf);
-  $('playBtn').innerHTML = '<svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg>';
+  $('playBtn').innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg><span class="pl">Run play</span>';
   $('playBtn').setAttribute('aria-label', 'Run the play');
 }
 
@@ -2360,7 +2378,7 @@ $('c1Sel').addEventListener('change', e => {
 function setRusher(v) { state.rusher = ['L', 'none'].includes(v) ? v : 'R'; $('rushSel').value = state.rusher; }
 $('rushSel').addEventListener('change', e => { setRusher(e.target.value); stop(); recompute(); setT(0); track('toggle_setting', { setting: 'rusher', value: state.rusher, ...covInfo() }); });
 $('blitzT').addEventListener('change', e => { state.blitz = e.target.checked; stop(); recompute(); setT(0); track('toggle_setting', { setting: 'blitz', value: state.blitz, ...covInfo() }); });
-$('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); track('toggle_setting', { setting: 'holes', value: state.holes }); });
+$('holesT').addEventListener('change', e => { state.holes = e.target.checked; renderField(); track('toggle_setting', { setting: 'holes', value: state.holes, ...covInfo() }); });
 let scrubbed = '';   // scrub_timeline once per play and coverage, not on every input event
 $('scrub').addEventListener('input', e => {
   stop(); setT(e.target.value);
@@ -2373,6 +2391,7 @@ function togglePlay(method) {
   track('run_play', { ...covInfo(), speed: state.speed, loop: state.loop, method, ...playInfo() });
 }
 $('playBtn').addEventListener('click', () => togglePlay('button'));
+$('fieldPlay').addEventListener('click', () => togglePlay('field'));
 $('marks').addEventListener('click', e => {
   const m = e.target.closest('[data-jump]'); if (!m) return;
   stop(); setT(+m.dataset.jump);
@@ -2381,7 +2400,7 @@ $('marks').addEventListener('click', e => {
 $('loopBtn').addEventListener('click', e => {
   state.loop = !state.loop;
   e.currentTarget.setAttribute('aria-pressed', state.loop);
-  track('toggle_setting', { setting: 'loop', value: state.loop });
+  track('toggle_setting', { setting: 'loop', value: state.loop, ...covInfo() });
 });
 /* Keyboard: Space plays or pauses, ←/→ step 0.1 s. Not while typing, in a dialog, during the tour, or on another button (Space presses it). */
 let stepped = '';   // step_timeline once per play and coverage, like scrub_timeline
