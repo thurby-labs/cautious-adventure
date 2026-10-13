@@ -46,6 +46,25 @@
   })();
 </script>
 <!-- ga:end -->
+<script>
+/* Visit stage (REDESIGN_PLAN.md Phase 2): new → explored → engaged, kept in og-stage. Worked out before the page draws so a
+   first visit never flashes the full app. A browser that already has plays, favorites, a sign-in, a used free draft or a finished
+   tour, or arrives on a share link (any #hash), is never "new". A "new" browser stays new for this visit (og-visit in
+   sessionStorage, so a reload keeps it) and comes back "explored". Blocked storage: the full app. */
+(() => {
+  let st = 'explored', from = null;
+  try {
+    st = localStorage.getItem('og-stage');
+    const known = ['og-tour-done', 'og-mine', 'og-favs', 'og-signed', 'og-free-draft'].some(k => localStorage.getItem(k));
+    if (!st) st = known || location.hash ? 'explored' : 'new';
+    else if (st === 'new' && (known || location.hash || !sessionStorage.getItem('og-visit'))) { st = 'explored'; from = 'new'; }
+    localStorage.setItem('og-stage', st);
+    if (st === 'new') sessionStorage.setItem('og-visit', '1');
+  } catch (e) { st = 'explored'; }
+  document.documentElement.dataset.stage = st;
+  window.OG_STAGE_FROM = from;   // app.src.html tracks the change once gtag is set up
+})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- SEO: copy says "flag football", not "5v5": 7v7 and other formats are coming. Open Grass is NOT a play designer app: it tests the plays coaches already have (any app, paper or whiteboard). Keep title ≤ ~60 chars, description ≤ ~155. -->
@@ -420,6 +439,55 @@ span.beta { cursor: default; margin-left: 4px; }
 .about > p { margin: 0; }
 .about a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
 .about details p { margin-top: 6px; }
+/* ---------- First visit (data-stage="new"): intro, the sample play looping, a caption and two buttons; nothing else ---------- */
+.fv-intro { display: grid; gap: 4px; }
+.fv-intro h1 { font-family: var(--f-display); font-weight: 900; font-size: clamp(30px, 6vw, 44px); line-height: .95; text-transform: uppercase; margin: 0; text-wrap: balance; }
+.fv-intro p { margin: 0; color: var(--muted); font-size: 16px; max-width: 52ch; }
+:root:not([data-stage="new"]) .fv-intro { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fv-card { display: none; }
+[data-stage="new"] .fv-card { display: grid; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.fv-cap { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 12px; }
+.fv-cap .g { font-size: 40px; flex: none; }
+.fv-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.fv-actions .testbtn { flex: 1 1 180px; justify-content: center; }
+.fv-explore { flex: 1 1 180px; min-height: 52px; padding: 0 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-weight: 700; cursor: pointer; }
+.fv-explore:hover { border-color: var(--muted); }
+.fv-note { margin: 0; color: var(--muted); font-size: 13px; }
+[data-stage="new"] { --peek-h: 0px; }
+[data-stage="new"] :is(.top .playrow, .tray, .playmeta, .hint, #readSheet, .timeline, .gbadge, #tourBtn) { display: none !important; }
+/* No header bar on the first visit: the logo sits beside the headline, and Sign in / Create account float at the column's top right */
+[data-stage="new"] .top { background: transparent; border-bottom: 0; }
+[data-stage="new"] .top-in { max-width: 800px; min-height: 0; padding-block: 8px 0; }
+[data-stage="new"] .brand { display: none; }
+[data-stage="new"] .head-actions { margin-left: auto; }
+.fv-logo { display: none; }
+[data-stage="new"] .fv-intro { grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; row-gap: 6px; align-items: center; }
+[data-stage="new"] .fv-logo { display: block; grid-row: 1 / span 2; height: 116px; width: auto; }
+[data-stage="new"] .fv-intro h1 { align-self: end; }
+[data-stage="new"] .fv-intro p { align-self: start; }
+@media (max-width: 699px) {
+  [data-stage="new"] .top-in { padding: 4px 8px 0 12px; }
+  [data-stage="new"] .fv-intro { column-gap: 12px; }
+  [data-stage="new"] .fv-logo { height: 84px; }
+  [data-stage="new"] .fv-intro h1 { font-size: 28px; }
+  [data-stage="new"] .fv-intro p { font-size: 14px; }
+}
+/* dark theme: the navy wordmark needs its light badge, as in the header */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fv-logo { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } }
+:root[data-theme="dark"] .fv-logo { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
+[data-stage="new"] .layout { grid-template-columns: minmax(0, 1fr); max-width: 760px; margin-inline: auto; width: 100%; }
+/* sign-in row + logo and intro ≈ 190 px above, the caption card ≈ 170 below: all of it on the first screen */
+[data-stage="new"] .field-wrap svg { max-height: max(300px, calc(100svh - 390px)); }
+@media (min-width: 700px) and (max-width: 979px) { [data-stage="new"] .field-wrap { padding-bottom: 0; } }
+/* Offered once after "Explore this sample first" */
+.offer { position: fixed; z-index: 35; left: 50%; transform: translateX(-50%); bottom: calc(16px + var(--dock-h) + var(--peek-h)); width: min(420px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px 10px 16px; background: var(--ink); color: var(--paper); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.3); }
+.offer b { flex: 1 1 auto; }
+.offer .act { min-height: 44px; }
+.offer .linkbtn { color: var(--paper); min-height: 44px; }
+/* Account nudges (signed out): an inline card in the results */
+.card.nudge { background: color-mix(in srgb, var(--hole) 22%, var(--panel)); border-color: var(--hole-edge); gap: 8px; }
+.card.nudge p { margin: 0; }
+
 /* Below-the-field copy is long and off screen at first: let the browser skip laying it out until it's near */
 .about { content-visibility: auto; contain-intrinsic-size: auto 1100px; }
 
@@ -504,7 +572,6 @@ span.beta { cursor: default; margin-left: 4px; }
       <img class="mark" src="logo/open-grass-logo-header.png" width="79" height="56" alt="">
       <img class="mark-sm" src="logo/open-grass-icon.png" width="36" height="36" alt="">
       <span class="wordmark" aria-hidden="true">Open Grass</span>
-      <h1 class="sr-only">Open Grass: flag football play tester</h1>
     </div>
     <div class="playrow">
       <div class="pickbtn">
@@ -529,6 +596,12 @@ span.beta { cursor: default; margin-left: 4px; }
 <div class="app">
   <main class="layout">
     <section class="stage">
+      <!-- First visit (data-stage="new") shows this intro; later it stays as the page's (visually hidden) H1 -->
+      <div class="fv-intro">
+        <img class="fv-logo" src="logo/open-grass-logo-header.png" width="300" height="213" alt="Open Grass">
+        <h1>Test your play before game day</h1>
+        <p>Bring a play you already run, put a defense on it, and see where the open grass is.</p>
+      </div>
       <div class="player" id="player">
         <div class="field-wrap" id="fieldWrap">
           <svg id="field" viewBox="0 0 360 336" role="img" aria-label="Field diagram of the play against the selected coverage"></svg>
@@ -545,6 +618,15 @@ span.beta { cursor: default; margin-left: 4px; }
           <div class="clock"><b id="clockT">0.0s</b><span id="clockL">Pre-snap</span></div>
           <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
         </div>
+      </div>
+
+      <div class="fv-card" id="fvCard">
+        <p class="fv-cap" id="fvCap"></p>
+        <div class="fv-actions">
+          <button class="testbtn" id="fvTest"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Test my play</button>
+          <button class="fv-explore" id="fvExplore">Explore this sample first</button>
+        </div>
+        <p class="fv-note">Free. Describe your play or snap a photo of your play card.</p>
       </div>
 
       <div class="tray">
@@ -1654,7 +1736,25 @@ function track(name, params = {}) {
   // Tour steps are real clicks: mark them so they can be filtered out of core-loop numbers. `tour` is declared later (tour.js), so guard it.
   try { if (tour.on) params = { ...params, in_tour: true }; } catch (e) {}
   try { gtag('event', name, params); } catch (e) {}
+  if (ENGAGED_BY.includes(name)) setStage('engaged', name);
 }
+
+/* ---------- visit stage (REDESIGN_PLAN.md Phase 2) ----------
+   new: the first-visit view (intro, the sample looping, Test my play / Explore this sample first). explored: the full app.
+   engaged: the coach drafted, saved or signed in (for analytics). The head script picks the stage before the page draws. */
+const ENGAGED_BY = ['ai_draft_success', 'save_play', 'login'];
+const stage = { now: document.documentElement.dataset.stage || 'explored' };
+const STAGES = ['new', 'explored', 'engaged'];
+function setStage(to, via) {
+  if (STAGES.indexOf(to) <= STAGES.indexOf(stage.now)) return;
+  const from = stage.now;
+  stage.now = to;
+  document.documentElement.dataset.stage = to;
+  try { localStorage.setItem('og-stage', to); } catch (e) {}
+  track('stage_change', { from, to, via });
+  if (from === 'new') leaveFirstVisit();
+}
+if (window.OG_STAGE_FROM) track('stage_change', { from: OG_STAGE_FROM, to: stage.now, via: 'return' });
 const builtIn = p => !p.draft && !p.mine && !p.shared;
 const playInfo = (p = state.basePlay) => ({
   play_source: p.draft ? 'draft' : p.mine ? 'mine' : p.shared ? 'shared' : 'builtin', play_type: p.type,
@@ -2044,7 +2144,7 @@ function renderRead() {
       ? `gains <b>${r.yards.toFixed(1)} yds</b> before the ${r.by} pulls the flag at ${fmtT(r.t)}.`
       : `is still running at ${fmtT(tEnd())}, <b>${r.yards.toFixed(1)} yds</b> downfield.`);
     h += `<div class="card verdict-card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
-    h += scout + sugsHtml(g, cov);
+    h += nudgeHtml() + scout + sugsHtml(g, cov);
     renderPeek({ g, cov, head, sub: `${tp.label} gains ${r.yards.toFixed(1)} yds` });
     const st = r.yards >= 5 ? 'open' : r.yards >= 2.5 ? 'tight' : 'covered';
     h += `<div class="card reads-card"><h3>Ball carrier</h3><ol class="reads"><li><button data-jump="${r.t ?? r.th}"><span class="num">★</span>${dotFor(tp)}<span class="rname"><b>${esc(tp.routeName)}</b> <small>${r.yards.toFixed(1)} yds${r.by ? ', flag pulled by ' + r.by : ''}</small><span class="bar"><i style="width:${clamp(r.yards / 10 * 100, 4, 100)}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st === 'open' ? 'big gain' : st === 'tight' ? 'short' : 'stuffed'}</span></button></li></ol>
@@ -2066,7 +2166,7 @@ function renderRead() {
   if (sim.hurry !== null && sim.hurry !== undefined) sum += ` The rusher reaches the QB at ${fmtT(sim.hurry)}. Throws after that are hurried, and the QB has about half a second left.`;
   else if (sim.pressure !== null) sum += ` The rusher gets home at ${fmtT(sim.pressure)}, so the ball has to be out before then.`;
   h += `<div class="card verdict-card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${sum}</p></div></div></div>`;
-  h += scout + sugsHtml(g, cov);
+  h += nudgeHtml() + scout + sugsHtml(g, cov);
   renderPeek({ g, cov, head, sub: tb.t !== null ? `${tp.label} has ${tb.eff.toFixed(1)} yds of space at ${fmtT(tb.t)}` : `Nobody gets open before ${fmtT(sim.deadline)}` });
 
   h += `<div class="card reads-card"><h3>QB read progression</h3><ol class="reads">`;
@@ -2175,6 +2275,10 @@ function renderHead() {
   const edited = n > 0 && !state.play.draft && !state.play.shared;
   $('saveDraftBtn').hidden = !(state.play.draft || state.play.shared || edited);
   $('saveDraftBtn').textContent = edited ? 'Save as My play' : 'Save to My plays';
+  // nudge: after a route fix, the save action says what's at stake
+  const keep = n > 0 && !$('saveDraftBtn').hidden && nudgeOn('keep_fixes');
+  $('saveDraftBtn').dataset.nudge = keep ? 'keep_fixes' : '';
+  if (keep) { $('saveDraftBtn').textContent = 'Keep your fixes'; nudgeSeen('keep_fixes'); }
   $('deletePlayBtn').hidden = !state.play.mine;
   $('detailsBtn').hidden = !state.play.mine;
   $('photoBtn').hidden = !(state.play.photo && typeof account !== 'undefined' && account.user);
@@ -2390,6 +2494,8 @@ function togglePlay(method) {
   if (state.playing) { stop(); return; }
   play();
   track('run_play', { ...covInfo(), speed: state.speed, loop: state.loop, method, ...playInfo() });
+  // the "save this play" nudge waits for the first run of the coach's own play
+  if (!state.ownRun && state.run && (state.play.draft || state.play.mine)) { state.ownRun = true; renderRead(); }
 }
 $('playBtn').addEventListener('click', () => togglePlay('button'));
 $('fieldPlay').addEventListener('click', () => togglePlay('field'));
@@ -2424,6 +2530,88 @@ document.querySelectorAll('.speed button[data-sp]').forEach(b => b.addEventListe
   track('change_speed', { speed: state.speed });
   document.querySelectorAll('.speed button[data-sp]').forEach(x => x.setAttribute('aria-pressed', x === b));
 }));
+
+/* ---------- account nudges (signed out, never on the first visit) ----------
+   One at a time: "save_play" (a card in the results after the first run of the coach's own play) or, once a route fix is
+   tried, "keep_fixes" (the save action's label). Dismissed nudges stay away for 7 days (og-nudge-<id>). The free-account
+   prompts (showGate) are separate and unchanged. */
+const NUDGE_DAYS = 7, nudgesShown = new Set();
+function nudgeOn(id) {
+  if ((typeof account !== 'undefined' && account.user) || gate.signedIn || gate.open || stage.now === 'new') return false;
+  try { const t = +localStorage.getItem('og-nudge-' + id); if (t && Date.now() - t < NUDGE_DAYS * 864e5) return false; } catch (e) {}
+  return true;
+}
+function nudgeSeen(id) { if (!nudgesShown.has(id)) { nudgesShown.add(id); track('nudge_view', { id }); } }
+function nudgeHtml() {
+  const own = state.play.draft || state.play.mine;
+  if (!own || !state.ownRun || Object.keys(state.changes).length || !nudgeOn('save_play')) return '';
+  nudgeSeen('save_play');
+  return `<div class="card nudge" data-nudge="save_play"><p><b>Save this play and its fixes.</b> Free account, free while in beta.</p>
+    <div class="gate-actions"><button class="act primary" data-nudge-go="save_play">Create free account</button><button class="linkbtn" data-nudge-x="save_play">Not now</button></div></div>`;
+}
+$('read').addEventListener('click', e => {
+  const go = e.target.closest('[data-nudge-go]'), x = e.target.closest('[data-nudge-x]');
+  if (go) { track('nudge_click', { id: go.dataset.nudgeGo }); openClerk('sign_up', 'nudge'); }
+  else if (x) {
+    try { localStorage.setItem('og-nudge-' + x.dataset.nudgeX, String(Date.now())); } catch (err) {}
+    track('nudge_dismiss', { id: x.dataset.nudgeX });
+    renderRead();
+  }
+});
+$('saveDraftBtn').addEventListener('click', e => { if (e.currentTarget.dataset.nudge) track('nudge_click', { id: e.currentTarget.dataset.nudge }); }, true);
+
+/* ---------- first visit: the tour play looping vs Cover 3 at half speed with holes on, a caption, two buttons ----------
+   Reduced motion: no autoplay, the field shows the throw. Leaving (either button, Tour, signing in) reveals the full app on the same play. */
+const FV_PLAY = 'p15', FV_COV = 'c3';
+const anA = g => (/^[AEF]/.test(g) ? 'an ' : 'a ') + g;
+function startFirstVisit() {
+  track('first_visit_view');
+  state.blitz = false; $('blitzT').checked = false; setRusher('R'); state.holes = true; $('holesT').checked = true;
+  loadPlay(PLAYS.find(p => p.id === FV_PLAY), FV_COV);
+  const ev = state.run.ev, pl = playerById(ev.order[0]), g = ev.grade;
+  const best = state.sugs.reduce((a, sg) => !a || 'ABCDF'.indexOf(sg.ev.grade) < 'ABCDF'.indexOf(a.ev.grade) ? sg : a, null);
+  const route = pl.routeName.replace(/\s*\(.*?\)/, '').replace(/ (left|right)$/i, '').toLowerCase();
+  $('fvCap').innerHTML = `<span class="g g${g}">${g}</span><span><b>vs ${esc(covsFor(state.play)[FV_COV].name)}.</b> ${esc(pl.label)} is open on the ${esc(route)}.${best && best.ev.grade < g ? ` One route change turns this ${g} into ${anA(best.ev.grade)}.` : ''}</span>`;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const pass = state.ball && state.ball.legs.find(L => L.kind === 'pass');
+    setT(pass ? pass.arrive : 1.5);
+  } else {
+    state.speed = 0.5; state.loop = true; $('loopBtn').setAttribute('aria-pressed', true);
+    play();
+    completed = true;   // autoplay isn't a coach's run: no play_complete
+  }
+}
+function leaveFirstVisit() {
+  state.loop = false; $('loopBtn').setAttribute('aria-pressed', false);
+  sizeDock();
+  renderRead(); renderHead();
+}
+$('fvTest').addEventListener('click', () => {
+  track('first_visit_cta', { cta: 'test_play' });
+  setStage('explored', 'test_play');
+  stop(); openStudio();
+});
+$('fvExplore').addEventListener('click', () => {
+  track('first_visit_cta', { cta: 'explore' });
+  setStage('explored', 'explore');
+  offerTour();
+});
+// "Take a 30-second tour?" once, after Explore (og-tour-offered)
+function offerTour() {
+  try { if (localStorage.getItem('og-tour-offered') || localStorage.getItem('og-tour-done')) return; localStorage.setItem('og-tour-offered', '1'); } catch (e) { return; }
+  const el = document.createElement('div');
+  el.className = 'offer'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Tour');
+  el.innerHTML = `<b>Take a 30-second tour?</b><button class="act primary" data-o="yes">Show me</button><button class="linkbtn" data-o="no">No thanks</button>`;
+  document.body.appendChild(el);
+  track('tour_offer', { action: 'view' });
+  const close = a => { el.remove(); clearTimeout(t); track('tour_offer', { action: a }); };
+  const t = setTimeout(() => { if (el.isConnected) close('timeout'); }, 15000);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-o]'); if (!b) return;
+    close(b.dataset.o === 'yes' ? 'accept' : 'dismiss');
+    if (b.dataset.o === 'yes') startTour('offer');
+  });
+}
 
 /* ---------- results sheet (phones and tablets, < 980 px) ----------
    The read panel is a bottom sheet with three heights: peek (the verdict line), half and full. Drag the handle, tap it,
@@ -2528,6 +2716,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
 buildCards();
 recompute();
 setT(0);
+if (stage.now === 'new') startFirstVisit();
 </script>
 <script>
 /* ---------- Word filter for play text (name, concept, route names, group) ----------
@@ -3675,7 +3864,8 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k.startsWith('og-nudge-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        sessionStorage.removeItem('og-visit');
       } catch (e) {}
       location.replace(location.pathname);
     });
@@ -3754,7 +3944,7 @@ startAccounts(async user => {
 })();
 
 /* ---------- Guided tour: a 5-step spotlight walkthrough of the core loop ----------
-   Starts once on a new visitor's first visit (og-tour-done), never on a share link. Replay from the header Tour button or the footer link.
+   Offered once after "Explore this sample first" on a first visit (offerTour in app.src.html); otherwise from the header Tour button or the footer link.
    The tour loads a starter play (TOUR_PLAY) that grades C against Cover 3 (rusher on, the default) and has route fixes to an A, so every step has something to show.
    Step 5's "Draw this play" is a scripted demo: no AI call, nothing saved, the visitor's free draft is untouched.
    When it ends, the coach's previous play, coverage and route changes come back. */
@@ -3819,6 +4009,7 @@ function tourCss() {
 
 function startTour(trigger) {
   if (tour.on) return;
+  if (stage.now === 'new') setStage('explored', 'tour');
   closeDialog();
   tourCss();
   tour.on = true; tour.i = 0;
@@ -4038,21 +4229,8 @@ function endTour(how) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && tour.on && $('scrim').hidden) endTour('skip'); }, true);
 $('tourBtn').addEventListener('click', () => startTour('header'));
 $('tourLink').addEventListener('click', () => startTour('footer'));
-
-// First visit only: not from a share link, not for a browser that already has plays, favorites or an account.
-(() => {
-  let seen = true;
-  try { seen = ['og-tour-done', 'og-mine', 'og-favs', 'og-signed', 'og-free-draft'].some(k => localStorage.getItem(k)); } catch (e) {}
-  if (seen || location.hash) return;
-  let tries = 0;
-  const go = () => {
-    // Wait for sign-in to settle and for nothing else (a dialog) to be open
-    if (++tries > 40) return;
-    if (!account.ready || !$('scrim').hidden) { setTimeout(go, 250); return; }
-    startTour('auto');
-  };
-  setTimeout(go, 1200);
-})();
+// No automatic start since Phase 2 (2026-10-13): a first visit gets the first-visit view instead, and "Explore this sample first"
+// offers the tour once (offerTour in app.src.html).
 
 </script>
 </body>
