@@ -252,7 +252,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .defline > span { min-width: 0; }
 .optbtn { margin-left: auto; flex: none; height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel); color: var(--ink); font-size: 13px; font-weight: 700; cursor: pointer; }
 .optbtn:hover, .optbtn[aria-expanded="true"] { border-color: var(--muted); }
-.optbtn .ol-short { display: none; }
+.optbtn .ol-chev { display: none; width: 14px; height: 14px; margin-left: -2px; }
 .optbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 /* Field options: a small popover above its button on wide screens (the row sits near the bottom of the screen), a bottom sheet on phones and tablets */
 .optsheet { position: absolute; right: 0; bottom: 50px; z-index: 40; width: min(340px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.22); padding: 14px; display: grid; gap: 12px; }
@@ -531,40 +531,51 @@ span.beta { cursor: default; margin-left: 4px; }
 
 /* ---------- Phones (< 700 px): full-width field, playback dock pinned to the bottom ---------- */
 @media (max-width: 699px) {
-  :root { --peek-h: 82px; }
+  :root { --peek-h: 58px; }
   .app { padding-inline: 12px; padding-top: 8px; gap: 10px; }
   .stage { gap: 10px; }
   .player { gap: 0; margin-inline: -12px; }
   .field-wrap { border-radius: 0; border-width: 0; }
-  /* keep the defense row above the results sheet on short phones: header with its play row, chips and line ≈ 250 px */
-  .field-wrap svg { max-height: calc(100svh - 250px - var(--peek-h) - var(--dock-h)); }
+  /* keep the defense row above the results sheet on short phones: header with its play row, chips and the Field options card ≈ 270 px */
+  .field-wrap svg { max-height: calc(100svh - 270px - var(--peek-h) - var(--dock-h)); }
   .pickbtn h2 { font-size: 18px; }
   .testbtn { padding: 0 14px; }
-  .timeline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; padding: 6px 16px calc(8px + env(safe-area-inset-bottom, 0px)); border-radius: 0; border-width: 1px 0 0; }
-  .timeline .playbtn { width: 56px; min-width: 0; height: 56px; padding: 0; }
+  /* Field options: the line under the chips is one big tappable card (the button stretches over it) */
+  .defline { position: relative; gap: 10px; min-height: 52px; padding: 6px 6px 6px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--muted); }
+  .defline:has(.optbtn:hover), .defline:has(.optbtn[aria-expanded="true"]) { border-color: var(--muted); }
+  .defline .optbtn { background: var(--chip); border-color: transparent; padding: 0 10px 0 12px; }
+  .defline .optbtn::after { content: ""; position: absolute; inset: 0; border-radius: 14px; }
+  .optbtn .ol-chev { display: inline; }
+  /* One bottom panel: the results peek (one line) sits right on top of the playback row, same colour */
+  .sheet { box-shadow: 0 -8px 24px rgba(14,21,17,.14); }
+  .sheet-grip { padding-top: 6px; }
+  .peek { min-height: 40px; padding: 0 0 6px; }
+  .peek .g { font-size: 28px; width: 28px; }
+  .peek b { font-size: 19px; }
+  .peek small { display: none; }
+  .timeline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; padding: 2px 10px calc(8px + env(safe-area-inset-bottom, 0px)) 12px; border-radius: 0; border-width: 0; background: var(--sheet-bg); }
+  .timeline .playbtn { width: 52px; min-width: 0; height: 52px; padding: 0; }
   .timeline .playbtn svg { width: 22px; height: 22px; }
   .timeline .playbtn .pl { display: none; }
   .fieldplay .ring { width: 72px; height: 72px; }
-  .timeline .clock { min-width: 58px; }
+  .timeline .clock { min-width: 50px; }
+  .timeline .clock b { font-size: 22px; }
+  .timeline .clock span { font-size: 9px; letter-spacing: .05em; }
   .timeline .track { padding-block: 6px 8px; }
   .timeline .track input { height: 44px; display: block; }
-  /* Field options sits in the dock next to the clock, where the coach's thumb already is */
-  .timeline { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; padding-inline: 12px 10px; }
-  .timeline .optbtn { margin: 0; height: 52px; width: 56px; padding: 0; flex-direction: column; justify-content: center; gap: 3px; border-radius: 12px; background: var(--chip); font-size: 11px; letter-spacing: .02em; }
-  .timeline .optbtn svg { width: 20px; height: 20px; }
-  .timeline .optbtn .ol-long { display: none; }
-  .timeline .optbtn .ol-short { display: inline; }
-  /* Speed and Loop get their own slim row across the top of the dock */
-  .timeline { row-gap: 2px; padding-top: 6px; }
-  .timeline > * { grid-row: 2; }
-  .timeline .speed { grid-row: 1; grid-column: 1 / -1; display: flex; flex-direction: row; justify-content: flex-end; align-items: center; gap: 6px; }
-  .timeline .speed button { min-height: 34px; min-width: 44px; padding: 0 10px; border-radius: 8px; font-size: 14px; }
-  .timeline .speed .loop { margin-left: 6px; }
+  /* Speed is one button that cycles ½× → 1× → ¼×; Loop is an icon toggle */
+  .timeline .speed { grid-column: auto; flex-direction: row; gap: 6px; }
+  .timeline .speed button { min-height: 44px; min-width: 42px; padding: 0 6px; border-radius: 10px; font-size: 15px; font-weight: 700; background: var(--chip); border-color: transparent; color: var(--ink); }
+  .timeline .speed button[data-sp][aria-pressed="false"] { display: none; }
+  .timeline .speed .loop { font-size: 21px; font-weight: 400; }
+  .timeline .speed .loop .lt { display: none; }
+  .timeline .speed .loop[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
   @media (max-width: 379px) {
-    .timeline { gap: 8px; padding-inline: 8px; }
-    .timeline .playbtn { width: 48px; height: 48px; }
+    .timeline { gap: 6px; padding-inline: 8px 6px; }
+    .timeline .playbtn { width: 46px; height: 46px; }
     .timeline .clock { min-width: 0; }
-    .timeline .optbtn { width: 48px; }
+    .timeline .speed { gap: 4px; }
+    .timeline .speed button { min-width: 38px; }
   }
   .hint { font-size: 12px; }
 }
@@ -641,7 +652,7 @@ span.beta { cursor: default; margin-left: 4px; }
             <div class="marks" id="marks"></div>
           </div>
           <div class="clock"><b id="clockT">0.0s</b><span id="clockL">Pre-snap</span></div>
-          <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false">¼×</button><button data-sp="0.5" aria-pressed="true">½×</button><button data-sp="1" aria-pressed="false">1×</button><button class="loop" id="loopBtn" aria-pressed="false" title="Replay the play until you pause it">⟲ Loop</button></span>
+          <span class="speed" role="group" aria-label="Playback speed"><button data-sp="0.25" aria-pressed="false" title="Quarter speed">¼×</button><button data-sp="0.5" aria-pressed="true" title="Half speed">½×</button><button data-sp="1" aria-pressed="false" title="Full speed">1×</button><button class="loop" id="loopBtn" aria-pressed="false" aria-label="Loop" title="Replay the play until you pause it">⟲<span class="lt"> Loop</span></button></span>
         </div>
       </div>
 
@@ -659,7 +670,7 @@ span.beta { cursor: default; margin-left: 4px; }
         <div class="cards" id="cards" role="group" aria-labelledby="trayLbl"></div>
         <div class="defline">
           <span id="covLine"></span>
-          <button class="optbtn" id="fieldOptBtn" aria-expanded="false" aria-controls="optSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span class="ol-long">Field options</span><span class="ol-short">Options</span></button>
+          <button class="optbtn" id="fieldOptBtn" aria-expanded="false" aria-controls="optSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Field options<svg class="ol-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
         </div>
         <div class="optscrim" id="optScrim" hidden></div>
         <div class="optsheet" id="optSheet" role="dialog" aria-labelledby="optTitle" tabindex="-1" hidden>
@@ -2657,10 +2668,14 @@ document.addEventListener('keydown', e => {
     if (k !== stepped) { stepped = k; track('step_timeline', covInfo()); }
   }
 });
-document.querySelectorAll('.speed button[data-sp]').forEach(b => b.addEventListener('click', () => {
+// Phones show only the current speed: tapping it moves to the next one (½× → 1× → ¼×)
+document.querySelectorAll('.speed button[data-sp]').forEach(btn => btn.addEventListener('click', () => {
+  const all = [...document.querySelectorAll('.speed button[data-sp]')];
+  const b = mqPhone.matches && btn.getAttribute('aria-pressed') === 'true' ? all[(all.indexOf(btn) + 1) % all.length] : btn;
   state.speed = +b.dataset.sp;
   track('change_speed', { speed: state.speed });
   document.querySelectorAll('.speed button[data-sp]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  if (b !== btn) b.focus({ preventScroll: true });   // the tapped one just hid
 }));
 
 /* ---------- account nudges (signed out, never on the first visit) ----------
@@ -2830,11 +2845,6 @@ $('optDone').addEventListener('click', () => { fieldOptions(false); $('fieldOptB
 $('optScrim').addEventListener('click', () => fieldOptions(false));
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('optSheet').hidden) { e.stopPropagation(); fieldOptions(false); $('fieldOptBtn').focus({ preventScroll: true }); } });
 
-// Phones: speed and Loop live in the Field options sheet; tablet and desktop keep them in the timeline bar
-// Phones: Field options moves into the playback dock (it was easy to miss under the coverage chips)
-function placeOptBtn() { (mqPhone.matches ? document.querySelector('.timeline') : document.querySelector('.defline')).appendChild($('fieldOptBtn')); }
-mqPhone.addEventListener('change', placeOptBtn);
-placeOptBtn();
 // The pinned playback dock's height (it grows with the safe-area inset) sets where the results sheet sits
 function sizeDock() {
   const h = mqPhone.matches ? document.querySelector('.timeline').offsetHeight : 0;
