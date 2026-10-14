@@ -49,15 +49,16 @@
 <script>
 /* Visit stage (REDESIGN_PLAN.md Phase 2): new → explored → engaged, kept in og-stage. Worked out before the page draws so a
    first visit never flashes the full app. A browser that already has plays, favorites, a sign-in, a used free draft or a finished
-   tour, or arrives on a share link (any #hash), is never "new". A "new" browser stays new for this visit (og-visit in
+   tour, or arrives on a share link (any #hash) or the ad landing page's ?test= link, is never "new". A "new" browser stays new for this visit (og-visit in
    sessionStorage, so a reload keeps it) and comes back "explored". Blocked storage: the full app. */
 (() => {
   let st = 'explored', from = null;
   try {
     st = localStorage.getItem('og-stage');
     const known = ['og-tour-done', 'og-mine', 'og-favs', 'og-signed', 'og-free-draft'].some(k => localStorage.getItem(k));
-    if (!st) st = known || location.hash ? 'explored' : 'new';
-    else if (st === 'new' && (known || location.hash || !sessionStorage.getItem('og-visit'))) { st = 'explored'; from = 'new'; }
+    const deep = location.hash || /[?&]test=/.test(location.search);
+    if (!st) st = known || deep ? 'explored' : 'new';
+    else if (st === 'new' && (known || deep || !sessionStorage.getItem('og-visit'))) { st = 'explored'; from = 'new'; }
     localStorage.setItem('og-stage', st);
     if (st === 'new') sessionStorage.setItem('og-visit', '1');
   } catch (e) { st = 'explored'; }
@@ -2496,6 +2497,10 @@ function togglePlay(method) {
   track('run_play', { ...covInfo(), speed: state.speed, loop: state.loop, method, ...playInfo() });
   // the "save this play" nudge waits for the first run of the coach's own play
   if (!state.ownRun && state.run && (state.play.draft || state.play.mine)) { state.ownRun = true; renderRead(); }
+  // play_tested: the coach ran a play they brought (draft or My plays) against a defense. Once per page load, never in the tour.
+  // A GA4 key event imported into Google Ads as a secondary conversion (ANALYTICS.md §3A).
+  let inTour = false; try { inTour = tour.on; } catch (e) {}
+  if (!state.tested && !inTour && state.run && (state.play.draft || state.play.mine)) { state.tested = true; track('play_tested', { ...covInfo(), ...playInfo() }); }
 }
 $('playBtn').addEventListener('click', () => togglePlay('button'));
 $('fieldPlay').addEventListener('click', () => togglePlay('field'));
@@ -3941,6 +3946,16 @@ startAccounts(async user => {
   }
   library.version++;
   buildSelect(); renderHead();
+})();
+
+// Ad landing page (/play-tester): /?test=photo or /?test=text opens New play on that tab, skipping the first-visit view (the
+// head script never marks these visits "new"). The param is dropped so a reload doesn't reopen the dialog; utm_* params stay.
+(() => {
+  const q = new URLSearchParams(location.search), t = q.get('test');
+  if (!t) return;
+  q.delete('test');
+  history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+  if (t === 'photo' || t === 'text') openStudio(t === 'photo' ? 'image' : 'text');
 })();
 
 /* ---------- Guided tour: a 5-step spotlight walkthrough of the core loop ----------
