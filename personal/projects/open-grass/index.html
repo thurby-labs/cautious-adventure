@@ -69,7 +69,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- SEO: copy says "flag football", not "5v5": 7v7 and other formats are coming. Open Grass is NOT a play designer app: it tests the plays coaches already have (any app, paper or whiteboard). Keep title ≤ ~60 chars, description ≤ ~155. -->
-<title>Test Your Flag Football Plays Against Any Defense | Open Grass</title>
+<title>Open Grass: Test Your Flag Football Plays Against Any Defense</title>
 <meta name="description" content="Test your flag football plays against Cover 1, 2, 3, 4 and man. Watch the defense react, find the open grass, get a letter grade and route fixes. Free in beta.">
 <meta name="author" content="Open Grass, LLC">
 <link rel="canonical" href="https://open-grass.com/">
@@ -93,6 +93,14 @@
 {
   "@context": "https://schema.org",
   "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://open-grass.com/#website",
+      "name": "Open Grass",
+      "alternateName": ["Open Grass Flag Football", "open-grass.com"],
+      "url": "https://open-grass.com/",
+      "publisher": { "@id": "https://open-grass.com/#org" }
+    },
     {
       "@type": "Organization",
       "@id": "https://open-grass.com/#org",
@@ -910,6 +918,9 @@ const playTime = play => play.handoff && !play.handoff.thenPass ? TMAX_RUN : TMA
 // from ZONE_EYES (squared zone radii) away; with no route near, he creeps toward the nearest receiver within NO_WORK yards
 const ZONE_READ = 0.4, ZONE_EYES = 3.5, NO_WORK = 12;
 const SNAP_T = 0.2, PASS_SPEED = 13, PITCH_SPEED = 8;
+// after the catch (display only, never graded): the catcher runs on for up to YAC_MAX s; a play ends WHISTLE s after the flag pull,
+// or when the ball carrier runs past FIELD_TOP yards (the top of the drawn field)
+const YAC_MAX = 2.0, WHISTLE = 0.6, FIELD_TOP = 20;
 
 /* 5v5: every card has its own rusher (RSH), 7 yards off beside the middle of the defense, separate from the LB and corners.
    He rushes by default from the right (the QB's arm side); `opts.rusher` puts him on the left, or takes the rush away ('none'):
@@ -1339,7 +1350,11 @@ function simulate(play, defense, opts = {}) {
     paths[p.id] = buildPath(pl);
   });
   let ballRun = null;
-  if (ho) {
+  const caught = opts.caught;
+  if (caught) {
+    // after the catch the receiver is the ball carrier: he steers himself (steerCarrier), and the run pursuit below takes over
+    ballRun = { id: caught.id, th: caught.t, tackle: null, thenPass: false, caught: true };
+  } else if (ho) {
     // the exchange happens when the carrier reaches the spot, or when a pitch can get there, whichever is later
     const tReach = paths[ho.to].ptTimes[ho.at + 1];
     const qbAt = posAt(paths[play.players.find(p => p.qb).id], tReach), spot = posAt(paths[ho.to], tReach);
@@ -1357,12 +1372,22 @@ function simulate(play, defense, opts = {}) {
   const is7 = fmtOf(play).id === '7v7';
   const rushRead = 0.45, rushStart = is7 ? 0.3 : 0.15, rushSpeed = is7 ? 5.0 : 5.4;
   const frames = [];
-  const steps = Math.round(playTime(play) / DT);
+  const steps = Math.round((caught ? Math.max(playTime(play), caught.t + YAC_MAX) : playTime(play)) / DT);
   let pressure = null;
   for (let k = 0; k <= steps; k++) {
     const t = +(k * DT).toFixed(3);
     const off = {};
     play.players.forEach(p => { off[p.id] = posAt(paths[p.id], t); });
+    if (ballRun && ballRun.caught && t > ballRun.th && !ballRun.tackle) {
+      if (!ballRun.pos) {
+        // he leaves the catch with his route's momentum, minus any drift back toward the QB
+        const was = posAt(paths[ballRun.id], ballRun.th - 0.1);
+        ballRun.pos = posAt(paths[ballRun.id], ballRun.th);
+        ballRun.vel = [(ballRun.pos[0] - was[0]) / 0.1, Math.max(0, (ballRun.pos[1] - was[1]) / 0.1)];
+      }
+      steerCarrier(ballRun, defs, play.players.find(p => p.id === ballRun.id).speed, fmtOf(play).w);
+    }
+    if (ballRun && ballRun.pos && t > ballRun.th) off[ballRun.id] = [...ballRun.pos];
     if (ballRun && ballRun.tackle) off[ballRun.id] = [...ballRun.tackle.pos];
     const carrier = ballRun && t >= ballRun.th ? off[ballRun.id] : null;
     if (k > 0) {
@@ -1376,7 +1401,8 @@ function simulate(play, defense, opts = {}) {
         }
         // youth defenders take a moment to recognize the run; biting on a fake costs more
         // 7v7: a man defender whose man takes the ball, and the spy, are already watching the ball carrier
-        const read = (is7 && ballRun && d.man === ballRun.id ? 0.2 : is7 && d.role === 'mirror' ? 0.3
+        // after a catch everyone watched the ball arrive: the catcher's man defender is already on him, the rest break a beat later
+        const read = ballRun && ballRun.caught ? (d.man === ballRun.id ? 0 : 0.2) : (is7 && ballRun && d.man === ballRun.id ? 0.2 : is7 && d.role === 'mirror' ? 0.3
           : d.role === 'man' ? 0.8 : d.deep ? 0.6 : 0.5) + (d.bites ? 0.8 : 0);
         const chases = !ballRun || !ballRun.thenPass || d.role === 'rush' || (d.role === 'zone' && !d.deep);
         const sees = carrier && chases && t >= ballRun.th + read;
@@ -1392,8 +1418,14 @@ function simulate(play, defense, opts = {}) {
         else if (sees) {
           // run recognized: take a pursuit angle on the ball carrier
           // the spy's job is the ball carrier: it goes straight at the runner instead of leading them
-          const ahead = ballRun.tackle || d.role === 'mirror' ? carrier : posAt(paths[ballRun.id], t + 0.35);
-          target = ahead; speed = d.deep ? 4.8 : 5.1;
+          speed = d.deep ? 4.8 : 5.1;
+          // after a catch (display only) the angle is a true intercept: the first spot the runner is heading for that the defender can reach in time
+          let ahead = ballRun.tackle || d.role === 'mirror' ? carrier : ballRun.caught ? carrier : posAt(paths[ballRun.id], t + 0.35);
+          if (ballRun.caught && !ballRun.tackle && ballRun.vel) for (let u = 0; u <= 1.5; u += DT) {
+            ahead = [carrier[0] + ballRun.vel[0] * u, carrier[1] + ballRun.vel[1] * u];
+            if (dist(d.p, ahead) <= speed * u + 0.8) break;
+          }
+          target = ahead;
         }
         else if (d.role === 'man') {
           const rp = paths[d.man];
@@ -1427,7 +1459,7 @@ function simulate(play, defense, opts = {}) {
             const soon = [now[0] + (now[0] - was[0]) * k, now[1] + (now[1] - was[1]) * k];
             const vx = Math.abs(now[0] - was[0]), vy = Math.abs(now[1] - was[1]);
             const inbound = dist([2 * now[0] - was[0], 2 * now[1] - was[1]], z.c) < dist(now, z.c);
-            const readAhead = !d.deep && !(ballRun && r.id === ballRun.id) && (!is7 || vx > 2 * vy || (vx > vy && inbound));
+            const readAhead = !d.deep && !(ballRun && (carrier || !ballRun.caught) && r.id === ballRun.id) && (!is7 || vx > 2 * vy || (vx > vy && inbound));
                         for (const [rp, reach] of readAhead ? [[now, 1.7], [soon, ZONE_EYES]] : [[now, 1.7]]) {
               if (rp[1] < -0.5) continue;
               const nd = ((rp[0] - z.c[0]) / z.rx) ** 2 + ((rp[1] - z.c[1]) / z.ry) ** 2;
@@ -1440,7 +1472,7 @@ function simulate(play, defense, opts = {}) {
           if (!best && !is7 && !d.deep) {
             // 5v5: an underneath defender with no route in his area creeps sideways toward the nearest threat, staying inside his zone
             let near = null, nn = Infinity;
-            for (const r of elig) { const q = dist(off[r.id], z.c); if (off[r.id][1] >= -0.5 && !(ballRun && r.id === ballRun.id) && q < nn) { nn = q; near = off[r.id]; } }
+            for (const r of elig) { const q = dist(off[r.id], z.c); if (off[r.id][1] >= -0.5 && !(ballRun && (carrier || !ballRun.caught) && r.id === ballRun.id) && q < nn) { nn = q; near = off[r.id]; } }
             target = near && nn < NO_WORK ? clampToEllipse([near[0], z.c[1]], { c: z.c, rx: z.rx * 0.6, ry: z.ry * 0.6 }) : z.c;
           }
           else if (!best) target = z.c;
@@ -1463,7 +1495,7 @@ function simulate(play, defense, opts = {}) {
       if (i >= 0) ballRun.tackle = { t, pos: [...carrier], by: defs[i].label };
     }
     frames.push({ t, off, def: defs.map(d => [...d.p]) });
-    if (!ballRun && pressure === null && defs.some(d => d.role === 'rush' && dist(d.p, off[qb.id]) < 1.2)) pressure = t;
+    if ((!ballRun || ballRun.caught && !carrier) && pressure === null && defs.some(d => d.role === 'rush' && dist(d.p, off[qb.id]) < 1.2)) pressure = t;
   }
   // 7v7 with nobody rushing: the pass clock leaves time to the end of the sim. A rusher hurries the QB: one more beat to throw.
   const rushers = defs.some(d => d.role === 'rush');
@@ -1471,7 +1503,14 @@ function simulate(play, defense, opts = {}) {
   const hurry = pressure !== null ? pressure : null;
   let deadline = pressure !== null ? Math.min(throwBy, pressure + 0.4) : throwBy;
   if (ballRun && ballRun.thenPass) deadline = ballRun.tackle ? ballRun.tackle.t : Math.min(playTime(play), ballRun.th + 2.2);
-  return { frames, pressure, hurry, deadline, roles: defs.map(d => d.role), paths, ballRun };
+  // the play ends at the whistle: a beat after the flag pull, once the ball carrier is past the top of the field, or YAC_MAX s after a catch
+  let tEnd = caught ? caught.t + YAC_MAX : playTime(play);
+  if (ballRun && !ballRun.thenPass) {
+    const gone = frames.find(f => f.t >= ballRun.th && f.off[ballRun.id][1] > FIELD_TOP);
+    if (gone) tEnd = Math.min(tEnd, gone.t);
+    if (ballRun.tackle) tEnd = Math.min(tEnd, ballRun.tackle.t + WHISTLE);
+  }
+  return { frames, pressure, hurry, deadline, roles: defs.map(d => d.role), paths, ballRun, tEnd: +tEnd.toFixed(3) };
 }
 
 /* How open is a receiver at one moment: space to the nearest cover defender, minus anyone sitting in the throwing lane. */
@@ -1593,6 +1632,68 @@ function runPlay(play, covId, opts) {
   const def = buildDefense(covId, play, opts);
   const sim = simulate(play, def, opts);
   return { def, sim, ev: evaluate(play, sim) };
+}
+
+/* A player's position at any time, blended between sim frames (the field draws the same blend). */
+function offAt(sim, id, t) {
+  const fr = sim.frames, k = clamp(t / DT, 0, fr.length - 1), i = Math.floor(k), u = k - i;
+  const a = fr[i].off[id], b = fr[Math.min(i + 1, fr.length - 1)].off[id];
+  return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+}
+
+/* The pass to the top read: released early enough to arrive at the receiver's best moment, and only if the rusher isn't there first. */
+function passLeg(sim, ev, holder, ready, at = (id, t) => offAt(sim, id, t)) {
+  const top = ev.order[0], b = top ? ev.receivers[top].best : { t: null };
+  if (b.t === null) return null;
+  let arrive = b.t;
+  const release = Math.max(ready, arrive - dist(at(holder, arrive), b.pos) / PASS_SPEED);
+  arrive = release + dist(at(holder, release), at(top, arrive)) / PASS_SPEED;
+  if (sim.pressure !== null && release > sim.pressure) return null;
+  return { from: holder, to: top, kind: 'pass', release, arrive };
+}
+
+/* After the catch the ball carrier heads for his sideline and up the field: on the left half of the field he only runs up, left, or
+   anywhere between (right half: up and right). Inside that fan he picks the heading that keeps him away from the defenders, favoring 45°
+   (equal parts up and out) when he's clear; within 3 yards of the sideline he turns up it. */
+function steerCarrier(br, defs, speed, w) {
+  const pos = br.pos, mid = w / 2;
+  if (!br.side) br.side = pos[0] < mid ? -1 : pos[0] > mid ? 1 : Math.sign(br.vel[0]) || 1;   // the half he catches it on, for the whole run
+  const side = br.side, room = side > 0 ? w - 1 - pos[0] : pos[0] - 1;   // yards to his sideline
+  let best = null, bs = -Infinity;
+  for (let a = 0; a <= 80; a += 10) {
+    const r = side * a * Math.PI / 180, dir = [Math.sin(r), Math.cos(r)];
+    let margin = Infinity, ok = true;
+    for (const tau of [0.25, 0.5, 0.75, 1.0]) {
+      const q = [pos[0] + dir[0] * speed * tau, pos[1] + dir[1] * speed * tau];
+      if (q[0] < 0.5 || q[0] > w - 0.5) { ok = false; break; }
+      for (const d of defs) margin = Math.min(margin, dist(d.p, q) - 5.2 * tau - 1.0);
+    }
+    if (!ok && a > 0) continue;
+    const lane = room > 3 ? (dir[1] + side * dir[0]) / 2 : dir[1];
+    const score = lane + 0.8 * clamp(margin, -8, 1);
+    if (score > bs) { bs = score; best = dir; }
+  }
+  // he can't change direction instantly (a crosser has to plant and turn outside): blend toward the new heading
+  const v = [br.vel[0] * 0.4 + best[0] * speed * 0.6, br.vel[1] * 0.4 + best[1] * speed * 0.6], m = Math.hypot(...v) || 1;
+  br.vel = [v[0] / m * speed, v[1] / m * speed];
+  br.pos = [clamp(pos[0] + br.vel[0] * DT, 0.5, w - 0.5), pos[1] + br.vel[1] * DT];
+}
+
+/* For playback only: re-run the play with the catcher carrying the ball after the catch. The grade, reads and every frame up to the
+   catch are unchanged (evaluate never sees this sim); returns null when there is no completed pass (runs, trick plays, sacks). */
+function withYac(play, covId, opts, run) {
+  if (run.ev.run || run.ev.trick) return null;
+  const qb = play.players.find(p => p.qb);
+  const leg = passLeg(run.sim, run.ev, qb.id, SNAP_T + 0.15);
+  if (!leg) return null;
+  const caught = { id: leg.to, t: leg.arrive };
+  const sim = simulate(play, run.def, { ...opts, caught });
+  const br = sim.ballRun, last = sim.frames[clamp(Math.round(sim.tEnd / DT), 0, sim.frames.length - 1)];
+  const from = offAt(sim, leg.to, leg.arrive), end = br.tackle ? br.tackle.pos : last.off[leg.to];
+  return {
+    sim: { ...sim, pressure: run.sim.pressure, hurry: run.sim.hurry, deadline: run.sim.deadline },
+    yac: { id: leg.to, t: leg.arrive, from, pos: end, yards: end[1] - from[1], flagT: br.tackle ? br.tackle.t : null, by: br.tackle ? br.tackle.by : null }
+  };
 }
 
 /* Route library for suggested adjustments. dx is relative to the receiver's alignment; y is absolute depth. */
@@ -1775,6 +1876,8 @@ function recompute(full = true) {
   if (fmtOf(state.play).id === '5v5' && (state.cov === 'man' || state.cov === 'c1')) state.c1 = state.cov === 'man' ? 'man' : 'zone';
   $('c1Sel').value = state.c1;
   state.run = state.cov ? runPlay(state.play, state.cov, opts()) : null;
+  // playback only: the catcher keeps running after the catch and the defense chases him (the grade and reads use run.sim)
+  if (state.run) { const y = withYac(state.play, state.cov, opts(), state.run); state.run.yac = y && y.yac; state.run.view = y && y.sim; }
   state.ball = planBall();
   if (full) {
     state.scout = {};
@@ -1839,13 +1942,15 @@ function football(x, y, rot = -30, sc = 1) {
   return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)}) scale(${sc.toFixed(2)})"><ellipse rx="8" ry="5" style="fill:var(--ball);stroke:var(--chalk)" stroke-width="1"/><path d="M-3 0h6M-1.5 -1.5v3M0 -1.5v3M1.5 -1.5v3" style="stroke:var(--chalk)" stroke-width=".9"/></g>`;
 }
 
-/* The sim steps every DT (0.05 s); blend the two frames around t so players move every display frame. */
+/* The sim steps every DT (0.05 s); blend the two frames around t so players move every display frame.
+   Playback draws the after-the-catch sim when there is one: it matches the graded sim frame for frame up to the catch. */
+const viewSim = () => state.run.view || state.run.sim;
 function simFrame(t) {
-  const fr = state.run.sim.frames;
+  const fr = viewSim().frames;
   return fr[clamp(Math.round(t / DT), 0, fr.length - 1)];
 }
 function frameAt(t) {
-  const fr = state.run.sim.frames, k = clamp(t / DT, 0, fr.length - 1), i = Math.floor(k), u = k - i;
+  const fr = viewSim().frames, k = clamp(t / DT, 0, fr.length - 1), i = Math.floor(k), u = k - i;
   const a = fr[i], b = fr[Math.min(i + 1, fr.length - 1)];
   if (u < 1e-6 || a === b) return a;
   const mix = (p, q) => [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u];
@@ -1856,7 +1961,8 @@ function frameAt(t) {
 
 /* Pre-snap, holes are the gaps between where each zone will be. After the snap, they are the gaps between actual defenders. */
 /* The ball's trip: snap from C to Q, then a list of legs (pitch, handoff, lateral, pass), each with a release and arrival time. */
-const tEnd = () => playTime(state.play);
+// the play ends at the whistle: a beat after the flag pull, or when the sim runs out (engine.js sets tEnd)
+const tEnd = () => state.run ? viewSim().tEnd : playTime(state.play);
 function planBall() {
   const run = state.run, play = state.play;
   if (!run) return null;
@@ -1872,12 +1978,8 @@ function planBall() {
     holder = ho.to; ready = br.th + 0.3;
   }
   if (!run.ev.run) {
-    const top = run.ev.order[0], b = top ? run.ev.receivers[top].best : { t: null };
-    if (b.t !== null) {
-      let arrive = b.t, release = Math.max(ready, arrive - dist(at(holder, arrive), b.pos) / PASS_SPEED);
-      arrive = release + dist(at(holder, release), at(top, arrive)) / PASS_SPEED;
-      if (!(run.sim.pressure !== null && release > run.sim.pressure)) plan.legs.push({ from: holder, to: top, kind: 'pass', release, arrive });
-    }
+    const leg = passLeg(run.sim, run.ev, holder, ready, at);
+    if (leg) plan.legs.push(leg);
   }
   return plan;
 }
@@ -2011,7 +2113,7 @@ function fieldMarkup(t) {
   play.players.forEach(pl => {
     const p = run ? f.off[pl.id] : pl.start;
     const cx = X(p[0]), cy = Y(p[1]);
-    if (run && !run.ev.run && run.ev.receivers[pl.id] && pl.eligible && t >= Math.max(0.7, run.sim.paths[pl.id].window) && t <= run.sim.deadline + 0.2) {
+    if (run && !run.ev.run && run.ev.receivers[pl.id] && pl.eligible && t >= Math.max(0.7, run.sim.paths[pl.id].window) && t <= (run.yac ? run.yac.t : run.sim.deadline + 0.2)) {
       const eff = run.ev.receivers[pl.id].series[Math.round(t / DT)];
       s += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" style="stroke:${ST[statusFor(eff)]}" stroke-width="3"/>`;
     }
@@ -2026,9 +2128,13 @@ function fieldMarkup(t) {
   if (run) s += ballLayer(t, f);
   if (run && run.ev.run && t >= run.ev.run.th) {
     const r = run.ev.run, cp = f.off[r.id];
-    if (r.t !== null && t >= r.t) s += `<text x="${X(cp[0])}" y="${Y(cp[1]) + 26}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED · ${r.yards >= 0 ? '+' : ''}${r.yards.toFixed(1)} YDS</text>`;
+    if (r.t !== null && t >= r.t) s += `<text x="${clamp(X(cp[0]), 72, w * S - 72)}" y="${Y(cp[1]) + 26}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED · ${r.yards >= 0 ? '+' : ''}${r.yards.toFixed(1)} YDS</text>`;
   }
-  if (run && !run.ev.run && run.sim.pressure !== null && t >= run.sim.pressure) {
+  if (run && run.yac && run.yac.flagT !== null && t >= run.yac.flagT) {
+    const y = run.yac, cp = f.off[y.id], gain = y.pos[1];
+    s += `<text x="${clamp(X(cp[0]), 72, w * S - 72)}" y="${Y(cp[1]) + 26}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">FLAG PULLED · ${gain >= 0 ? '+' : ''}${gain.toFixed(1)} YDS</text>`;
+  }
+  if (run && !run.ev.run && run.sim.pressure !== null && t >= run.sim.pressure && !(run.yac && run.sim.pressure > run.yac.t)) {
     const q = f.off[qb.id];
     s += `<text x="${X(q[0])}" y="${Y(q[1]) + 24}" text-anchor="middle" class="lbl" font-size="10" letter-spacing="1" style="fill:var(--bad)">${run.sim.hurry != null ? 'HURRIED' : 'FLAG PULLED'}</text>`;
   }
@@ -2080,8 +2186,10 @@ function renderMarks() {
     const mk = (cls, t, kind, text) => `<button class="mk top ${cls}" style="left:${pct(t)}" data-jump="${t}" data-mark="${kind}" aria-label="Jump to ${text.replace(/^[●▼] /, '')} at ${fmtT(t)}">${text}</button>`;
     (state.ball ? state.ball.legs : []).forEach(L => { s += mk('throw', L.release, L.kind, `● ${label[L.kind]}`); });
     if (r && r.t !== null) s += mk('rush', r.t, 'flag', `▼ Flag ${fmtT(r.t)}`);
-    else if (!r && sim.pressure !== null) s += mk('rush', sim.pressure, 'rush', `▼ Rush ${fmtT(sim.pressure)}`);
+    else if (!r && sim.pressure !== null && !(state.run.yac && sim.pressure > state.run.yac.t)) s += mk('rush', sim.pressure, 'rush', `▼ Rush ${fmtT(sim.pressure)}`);
     else if (!r && !(state.ball && state.ball.legs.some(L => L.kind === 'pass'))) s += mk('tick', sim.deadline, 'throw_by', `▼ Throw by ${fmtT(sim.deadline)}`);
+    const y = state.run.yac;
+    if (y && y.flagT !== null) s += mk('rush', y.flagT, 'flag', `▼ Flag ${fmtT(y.flagT)}`);
   }
   m.innerHTML = s;
 }
@@ -2162,6 +2270,10 @@ function renderRead() {
   let sum = tb.t !== null
     ? `Best throw: <b>${tp.label}</b> on the ${esc(tp.routeName.toLowerCase())} at <b>${fmtT(tb.t)}</b>, with ${tb.eff.toFixed(1)} yds of space ${fmtY(tb.pos[1])} yds downfield.${why ? ' ' + esc(why) : ''}`
     : `No receiver gets clear of a defender before ${fmtT(sim.deadline)}.`;
+  const yac = state.run.yac;
+  if (yac && yac.id === top) sum += yac.flagT !== null
+    ? ` After the catch ${tp.label} gets ${Math.max(0, yac.yards).toFixed(1)} more yds before the ${yac.by} pulls the flag.`
+    : ` After the catch ${tp.label} is still running at ${fmtT(tEnd())}, ${yac.pos[1].toFixed(1)} yds downfield.`;
   if (ev.trick) {
     const tp2 = playerById(ev.trick.passer);
     sum = `<b>${tp2.label}</b> gets the ball at ${fmtT(ev.trick.th)} and throws. ` + sum.replace('Best throw:', 'Best target:');
@@ -2181,7 +2293,7 @@ function renderRead() {
     const when = b.t === null ? 'no window' : `${b.eff.toFixed(1)} yds at ${fmtT(b.t)}`;
     h += `<li><button data-jump="${b.t ?? ''}"><span class="num">${i + 1}</span>${dotFor(pl)}<span class="rname"><b>${esc(pl.routeName)}</b>${pl.shape === 'star' ? ' <small style="display:inline">★ designed</small>' : ''} <small>${when}</small><span class="bar"><i style="width:${pct}%;background:${ST[st]}"></i></span></span><span class="pill p-${st}">${st}</span></button></li>`;
   });
-  h += `</ol><p class="src">Tap a receiver to jump to their best moment.</p>`;
+  h += `</ol><p class="src">Tap a receiver to jump to their best moment.${yac ? ' Yards after the catch are shown, not graded: the grade is about getting open.' : ''}</p>`;
   const read = readsFor(state.play)[cov.id];
   if (read && !ev.trick) h += `<p class="qbread"><b>The read vs ${cov.name}:</b> ${read}</p>`;
   h += `</div>`;
