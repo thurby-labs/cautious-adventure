@@ -141,7 +141,7 @@
   --f-body: "Barlow", "Segoe UI", system-ui, sans-serif;
   --radius: 10px; --on-grade: #FFFFFF;
   --dock-h: 0px; --peek-h: 0px;
-  --sheet-bg: var(--panel); --sheet-edge: transparent; --grip: #B7C4B0;
+  --sheet-bg: var(--panel); --sheet-edge: transparent; --grip: #B7C4B0; --pop-bg: var(--panel); --pop-edge: var(--line); --tour-ring: var(--accent);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -151,7 +151,7 @@
     --def: #DCE4F4; --def-ink: #17203A; --zone: #A9BCE6;
     --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --r-teal: #4FC9D2; --r-gold: #E8B33E; --ball: #C98A57;
     --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; --on-grade: #0E1410;
-    --sheet-bg: #1F2B22; --sheet-edge: #3D5244; --grip: #8FA395;
+    --sheet-bg: #33463A; --sheet-edge: #85A58E; --grip: #D6E3D9; --pop-bg: #3B5143; --pop-edge: #9DBDA6; --tour-ring: var(--hole);
     color-scheme: dark;
   }
 }
@@ -162,7 +162,7 @@
   --def: #DCE4F4; --def-ink: #17203A; --zone: #A9BCE6;
   --r-orange: #F5953F; --r-green: #3FC79C; --r-purple: #B78BF2; --r-red: #FF6A5C; --r-ink: #F4F4F0; --r-teal: #4FC9D2; --r-gold: #E8B33E; --ball: #C98A57;
   --good: #4CC27A; --warn: #E3AE3A; --bad: #F06B5E; --on-grade: #0E1410;
-  --sheet-bg: #1F2B22; --sheet-edge: #3D5244; --grip: #8FA395;
+  --sheet-bg: #33463A; --sheet-edge: #85A58E; --grip: #D6E3D9; --pop-bg: #3B5143; --pop-edge: #9DBDA6; --tour-ring: var(--hole);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -175,19 +175,18 @@ body { background: var(--paper); color: var(--ink); font-family: var(--f-body); 
 button, select, input { font: inherit; color: inherit; }
 button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Header: a full-width bar. Phones show the icon and the wordmark; tablet and desktop the full logo and Tour. */
+/* Header: a full-width bar. Phones show the wide wordmark logo; tablet and desktop the full logo and Tour. */
 .top { background: var(--panel); border-bottom: 1px solid var(--line); }
 /* One bar from 700 px up: logo, play picker, Test a play, Tour, Sign in, Sign up free. Phones wrap the play row under the logo line. */
 .top-in { max-width: 1320px; margin: 0 auto; padding: 8px 20px; min-height: 60px; display: flex; align-items: center; gap: 8px 12px; }
 .top-in .playrow { flex: 1; min-width: 0; }
 .brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mark { height: 48px; width: auto; flex: none; display: block; }
-.mark-sm { display: none; width: 36px; height: 36px; flex: none; }
-.wordmark { display: none; font-family: var(--f-display); font-weight: 900; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; line-height: 1; white-space: nowrap; }
+.mark-sm { display: none; width: auto; height: 34px; flex: none; box-sizing: content-box; }
 /* The wordmark's navy "OPEN" vanishes on the dark theme, so seat the logo on a light badge there. */
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } :root:not([data-theme="light"]) .mark-sm { padding: 2px; border-radius: 9px; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } :root:not([data-theme="light"]) .mark-sm { padding: 4px 8px; border-radius: 9px; } }
 :root[data-theme="dark"] :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
-:root[data-theme="dark"] .mark-sm { padding: 2px; border-radius: 9px; }
+:root[data-theme="dark"] .mark-sm { padding: 4px 8px; border-radius: 9px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .head-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .hbtn { height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -209,12 +208,12 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
   .top-in .playrow { order: 3; flex-basis: 100%; padding-right: 4px; }
   /* phones: Sign in takes Tour's place (Tour stays in the footer) */
   .mark, #tourBtn { display: none; }
-  .mark-sm, .wordmark { display: block; }
+  .mark-sm { display: block; }
   .hbtn { padding: 0 10px; }
 }
-/* small phones: a tighter wordmark and buttons keep Sign in and Create account on the logo line */
-@media (max-width: 389px) { .wordmark { font-size: 19px; } .hbtn { padding: 0 8px; } .hbtn.cta { padding: 0 10px; } .top-in { column-gap: 6px; } }
-@media (max-width: 339px) { .wordmark { display: none; } }
+/* small phones: a smaller logo and tighter buttons keep Sign in and Create account on the logo line */
+@media (max-width: 389px) { .mark-sm { height: 30px; } .hbtn { padding: 0 8px; } .hbtn.cta { padding: 0 10px; } .top-in { column-gap: 6px; } }
+@media (max-width: 339px) { .mark-sm { height: 25px; } }
 
 /* Play row: the play picker (a native select laid over a big button) and Test a play */
 .playrow { display: flex; align-items: center; gap: 8px; }
@@ -253,9 +252,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .defline > span { min-width: 0; }
 .optbtn { margin-left: auto; flex: none; height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel); color: var(--ink); font-size: 13px; font-weight: 700; cursor: pointer; }
 .optbtn:hover, .optbtn[aria-expanded="true"] { border-color: var(--muted); }
+.optbtn .ol-short { display: none; }
 .optbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 /* Field options: a small popover above its button on wide screens (the row sits near the bottom of the screen), a bottom sheet on phones and tablets */
 .optsheet { position: absolute; right: 0; bottom: 50px; z-index: 40; width: min(340px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.22); padding: 14px; display: grid; gap: 12px; }
+.optsheet:focus { outline: none; }
 .optsheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .optsheet-head b { font-family: var(--f-display); font-weight: 800; font-size: 20px; text-transform: uppercase; line-height: 1; }
 .optscrim { position: fixed; inset: 0; z-index: 39; background: transparent; }
@@ -263,11 +264,6 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .tog { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 4px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-size: 15px; font-weight: 600; cursor: pointer; }
 .tog input { accent-color: var(--accent); margin: 0; width: 20px; height: 20px; order: 2; }
 .tog select { font: inherit; font-weight: 600; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
-#speedSlot:empty { display: none; }
-#speedSlot { display: grid; gap: 6px; }
-#speedSlot .speed { display: flex; gap: 6px; flex-wrap: wrap; }
-#speedSlot .speed button { min-height: 44px; min-width: 52px; padding: 0 12px; border-radius: 10px; font-size: 15px; }
-#speedSlot .speed .loop { margin-left: auto; }
 
 /* Field */
 .player { position: relative; display: grid; gap: 12px; }
@@ -552,6 +548,24 @@ span.beta { cursor: default; margin-left: 4px; }
   .timeline .clock { min-width: 58px; }
   .timeline .track { padding-block: 6px 8px; }
   .timeline .track input { height: 44px; display: block; }
+  /* Field options sits in the dock next to the clock, where the coach's thumb already is */
+  .timeline { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; padding-inline: 12px 10px; }
+  .timeline .optbtn { margin: 0; height: 52px; width: 56px; padding: 0; flex-direction: column; justify-content: center; gap: 3px; border-radius: 12px; background: var(--chip); font-size: 11px; letter-spacing: .02em; }
+  .timeline .optbtn svg { width: 20px; height: 20px; }
+  .timeline .optbtn .ol-long { display: none; }
+  .timeline .optbtn .ol-short { display: inline; }
+  /* Speed and Loop get their own slim row across the top of the dock */
+  .timeline { row-gap: 2px; padding-top: 6px; }
+  .timeline > * { grid-row: 2; }
+  .timeline .speed { grid-row: 1; grid-column: 1 / -1; display: flex; flex-direction: row; justify-content: flex-end; align-items: center; gap: 6px; }
+  .timeline .speed button { min-height: 34px; min-width: 44px; padding: 0 10px; border-radius: 8px; font-size: 14px; }
+  .timeline .speed .loop { margin-left: 6px; }
+  @media (max-width: 379px) {
+    .timeline { gap: 8px; padding-inline: 8px; }
+    .timeline .playbtn { width: 48px; height: 48px; }
+    .timeline .clock { min-width: 0; }
+    .timeline .optbtn { width: 48px; }
+  }
   .hint { font-size: 12px; }
 }
 
@@ -582,8 +596,7 @@ span.beta { cursor: default; margin-left: 4px; }
   <div class="top-in">
     <div class="brand">
       <img class="mark" src="logo/open-grass-logo-header.png" width="79" height="56" alt="">
-      <img class="mark-sm" src="logo/open-grass-icon.png" width="36" height="36" alt="">
-      <span class="wordmark" aria-hidden="true">Open Grass</span>
+      <img class="mark-sm" src="logo/open-grass-wordmark.png" width="127" height="34" alt="">
     </div>
     <div class="playrow">
       <div class="pickbtn">
@@ -646,10 +659,10 @@ span.beta { cursor: default; margin-left: 4px; }
         <div class="cards" id="cards" role="group" aria-labelledby="trayLbl"></div>
         <div class="defline">
           <span id="covLine"></span>
-          <button class="optbtn" id="fieldOptBtn" aria-expanded="false" aria-controls="optSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Field options</button>
+          <button class="optbtn" id="fieldOptBtn" aria-expanded="false" aria-controls="optSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span class="ol-long">Field options</span><span class="ol-short">Options</span></button>
         </div>
         <div class="optscrim" id="optScrim" hidden></div>
-        <div class="optsheet" id="optSheet" role="dialog" aria-labelledby="optTitle" hidden>
+        <div class="optsheet" id="optSheet" role="dialog" aria-labelledby="optTitle" tabindex="-1" hidden>
           <div class="optsheet-head"><b id="optTitle">Field options</b><button class="act" id="optDone">Done</button></div>
           <div class="toggles">
             <label class="tog" title="Where the rusher lines up, 7 yards off the ball. A player who shows rush must rush. With no rusher, that player plays an extra safety">Rusher <select id="rushSel"><option value="R">Right side</option><option value="L">Left side</option><option value="none">No rusher</option></select></label>
@@ -657,7 +670,6 @@ span.beta { cursor: default; margin-left: 4px; }
             <label class="tog"><span id="blitzL">Extra rusher</span> <input type="checkbox" id="blitzT"></label>
             <label class="tog">Show holes <input type="checkbox" id="holesT" checked></label>
           </div>
-          <div id="speedSlot"></div>
         </div>
       </div>
 
@@ -2806,11 +2818,12 @@ function showPlayer() {
   if (r.top < 0 || r.bottom > innerHeight) scrollTo({ top: Math.max(0, scrollY + r.top - 12), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 
-/* ---------- field options: rusher, Cover 1 Man/Zone, extra rusher, holes (and speed + loop on phones) ---------- */
+/* ---------- field options: rusher, Cover 1 Man/Zone, extra rusher, holes ---------- */
 function fieldOptions(open) {
   $('optSheet').hidden = $('optScrim').hidden = !open;
   $('fieldOptBtn').setAttribute('aria-expanded', open);
-  if (open) { (($('optSheet').querySelector('select:not([hidden])')) || $('optDone')).focus({ preventScroll: true }); track('field_options_open', covInfo()); }
+  // On touch screens focus the sheet itself: focusing a select pops the phone's picker over the sheet before the coach taps anything
+  if (open) { (matchMedia('(pointer: coarse)').matches ? $('optSheet') : $('optSheet').querySelector('select:not([hidden])') || $('optDone')).focus({ preventScroll: true }); track('field_options_open', covInfo()); }
 }
 $('fieldOptBtn').addEventListener('click', () => fieldOptions($('optSheet').hidden));
 $('optDone').addEventListener('click', () => { fieldOptions(false); $('fieldOptBtn').focus({ preventScroll: true }); });
@@ -2818,10 +2831,10 @@ $('optScrim').addEventListener('click', () => fieldOptions(false));
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('optSheet').hidden) { e.stopPropagation(); fieldOptions(false); $('fieldOptBtn').focus({ preventScroll: true }); } });
 
 // Phones: speed and Loop live in the Field options sheet; tablet and desktop keep them in the timeline bar
-const speedEl = document.querySelector('.timeline .speed');
-function placeSpeed() { (mqPhone.matches ? $('speedSlot') : document.querySelector('.timeline')).appendChild(speedEl); }
-mqPhone.addEventListener('change', placeSpeed);
-placeSpeed();
+// Phones: Field options moves into the playback dock (it was easy to miss under the coverage chips)
+function placeOptBtn() { (mqPhone.matches ? document.querySelector('.timeline') : document.querySelector('.defline')).appendChild($('fieldOptBtn')); }
+mqPhone.addEventListener('change', placeOptBtn);
+placeOptBtn();
 // The pinned playback dock's height (it grows with the safe-area inset) sets where the results sheet sits
 function sizeDock() {
   const h = mqPhone.matches ? document.querySelector('.timeline').offsetHeight : 0;
@@ -4088,30 +4101,38 @@ const TOUR_DEMO = { name: 'Trips Right, Z Out', concept: 'Trips right, out under
   { id: 'Y', start: [26.5, 0], route: [[26.5, 18]], routeName: 'Go' }] };
 
 const tour = { on: false, i: 0, prev: null, el: null, poll: null };
+// Phones get the short copy and a compact card so the field and the playback dock stay visible
+const tourPhone = () => innerWidth <= 640;
 const readCards = () => [...$('read').querySelectorAll('.card')];
 const readCard = cls => $('read').querySelector('.' + cls);
 // On phones and tablets the read panel is a bottom sheet (sheetTo in app.src.html): each step says how open it should be.
 const TOUR_STEPS = [
   { target: () => document.querySelector('.cov[data-cov="c3"]'), title: 'Pick a defense',
     body: 'Tap <b>Cover 3</b> to put it on the field and see how this play holds up against it.',
+    short: 'Tap <b>Cover 3</b> to put it on the field.',
     wait: 'Tap Cover 3 to continue', done: () => state.cov === TOUR_COV, sheet: 'peek' },
   { target: () => [$('fieldWrap'), document.querySelector('.timeline')], title: 'Run the play',
     body: 'Press <b>play</b> and watch the defenders react. Drag the slider to step through it. Before the snap, you can drag any defender to match what you see on game day.',
+    short: 'Press <b>play</b> and watch the defense react.',
     wait: 'Press play to continue', done: () => state.t > 0 && !state.playing, avoid: () => document.querySelector('.timeline'), sheet: 'peek' },
   { target: () => readCard('verdict-card'), title: 'Read the verdict', sheet: 'full',
-    body: 'Every play gets a grade against the defense, with the best throw and when it’s open. Further down, the QB read shows each receiver as <b>open</b>, <b>tight</b> or <b>covered</b>.' },
+    body: 'Every play gets a grade against the defense, with the best throw and when it’s open. Further down, the QB read shows each receiver as <b>open</b>, <b>tight</b> or <b>covered</b>.',
+    short: 'Your grade against this defense, with the best throw and when it’s open.' },
   { target: () => readCards().find(c => c.querySelector('[data-sug]')) || readCard('sug-card'), title: 'Fix what isn’t working', sheet: 'full',
     body: () => `${state.run ? `${/^[AF]/.test(state.run.ev.grade) ? 'An' : 'A'} ${state.run.ev.grade} won’t cut it. ` : ''}These route changes would beat Cover 3. Tap <b>Try it</b> and watch the grade change.`,
+    short: () => `${state.run ? `${/^[AF]/.test(state.run.ev.grade) ? 'An' : 'A'} ${state.run.ev.grade} won’t cut it. ` : ''}Tap <b>Try it</b> on a route change.`,
     wait: 'Tap Try it to continue', done: () => Object.keys(state.changes).length > 0,
     after: () => { if (state.run) toast(`Now it’s ${/^[AF]/.test(state.run.ev.grade) ? 'an' : 'a'} ${state.run.ev.grade} against Cover 3.`); } },
   { target: () => $('newPlayBtn'), title: 'Now bring your own plays', sheet: 'peek',
     body: 'That’s the real point of Open Grass: test <b>your</b> playbook. Describe a play or snap a photo of a play card, and it’s drawn for you. Here’s how.',
+    short: 'Test <b>your</b> playbook: describe a play or snap a photo of a play card.',
     next: 'Show me', action: () => tourDemo() },
   // Side by side (wide screens) light up the field and the grades; stacked, just the grades so they fit on screen
   { target: () => [...(innerWidth >= 980 ? [$('fieldWrap')] : []), readCard('verdict-card'), readCard('scout-card')], title: 'Drawn and graded', count: 5, sheet: 'full',
     body: () => (account.user || gate.open)
       ? 'That’s it: your play, on the field, graded against every defense. Try it with one of your own plays.'
       : 'That’s it: your play, on the field, graded against every defense. Create a free account to save your playbook and test every play. Free while in beta.',
+    short: () => (account.user || gate.open) ? 'Your play, graded against every defense. Try one of your own.' : 'Your play, graded against every defense. Save your playbook with a free account.',
     final: true }
 ];
 
@@ -4122,17 +4143,19 @@ function tourCss() {
 .tour { position: fixed; inset: 0; z-index: 55; pointer-events: none; }
 .tour svg.shade { position: absolute; inset: 0; width: 100%; height: 100%; }
 .tour svg.shade path { fill: rgba(10, 16, 12, .6); pointer-events: auto; fill-rule: evenodd; }
-.tour .ring { position: absolute; border: 2.5px solid var(--hole); border-radius: 12px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--hole) 30%, transparent); transition: all .25s ease; }
-.tour .tcard { position: absolute; pointer-events: auto; width: min(340px, calc(100vw - 32px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; box-shadow: 0 18px 44px rgba(0,0,0,.32); }
+/* light mode outlines in dark green (a yellow ring vanishes on the light field); dark mode keeps the yellow */
+.tour .ring { position: absolute; border: 3px solid var(--tour-ring); border-radius: 12px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--tour-ring) 30%, transparent); transition: all .25s ease; }
+.tour .tcard { position: absolute; pointer-events: auto; width: min(340px, calc(100vw - 32px)); background: var(--pop-bg); color: var(--ink); border: 1px solid var(--pop-edge); border-radius: 14px; padding: 16px; display: grid; gap: 10px; box-shadow: 0 18px 44px rgba(0,0,0,.32); }
 .tour .tcard h3 { font-family: var(--f-display); font-weight: 800; font-size: 22px; text-transform: uppercase; margin: 0; line-height: 1; }
 .tour .tcard p { margin: 0; font-size: 14px; }
-.tour .tcard .wait { color: var(--muted); font-size: 13px; font-style: italic; }
+.tour .tcard .eyebrow { color: color-mix(in srgb, var(--ink) 75%, var(--pop-bg)); }
+.tour .tcard .wait { color: color-mix(in srgb, var(--ink) 75%, var(--pop-bg)); font-size: 13px; font-style: italic; }
 .tour .tnav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .tour .tnav .sp { flex: 1; }
 .tour .dots { display: flex; gap: 5px; }
 .tour .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
 .tour .dots i.on { background: var(--accent); }
-@media (max-width: 640px) { .tour .tcard { left: 16px !important; right: 16px; top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: auto; } .tour .linkbtn { min-height: 44px; } }
+@media (max-width: 640px) { .tour .tcard { left: 12px !important; right: 12px; top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); width: auto; padding: 10px 14px 12px; gap: 6px; } .tour .tcard h3 { font-size: 19px; } .tour .tcard .dots { display: none; } .tour .tcard .tnav .act { min-height: 40px; padding-block: 0; } .tour .linkbtn { min-height: 40px; } }
 .tour-demo-note { background: var(--hole); color: #1d2208; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; margin: 0; }`;
   document.head.appendChild(s);
 }
@@ -4173,7 +4196,8 @@ function tourShow(i) {
   sheetTo(s.sheet || 'peek');
   tour.el.hidden = false;
   const n = TOUR_STEPS.length - 1, num = s.count || i + 1;
-  const body = typeof s.body === 'function' ? s.body() : s.body;
+  const phone = tourPhone(), text = (phone && s.short) || s.body;
+  const body = typeof text === 'function' ? text() : text;
   const signedIn = account.user || gate.open;
   let nav;
   if (s.final) nav = signedIn
@@ -4182,7 +4206,7 @@ function tourShow(i) {
   else nav = `${i > 0 ? '<button class="linkbtn" data-t="back">Back</button>' : '<button class="linkbtn" data-t="skip">Skip tour</button>'}<span class="sp"></span><button class="act primary" data-t="next">${s.next || 'Next'}</button>`;
   const card = tour.el.querySelector('.tcard');
   card.innerHTML = `<div class="tnav"><span class="eyebrow">Tour · ${num} of ${n}</span><span class="sp"></span><button class="linkbtn" data-t="skip" aria-label="Close the tour">✕</button></div>
-    <h3 id="tourTitle">${s.title}</h3><p>${body}</p>${s.wait ? `<p class="wait">${s.wait}, or press Next.</p>` : ''}
+    <h3 id="tourTitle">${s.title}</h3><p>${body}</p>${s.wait && !phone ? `<p class="wait">${s.wait}, or press Next.</p>` : ''}
     <div class="tnav">${nav}</div>
     <div class="dots" aria-hidden="true">${TOUR_STEPS.slice(0, n).map((_, k) => `<i class="${k < num ? 'on' : ''}"></i>`).join('')}</div>`;
   card.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => tourAct(b.dataset.t)));
@@ -4236,7 +4260,10 @@ function tourRect(els = tourEls()) {
 function tourScroll() {
   const t = TOUR_STEPS[tour.i].target(), first = (Array.isArray(t) ? t : [t]).find(Boolean);
   if (first && mqSheet.matches && $('read').contains(first)) {
-    $('read').scrollTop += first.getBoundingClientRect().top - $('read').getBoundingClientRect().top - 8;
+    // Phones: a card too tall to share the screen with the tour card gets its top scrolled below it (tourPlace puts the card at the top)
+    const fr = first.getBoundingClientRect(), ch = tour.el.querySelector('.tcard').offsetHeight, rt = $('read').getBoundingClientRect().top;
+    const under = tourPhone() && fr.height > innerHeight - rt - ch - 40 ? 24 + ch : 0;
+    $('read').scrollTop += fr.top - Math.max(rt + 8, under);
     return;
   }
   // scroll for what moves with the page: the pinned playback dock (phones) is always on screen
@@ -4252,13 +4279,24 @@ function tourScroll() {
 function tourPlace() {
   if (!tour.on || tour.el.hidden) return;
   const r = tourRect(), W = innerWidth, H = innerHeight, pad = 6;
-  const path = tour.el.querySelector('path'), ring = tour.el.querySelector('.ring'), card = tour.el.querySelector('.tcard');
+  const path = tour.el.querySelector('path'), card = tour.el.querySelector('.tcard');
+  // Phones light up each target on its own (step 2: the field and the playback dock, with the chips, tray and card between them
+  // left in the shade); wider screens light up the box around them all. Overlapping holes merge, and every hole stays on screen
+  // so the outline isn't cut off at the edges of a full-width field or the dock.
+  // A card in the results sheet is cut off where the sheet's scroll area ends (above the dock), so is its hole.
+  const clip = e => { const q = e.getBoundingClientRect(), c = $('read').contains(e) && $('read').getBoundingClientRect();
+    return c ? { left: q.left, right: q.right, top: Math.max(q.top, c.top + pad), bottom: Math.min(q.bottom, c.bottom - pad - 2) } : q; };
+  let holes = !r ? [] : W <= 640 ? tourEls().map(clip) : [r];
+  holes = holes.map(q => ({ l: Math.max(2, q.left - pad), t: Math.max(2, q.top - pad), r: Math.min(W - 2, q.right + pad), b: Math.min(H - 2, q.bottom + pad) }))
+    .filter(q => q.r > q.l && q.b > q.t).sort((a, b) => a.t - b.t)
+    .reduce((m, q) => { const p = m[m.length - 1]; if (p && q.t <= p.b && q.l <= p.r && q.r >= p.l) Object.assign(p, { l: Math.min(p.l, q.l), r: Math.max(p.r, q.r), b: Math.max(p.b, q.b) }); else m.push(q); return m; }, []);
   let d = `M0 0H${W}V${H}H0Z`;
-  if (r) {
-    const x = r.left - pad, y = r.top - pad, w = r.right - r.left + pad * 2, h = r.bottom - r.top + pad * 2;
-    d += `M${x} ${y}h${w}v${h}h${-w}Z`;
-    Object.assign(ring.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', display: '' });
-  } else ring.style.display = 'none';
+  holes.forEach(q => { d += `M${q.l} ${q.t}h${q.r - q.l}v${q.b - q.t}h${q.l - q.r}Z`; });
+  let rings = [...tour.el.querySelectorAll('.ring')];
+  while (rings.length < holes.length) { const e = document.createElement('div'); e.className = 'ring'; tour.el.insertBefore(e, card); rings.push(e); }
+  rings.forEach((e, k) => { const q = holes[k];
+    if (q) Object.assign(e.style, { left: q.l + 'px', top: q.t + 'px', width: q.r - q.l + 'px', height: q.b - q.t + 'px', display: '' });
+    else e.style.display = 'none'; });
   path.setAttribute('d', d);
   // Phones: the card is a bottom sheet (CSS). When the spotlight reaches down there (the playback dock), it moves to the
   // lowest open band between the lit-up parts (between the field and the dock), or the top of the screen.
