@@ -260,6 +260,17 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .optsheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .optsheet-head b { font-family: var(--f-display); font-weight: 800; font-size: 20px; text-transform: uppercase; line-height: 1; }
 .optscrim { position: fixed; inset: 0; z-index: 39; background: transparent; }
+/* ≥ 700 px: Field options joins the chip row at the chips' height (the shape · rush line drops underneath) so it reads as part of the defense controls */
+@media (min-width: 700px) {
+  .tray { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; }
+  .cards { grid-row: 1; flex-wrap: wrap; overflow: visible; } /* wrap, not scroll: a clipped chip beside the button looked cut off (7v7 has six) */
+  .defline { display: contents; }
+  #covLine { grid-column: 1 / -1; grid-row: 2; }
+  .optbtn { grid-column: 2; grid-row: 1; margin-left: 0; height: 48px; padding: 0 16px 0 14px; border-width: 1.5px; font-size: 14px; }
+  .optbtn .ol-chev { display: inline; transform: rotate(-90deg); }
+  .optbtn[aria-expanded="true"] .ol-chev { transform: rotate(90deg); }
+  .optsheet { bottom: calc(100% + 8px); }
+}
 .toggles { display: grid; gap: 8px; }
 .tog { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 4px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-size: 15px; font-weight: 600; cursor: pointer; }
 .tog input { accent-color: var(--accent); margin: 0; width: 20px; height: 20px; order: 2; }
