@@ -409,6 +409,14 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .status { font-size: 13px; color: var(--muted); min-height: 1.2em; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .status.err { color: var(--bad); }
 .preview-img { max-height: 160px; border-radius: 8px; border: 1px solid var(--line); justify-self: start; }
+.pane .soon { font-size: 13px; margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--chip); color: var(--muted); }
+.batch { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.batch li { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; font-size: 13px; }
+.batch img { grid-row: 1 / 3; width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.batch .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.batch .st { color: var(--muted); }
+.batch .st.ok { color: var(--good); }
+.batch .st.err { color: var(--bad); }
 .sharebox { display: grid; gap: 6px; }
 .details { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; }
 .details > div { display: grid; gap: 4px; min-width: 0; }
@@ -3526,9 +3534,11 @@ async function openStudio(tab) {
     </div>
     <div class="pane" data-pane="image" hidden>
       <p class="muted">Upload a screenshot or photo of a play card. The AI reads the players, routes, motion and fakes, and draws it as a draft you can test and save.</p>
-      <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'}>
-      <p class="muted">Play diagrams only: photos that show people are rejected. See the <a href="terms.html" target="_blank" rel="noopener">Terms</a>.</p>
+      <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'} ${img && canBatch() ? 'multiple' : ''}>
+      <p class="muted">${canBatch() ? `Pick up to ${BATCH_MAX} at once: each one is drawn and saved to My plays.` : `With a free account, pick up to ${BATCH_MAX} diagrams at once.`} Play diagrams only: photos that show people are rejected. See the <a href="terms.html" target="_blank" rel="noopener">Terms</a>.</p>
+      <p class="soon"><b>Coming soon:</b> upload a whole playbook as a PDF.</p>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
+      <ol class="batch" id="imgList" hidden></ol>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
       ${img && !account.user ? `<p class="muted">${FREE_NOTE()}</p>` : ''}
       <p class="status${img ? '' : ' err'}" id="imgStatus">${img ? '' : sample ? 'Reading images isn’t available here. Describe the play instead.' : AI_UNAVAILABLE}</p>
@@ -3576,19 +3586,26 @@ async function openStudio(tab) {
     if ($('aiGo')) $('aiGo').disabled = false;
   });
 
-  let file = null;
+  let files = [];
   $('imgFile').addEventListener('change', e => {
-    file = e.target.files[0] || null;
-    const pv = $('imgPrev');
-    if (file) { pv.src = URL.createObjectURL(file); pv.hidden = false; } else pv.hidden = true;
-    $('imgGo').disabled = !file;
+    const picked = [...e.target.files], st = $('imgStatus');
+    files = picked.slice(0, canBatch() ? BATCH_MAX : 1);
+    const pv = $('imgPrev'), list = $('imgList');
+    pv.hidden = files.length !== 1;
+    if (files.length === 1) pv.src = URL.createObjectURL(files[0]);
+    list.hidden = files.length < 2;
+    list.innerHTML = files.length < 2 ? '' : files.map(f => `<li><img src="${URL.createObjectURL(f)}" alt=""><span class="nm">${esc(f.name)}</span><span class="st">Waiting</span></li>`).join('');
+    st.className = 'status'; st.textContent = picked.length > files.length ? `Only the first ${BATCH_MAX} will be read. Pick the rest after these are done.` : '';
+    $('imgGo').textContent = files.length > 1 ? `Read ${files.length} diagrams` : 'Read this diagram';
+    $('imgGo').disabled = !files.length;
   });
   $('imgGo').addEventListener('click', async () => {
     const st = $('imgStatus');
     if (aiBlocked('photo')) return;
-    $('imgGo').disabled = true;
-    await draft('image', { image: file }, st);
-    if ($('imgGo')) $('imgGo').disabled = false;
+    $('imgGo').disabled = true; $('imgFile').disabled = true;
+    if (files.length > 1) await readMany(files);
+    else await draft('image', { image: files[0] }, st);
+    if ($('imgGo')) { $('imgGo').disabled = false; $('imgFile').disabled = false; }
   });
 
   $('jsonFile').addEventListener('change', async e => {
@@ -3612,6 +3629,61 @@ async function openStudio(tab) {
       st.textContent = err instanceof SyntaxError ? 'That file isn’t valid JSON.' : (err.message || 'Those plays couldn’t be imported.');
     }
   });
+}
+
+/* Several diagrams at once (signed in only, see canBatch): read one after another, and save each play to My plays in BATCH_GROUP,
+   since only one draft can be on the field at a time. Each counts as one AI draft against the Worker's daily limits,
+   so BATCH_MAX matches DAILY_LIMIT_PER_IP; a limit or a block stops the rest. Closing the dialog cancels what's left. */
+const BATCH_MAX = 5;
+const BATCH_GROUP = 'From diagrams';
+const BATCH_STOP = /^(daily_limit|daily_limit_ip|free_draft_used|anon_limit|blocked|signed_out|rate_limited|unavailable)$/;
+// Clerk's live key doesn't load on localhost, so nobody is signed in there: for local testing, the owner token
+// (#owner=..., ai.js) turns batches on and the plays go to this browser's My plays.
+const canBatch = () => !!account.user || (gate.open && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && !!ownerToken());
+async function readMany(files) {
+  const ai = aiProvider(), st = $('imgStatus'), rows = [...$('imgList').children];
+  if (aiCtl) aiCtl.abort();
+  const ctl = aiCtl = new AbortController();
+  const mark = (row, text, cls) => { const el = row.querySelector('.st'); el.textContent = text; el.className = 'st' + (cls ? ' ' + cls : ''); };
+  const saved = [];
+  let stop = null;
+  for (let i = 0; i < files.length; i++) {
+    if (ctl.signal.aborted) return;
+    if (stop) { mark(rows[i], 'Not read', 'err'); continue; }
+    st.className = 'status'; st.textContent = `Reading diagram ${i + 1} of ${files.length}…`;
+    mark(rows[i], 'Drawing…');
+    const t0 = performance.now();
+    track('ai_draft_start', { input: 'image_batch', signed_in: !!account.user, free_draft: false });
+    try {
+      if (!ai) throw { code: 'unavailable' };
+      const { play: raw, photo } = await ai.json({ image: files[i] }, { signal: ctl.signal });
+      const p = normalizePlay(raw, 'u' + rid());
+      if (photo) p.photo = photo;
+      p.series = 'mine'; p.group = BATCH_GROUP; delete p.num;
+      track('ai_draft_success', { input: 'image_batch', latency_ms: Math.round(performance.now() - t0), play_type: p.type, player_count: p.players.length, free_draft: false });
+      await store.saveMine(p);
+      p.mine = true; library.mine.push(p); library.version++;
+      saved.push(p);
+      if (!ctl.signal.aborted) mark(rows[i], 'Saved: ' + p.name, 'ok');
+    } catch (e) {
+      if (ctl.signal.aborted || (e && e.code === 'cancelled')) return;
+      track('ai_draft_error', { input: 'image_batch', error_code: (e && e.code) || 'invalid_play', latency_ms: Math.round(performance.now() - t0), free_draft: false });
+      mark(rows[i], aiError(e && e.code === 'refused' ? { code: 'refused_image' } : e), 'err');
+      if (e && BATCH_STOP.test(e.code)) stop = e;
+    }
+  }
+  if (aiCtl === ctl) aiCtl = null;
+  if (saved.length) track('import_plays', { play_count: saved.length, storage: account.user ? 'account' : 'local', source: 'diagrams' });
+  st.className = saved.length ? 'status' : 'status err';
+  st.textContent = saved.length
+    ? `Saved ${saved.length} of ${files.length} to My plays, in the group “${BATCH_GROUP}”.${stop ? ' ' + aiError(stop) : ''}`
+    : stop ? aiError(stop) : 'None of those could be read. Try clearer photos or screenshots of just the play.';
+  if (saved.length) {
+    const b = document.createElement('button');
+    b.className = 'act primary'; b.textContent = 'Open the first one';
+    b.addEventListener('click', () => { closeDialog(); loadPlay(saved[0]); });
+    $('imgGo').replaceWith(b);
+  }
 }
 
 /* ---------- save, delete, favorite ---------- */
