@@ -380,6 +380,19 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 .sug p { margin: 0; font-size: 14px; }
 .sug .muted { color: var(--muted); font-size: 13px; }
 .sug-actions { display: flex; gap: 8px; }
+/* "You tried" strip: the last route fix, Undo, and "Did this help?" once the coach watched it */
+.tried { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 10px; padding: 12px; display: grid; gap: 8px; margin-bottom: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--paper)); }
+.tried .eyebrow { display: block; margin-bottom: 1px; }
+.tried p { margin: 0; font-size: 14px; }
+.tried .muted { color: var(--muted); font-size: 13px; }
+.tried-row { display: flex; align-items: center; gap: 8px; }
+.tried-rate { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.thumb { border: 1px solid var(--line); background: var(--panel); border-radius: 99px; min-width: 44px; height: 38px; font-size: 18px; cursor: pointer; filter: grayscale(.6); opacity: .8; }
+.thumb:hover { border-color: var(--accent); filter: none; opacity: 1; }
+.thumb[aria-pressed="true"] { filter: none; opacity: 1; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
+.reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.chipbtn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 99px; padding: 7px 12px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 36px; }
+.chipbtn:hover { border-color: var(--accent); }
 .btn { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .btn.ghosty { background: transparent; color: var(--accent); border: 1px solid var(--line); }
 .btn:hover { filter: brightness(1.08); }
@@ -511,6 +524,12 @@ span.beta { cursor: default; margin-left: 4px; }
 .offer b { flex: 1 1 auto; }
 .offer .act { min-height: 44px; }
 .offer .linkbtn { color: var(--paper); min-height: 44px; }
+.fixask-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 10px 12px 14px; border-radius: 12px; background: var(--ink); color: var(--paper); }
+.fixask-in .linkbtn { color: var(--paper); min-height: 36px; }
+.fixask-in .fa-q { flex: 1 1 140px; min-width: 0; }
+.fixask-in .fa-q small { display: block; font-size: 12px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fixask-in .fa-x { padding: 0 6px; font-size: 16px; }
+.fixask-in .chipbtn { background: color-mix(in srgb, var(--paper) 14%, transparent); border-color: transparent; color: var(--paper); }
 /* Account nudges (signed out): an inline card in the results */
 .card.nudge { background: color-mix(in srgb, var(--hole) 22%, var(--panel)); border-color: var(--hole-edge); gap: 8px; }
 .card.nudge p { margin: 0; }
@@ -1863,7 +1882,7 @@ try {
 const state = {
   basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
   cov: 'c2', blitz: false, rusher: 'R', c1: 'man', holes: true, t: 0, playing: false, speed: 0.5, loop: false, nudges: {},
-  run: null, scout: {}, sugs: []
+  run: null, scout: {}, sugs: [], tried: null
 };
 const $ = id => document.getElementById(id);
 const svg = $('field');
@@ -2246,7 +2265,7 @@ function tick(ts) {
     const nt = state.t + dt * state.speed;
     if (nt >= tEnd()) {
       setT(tEnd());
-      if (!completed) { completed = true; track('play_complete', { ...covInfo(), ...playInfo() }); }   // once per Play press, not per loop
+      if (!completed) { completed = true; track('play_complete', { ...covInfo(), ...playInfo() }); watchedFix(); }   // once per Play press, not per loop
       if (!state.loop || tour.on) { stop(); return; }   // the tour waits for playback to end
       holdUntil = ts + LOOP_HOLD * 1000;
     } else setT(nt);
@@ -2365,7 +2384,7 @@ function pitchNote() {
   return `<div class="card"><p class="src">Heads up: this play tosses the ball to the runner. Many 7v7 leagues only allow a direct handoff behind the line, so check your league's rules.</p></div>`;
 }
 function sugsHtml(g, cov) {
-  let h = `<div class="card sug-card"><h3>Coach's adjustments</h3>`;
+  let h = `<div class="card sug-card"><h3>Coach's adjustments</h3>` + triedHtml();
   if (!state.sugs.length) {
     h += g === 'A'
       ? `<p class="empty">This play already beats ${cov.name}. Run it as drawn.</p>`
@@ -2387,6 +2406,122 @@ function sugsHtml(g, cov) {
 
   return h;
 }
+
+/* ---------- fix feedback (FIX_FEEDBACK_PLAN.md) ----------
+   state.tried is the last route fix the coach tried. The "You tried" strip at the top of Coach's adjustments keeps it on screen
+   (the fix list is recomputed for the changed play) with Undo and a one-tap 👍 / 👎 beside it, the same on every screen size.
+   Only a 👎 opens a small card in the strip asking what was off.
+   Every signal goes to GA as fix_feedback with the fix's signature: engine route names and built-in ids only, never a coach's
+   own route or play names. Signals: up, down, reason, dismiss, undo, reset, replaced, kept. Never during the tour. */
+const FIX_REASONS = [['grade', 'Grade looks wrong'], ['defense', 'Defense wouldn’t play it that way'], ['players', 'Too hard for my players'], ['idea', 'Changes what the play is for'], ['other', 'Something else']];
+const lookKey = () => [state.cov, state.rusher, state.blitz, JSON.stringify(state.nudges)].join('|');
+const touring = () => { try { return tour.on; } catch (e) { return false; } };
+// one vote per fix per browser (it can be changed): signature → 'up' | 'down'
+function fixVotes(set) {
+  try { if (set) localStorage.setItem('og-fixvotes', JSON.stringify(set)); return JSON.parse(localStorage.getItem('og-fixvotes')) || {}; } catch (e) { return set || {}; }
+}
+function spotOf(pl) {
+  const F = fmtOf(state.play), [x, y] = pl.start;
+  return pl.id === 'C' ? 'center' : y < -1 ? 'back' : Math.abs(x - F.w / 2) >= F.w / 2 - 6 ? 'wide' : 'slot';
+}
+// a route's family when its name is one of the engine's routes, else 'custom' (a coach's or the AI's route name stays out of GA)
+const routeBase = n => String(n).replace(/\s*\(.*?\)/g, '').replace(/\s+(left|right)$/i, '').trim().toLowerCase();
+const famOf = name => (ROUTES.find(R => routeBase(R.name) === routeBase(name)) || { fam: 'custom' }).fam;
+function startTried(sg, pl) {
+  const prev = state.tried;
+  if (prev && prev.id === sg.id && !prev.vote && prev.look === lookKey()) fixSignal('replaced', prev);
+  if (touring()) { state.tried = null; return; }
+  const g = state.run.ev.grade, base = state.basePlay;
+  const key = [base.id, state.cov, state.rusher, state.blitz ? 'b' : '', sg.id, sg.to].join(':');
+  const params = {
+    ...playInfo(), format: fmtOf(state.play).id, coverage: state.cov, rusher: state.rusher, blitz: state.blitz,
+    player_id: sg.id, spot: spotOf(pl), route_to: sg.to, route_fam: sg.fam || 'run', from_fam: sg.fam ? famOf(pl.routeName) : 'run',
+    grade: g, grade_after: sg.ev.grade, gain: Math.round(sg.gain * 100) / 100,
+    ...(builtIn(base) ? { route_from: pl.routeName } : {})
+  };
+  state.tried = {
+    id: sg.id, to: sg.to, before: g, after: sg.ev.grade, key, params, look: lookKey(), at: Date.now(),
+    prevRoute: clone(pl.route), prevName: pl.routeName, prevChange: state.changes[sg.id] ? clone(state.changes[sg.id]) : null,
+    watched: false, vote: fixVotes()[key] || null, reason: null, asking: false
+  };
+}
+// the coach's tried fix, when it belongs to the look on the field now
+const liveTried = () => state.tried && state.tried.look === lookKey() ? state.tried : null;
+function fixSignal(signal, t = state.tried, extra = {}) {
+  if (!t) return;
+  track('fix_feedback', { signal, ...t.params, watched: t.watched, secs: Math.round((Date.now() - t.at) / 1000), ...extra });
+  if (['up', 'down', 'reason'].includes(signal)) sendFixVote(signal, t, extra.reason);
+}
+// The explicit signals (👍, 👎, a reason) also go to the Worker (POST /feedback, stored in D1 so fixes that keep getting a 👎 can be
+// flagged; worker/src/feedback.js). Same fields as GA, engine vocabulary only: play_id only for built-in plays, never route_from.
+// Fire and forget. Not when AI is off, during the tour, or when the coach turned usage statistics off (Your data, GPC): privacy.html
+// lists fix ratings under that switch. Signed in, the vote is tied to the account (Your data export and delete cover it).
+async function sendFixVote(signal, t, reason) {
+  if (!AI_ENDPOINT || touring() || window['ga-disable-G-1T9DMC15V7']) return;
+  const p = t.params;
+  const body = { signal, format: p.format, coverage: p.coverage, rusher: p.rusher, blitz: !!p.blitz, player_id: p.player_id, spot: p.spot,
+    from_fam: p.from_fam, route_to: p.route_to, route_fam: p.route_fam, grade: p.grade, grade_after: p.grade_after, gain: p.gain,
+    watched: !!t.watched, ...(p.play_id ? { play_id: p.play_id } : {}), ...(signal === 'reason' ? { reason } : {}) };
+  try {
+    const tok = await authToken();
+    fetch(AI_ENDPOINT.replace(/\/$/, '') + '/feedback', {
+      method: 'POST', keepalive: true, body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) }
+    }).catch(() => {});
+  } catch (e) {}
+}
+const thumbsHtml = t => ['up', 'down'].map(v => `<button class="thumb" data-fixvote="${v}" aria-pressed="${t.vote === v}" aria-label="${v === 'up' ? 'This fix helped' : 'This fix didn’t help'}">${v === 'up' ? '👍' : '👎'}</button>`).join('');
+function triedHtml() {
+  const t = liveTried();
+  if (!t) return '';   // tried against another look: hidden until the coach switches back
+  const pl = playerById(t.id);
+  const delta = t.after === t.before ? `<span class="delta room">More room</span>`
+    : `<span class="delta"><span class="g${t.before}">${t.before}</span> <span class="arrow">→</span> <span class="g${t.after}">${t.after}</span></span>`;
+  return `<div class="tried"><div class="sug-top">${dotFor(pl)}<span><span class="eyebrow">You tried</span><b>${pl.label}</b> ${esc(t.prevName)} <span class="arrow">→</span> <b>${esc(t.to)}</b></span>${delta}</div>
+    <div class="tried-row"><button class="btn ghosty" data-fixundo>Undo</button><span class="tried-rate"><span>${t.vote ? 'Thanks!' : 'Helpful?'}</span>${thumbsHtml(t)}</span></div>${t.asking || t.thanking ? `<div class="fixask-in" role="group" aria-label="What was off with this fix?">${askHtml(t)}</div>` : ''}</div>`;
+}
+function voteFix(v) {
+  const t = state.tried; if (!t || t.vote === v) return;
+  const changed = !!t.vote;
+  t.vote = v; t.reason = null;
+  const all = fixVotes(); all[t.key] = v; fixVotes(all);
+  fixSignal(v, t, changed ? { changed: true } : {});
+  t.asking = v === 'down';   // only a 👎 asks for more
+  renderRead();
+}
+function reasonFix(r) {
+  const t = state.tried; if (!t || t.vote !== 'down') return;
+  t.reason = r; fixSignal('reason', t, { reason: r });
+  fixAsk(true);
+}
+function undoFix() {
+  const t = state.tried; if (!t) return;
+  const pl = playerById(t.id);
+  pl.route = t.prevRoute; pl.routeName = t.prevName;
+  if (t.prevChange) state.changes[t.id] = t.prevChange; else delete state.changes[t.id];
+  if (!t.vote) fixSignal('undo', t);
+  state.tried = null;
+  stop(); recompute(); setT(0);
+}
+// sent with the vote: did the coach watch the changed play to the end before rating it?
+function watchedFix() { if (state.tried) state.tried.watched = true; }
+// After a 👎: a small card in the strip asks what was off (one tap, or ✕ to skip), then thanks and goes.
+const askHtml = t => t.thanking ? `<span class="fa-q"><b>Thanks. We’ll look at this fix.</b></span>`
+  : `<span class="fa-q"><b>What was off?</b><small>Optional. It helps us fix our fixes.</small></span><button class="linkbtn fa-x" data-fixdismiss aria-label="Skip">✕</button><div class="reasons">${FIX_REASONS.map(([k, l]) => `<button class="chipbtn" data-fixreason="${k}">${l}</button>`).join('')}</div>`;
+function fixAsk(thanks) {
+  const t = liveTried(); if (!t) return;
+  if (thanks) {
+    t.asking = false; t.thanking = true;
+    setTimeout(() => { t.thanking = false; renderRead(); }, 2000);
+  }
+  renderRead();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.fixask-in')) return;
+  const fr = e.target.closest('[data-fixreason]');
+  if (fr) reasonFix(fr.dataset.fixreason);
+  else if (e.target.closest('[data-fixdismiss]') && state.tried) { state.tried.asking = false; fixSignal('dismiss'); fixAsk(); }
+});
 const bestCache = {};
 function bestPlaysFor(covId) {
   // only plays of the same format: a 7v7 coverage says nothing about a 5v5 play
@@ -2591,7 +2726,7 @@ function buildSelect() {
 }
 function loadPlay(pl, cov, optionOn = false) {
   if (optionOn && pl.option) pl = withOption(pl);
-  state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {};
+  state.basePlay = clone(pl); state.play = clone(pl); state.changes = {}; state.nudges = {}; state.tried = null;
   if (!pl.draft) { try { localStorage.setItem('og-play', pl.id); } catch (err) {} }
   if (cov !== undefined) state.cov = cov;
   state.cov = fitCov(state.cov, state.play);
@@ -2612,10 +2747,13 @@ $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
   const pb = e.target.closest('[data-play]'); if (pb) { pickPlay(pb.dataset.play, 'read_panel'); return; }
   const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', { ...covInfo(), source: 'read_panel' }); return; }
+  const fv = e.target.closest('[data-fixvote]'); if (fv) { voteFix(fv.dataset.fixvote); return; }
+  if (e.target.closest('[data-fixundo]')) { undoFix(); return; }
   const sb = e.target.closest('[data-sug]');
   if (sb) {
     const sg = state.sugs[+sb.dataset.sug];
     const pl = playerById(sg.id);
+    startTried(sg, pl);
     // route_from only for built-in plays: a coach's or the AI's route names are free text
     track('apply_suggestion', { ...covInfo(), ...playInfo(), route_to: sg.to, grade_after: sg.ev.grade, ...(builtIn(state.basePlay) ? { route_from: sg.from } : {}) });
     if (!state.changes[sg.id]) state.changes[sg.id] = { from: state.basePlay.players.find(p => p.id === sg.id).routeName };
@@ -2630,7 +2768,10 @@ $('optBtn').addEventListener('click', () => {
   if (pl && pl.option) { loadPlay(pl, undefined, !state.basePlay.optionOn); track('toggle_option', { value: !!state.basePlay.optionOn, play_id: pl.id }); }
 });
 $('playTags').addEventListener('click', e => {
-  if (e.target.id === 'resetPlay') { track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
+  if (e.target.id === 'resetPlay') {
+    if (state.tried && !state.tried.vote) fixSignal('reset');
+    state.tried = null;
+    track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
 });
 $('c1Sel').addEventListener('change', e => {
   state.c1 = e.target.value;
@@ -3703,6 +3844,7 @@ async function saveCurrentAsMine() {
   const edited = Object.keys(state.changes).length > 0 && !state.play.draft && !state.play.shared;
   const source = state.play.draft ? 'draft_' + (draftInput || 'text') : state.play.shared ? 'shared' : edited ? 'edited' : 'copy';
   const p = stripFlags(state.play);
+  const kept = state.tried && state.changes[state.tried.id] ? state.tried : null;   // the saved play keeps the fix the coach last tried
   p.id = state.play.draft ? state.basePlay.id.replace(/^d/, 'u') : 'u' + rid();
   p.series = 'mine';
   p.name = (edited ? `${p.name.replace(/^\d+\s*·\s*/, '')} (edited)` : p.name).slice(0, 80);
@@ -3714,6 +3856,7 @@ async function saveCurrentAsMine() {
     p.mine = true; library.mine.push(p); library.version++;
     loadPlay(p);
     toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
+    if (kept) fixSignal('kept', kept);
     track('save_play', { source, storage: account.user ? 'account' : 'local', play_type: p.type, my_plays: library.mine.length });
     return true;
   } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); return false; }
@@ -4034,14 +4177,14 @@ function openYourData() {
   const signedIn = !!account.user;
   openDialog(`${dlgHead('Your data')}
     <div class="pane">
-      <label class="tog"><input type="checkbox" id="gaOn" ${off ? '' : 'checked'} ${gpc ? 'disabled' : ''}> Share usage statistics (Google Analytics and Google Ads measurement)</label>
-      <p class="muted">${gpc ? 'Your browser sends Global Privacy Control, so Open Grass doesn’t load analytics here.' : 'Anonymous counts of which features coaches use. Never your plays, play names, descriptions or email. Applies to this browser.'}</p>
+      <label class="tog"><input type="checkbox" id="gaOn" ${off ? '' : 'checked'} ${gpc ? 'disabled' : ''}> Share usage statistics (Google Analytics, Google Ads measurement and fix ratings)</label>
+      <p class="muted">${gpc ? 'Your browser sends Global Privacy Control, so Open Grass doesn’t load analytics here.' : 'Anonymous counts of which features coaches use, and your 👍 / 👎 on suggested fixes. Never your plays, play names, descriptions or email. Applies to this browser.'}</p>
     </div>
     ${signedIn ? `<div class="pane">
       <div><button class="act" id="acctExport">Download my account data (.json)</button></div>
-      <p class="muted">Your plays, favorites, photo list and AI draft history.</p>
+      <p class="muted">Your plays, favorites, photo list, AI draft history and fix ratings.</p>
       <div><button class="act danger" id="acctDelete">Delete my account</button></div>
-      <p class="muted">Permanently deletes your account, plays, favorites and play-card photos. This can’t be undone.</p>
+      <p class="muted">Permanently deletes your account, plays, favorites and play-card photos (fix ratings stay, without your account). This can’t be undone.</p>
       <p class="status" id="dataStatus"></p>
     </div>` : `<div class="pane">
       <p class="muted">You’re not signed in, so your plays and favorites are only in this browser. We don’t store them.</p>
@@ -4090,7 +4233,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k.startsWith('og-nudge-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k === 'og-fixvotes' || k.startsWith('og-nudge-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
         sessionStorage.removeItem('og-visit');
       } catch (e) {}
       location.replace(location.pathname);
