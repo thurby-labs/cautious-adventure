@@ -4573,16 +4573,22 @@ function tourDemo() {
     <p class="tour-demo-note">Tour demo · nothing is sent or saved</p>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true">Describe it</button>
-      <button class="tab" role="tab" aria-selected="false" disabled>From a diagram</button>
-      <button class="tab" role="tab" aria-selected="false" disabled>Import file</button>
+      <button class="tab" role="tab" aria-selected="false" data-real="image">From a diagram</button>
+      <button class="tab" role="tab" aria-selected="false" data-real="file">Import file</button>
     </div>
     <div class="pane">
       <label class="eyebrow" for="tourText">Describe the play in your own words</label>
       <textarea id="tourText" readonly></textarea>
       <div><button class="act primary" id="tourDraw" disabled>Draw this play</button></div>
-      <p class="muted">Or use <b>From a diagram</b> to snap a photo of a play card.</p>
+      <p class="muted">Or tap <b>From a diagram</b> to upload a photo of your own play card (that ends the tour).</p>
       <p class="status" id="tourStatus"></p>
     </div>`, () => { if (tour.on && tour.i === 4) tourShow(4); });
+  // The other tabs are real: they end the tour and open the actual New play dialog on that tab
+  $('dialog').querySelectorAll('[data-real]').forEach(b => b.addEventListener('click', () => {
+    track('tour_demo_tab', { tab: b.dataset.real });
+    endTour('complete');
+    openStudio(b.dataset.real);
+  }));
   const ta = $('tourText');
   let k = 0;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
