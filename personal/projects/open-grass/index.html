@@ -3239,10 +3239,10 @@ async function authHeaders() {
   const t = await authToken();
   return t ? { Authorization: 'Bearer ' + t, ...(await gaHeader()) } : {};
 }
-// The Worker sends the sign_up event to GA itself (Measurement Protocol) when it creates a new account's row, so ad blockers,
-// the Internal traffic filter and sign-in redirects can't lose it. It needs this browser's GA client and session ids to tie the
-// sign-up to the visit (and the ad click). No header when analytics is off (og-no-analytics, GPC) or gtag.js didn't load: then
-// the Worker sends nothing.
+// sign_up (the Ads conversion) goes from this browser, in the visit's own session, when the Worker's reply says it just created
+// the account (X-OG-New; see accountApi). The Worker also sends a sign_up_server backup through the Measurement Protocol, which
+// needs this browser's GA client and session ids. No header when analytics is off (og-no-analytics, GPC) or gtag.js didn't
+// load: then the Worker sends nothing.
 // After a Google sign-up redirect the first account call can beat gtag.js, so wait up to 3 s for the ids.
 const ga = { cid: '', sid: '' };
 const gaReady = new Promise(resolve => {
@@ -3268,6 +3268,8 @@ async function accountApi(method, path, body, raw) {
       body: body ? JSON.stringify(body) : undefined
     });
   } catch (e) { throw { code: 'network' }; }
+  // Only the account's first call ever carries it, so this fires once per account (even after a sign-up redirect).
+  if (res.headers.get('X-OG-New') === '1') track('sign_up', { method: 'clerk' });
   if (raw && res.ok) return res;
   const data = await res.json().catch(() => null);
   if (!res.ok) throw { code: (data && data.code) || 'upstream_error' };
@@ -3329,7 +3331,7 @@ async function startAccounts(onChange) {
       gtag('set', { user_id: id });
       gtag('set', 'user_properties', { signed_in: u ? 'yes' : 'no' });
     } catch (e) {}
-    // sign_up (the Ads conversion) is sent by the Worker when it creates the account (see gaHeader), not from here.
+    // sign_up (the Ads conversion) is sent by accountApi when the Worker says it created the account, not from here.
     if (u && !first) track('login', { method: 'clerk' });
     else if (!u && lastId) track('logout');
     first = false;
