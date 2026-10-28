@@ -175,18 +175,16 @@ body { background: var(--paper); color: var(--ink); font-family: var(--f-body); 
 button, select, input { font: inherit; color: inherit; }
 button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Header: a full-width bar. Phones show the wide wordmark logo; tablet and desktop the full logo and Tour. */
+/* Header: a full-width bar with the wide wordmark logo on every screen size; tablet and desktop add Tour. */
 .top { background: var(--panel); border-bottom: 1px solid var(--line); }
 /* One bar from 700 px up: logo, play picker, Test a play, Tour, Sign in, Sign up free. Phones wrap the play row under the logo line. */
 .top-in { max-width: 1320px; margin: 0 auto; padding: 8px 20px; min-height: 60px; display: flex; align-items: center; gap: 8px 12px; }
 .top-in .playrow { flex: 1; min-width: 0; }
 .brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.mark { height: 48px; width: auto; flex: none; display: block; }
-.mark-sm { display: none; width: auto; height: 34px; flex: none; box-sizing: content-box; }
+.mark-sm { display: block; width: auto; height: 38px; flex: none; box-sizing: content-box; }
 /* The wordmark's navy "OPEN" vanishes on the dark theme, so seat the logo on a light badge there. */
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; } :root:not([data-theme="light"]) .mark-sm { padding: 4px 8px; border-radius: 9px; } }
-:root[data-theme="dark"] :is(.mark, .mark-sm) { background: #EEF2EA; border-radius: 12px; padding: 4px 6px; }
-:root[data-theme="dark"] .mark-sm { padding: 4px 8px; border-radius: 9px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mark-sm { background: #EEF2EA; padding: 4px 8px; border-radius: 9px; } }
+:root[data-theme="dark"] .mark-sm { background: #EEF2EA; padding: 4px 8px; border-radius: 9px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .head-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .hbtn { height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -209,8 +207,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
   .head-actions { margin-left: auto; }
   .top-in .playrow { order: 3; flex-basis: 100%; padding-right: 4px; }
   /* phones: Sign in takes Tour's place (Tour stays in the footer) */
-  .mark, #tourBtn { display: none; }
-  .mark-sm { display: block; }
+  #tourBtn { display: none; }
+  .mark-sm { height: 34px; }
   .hbtn { padding: 0 10px; }
 }
 /* small phones: a smaller logo and tighter buttons keep Sign in and Create account on the logo line */
@@ -672,7 +670,6 @@ span.beta { cursor: default; margin-left: 4px; }
 <header class="top">
   <div class="top-in">
     <div class="brand">
-      <img class="mark" src="logo/open-grass-logo-header.png" width="79" height="56" alt="">
       <img class="mark-sm" src="logo/open-grass-wordmark.webp" width="127" height="34" alt="">
     </div>
     <div class="playrow">
