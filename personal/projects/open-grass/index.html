@@ -304,16 +304,19 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .playbtn:focus-visible { outline: 3px solid var(--hole); outline-offset: 2px; }
 .playbtn svg { width: 18px; height: 18px; fill: currentColor; flex: none; }
 /* Big Run play button on the field whenever the play is stopped at the snap, like a video poster */
-.fieldplay { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 8px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; font-family: var(--f-display); font-size: 18px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+/* Run play on the field: a small ring and label side by side in the bottom-right corner of the backfield, where no player or
+   route sits on most plays (it used to cover the middle of the field; owner, 2026-10-28). The centre bottom is out: deep backs
+   line up there. --fp-bottom clears the floating dock on tablets. */
+.fieldplay { position: absolute; right: 12px; bottom: var(--fp-bottom, 12px); z-index: 2; display: grid; grid-auto-flow: column; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; font-family: var(--f-display); font-size: 18px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .fieldplay[hidden] { display: none; }
-.fieldplay .ring { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent), 0 10px 28px rgba(14,21,17,.35); }
-.fieldplay .ring svg { width: 34px; height: 34px; max-height: none; fill: currentColor; margin: 0; transform: translateX(3px); }   /* override .field-wrap svg (auto margin pushed the icon left); nudge the triangle to look centered */
+.fieldplay .ring { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent), 0 6px 16px rgba(14,21,17,.3); }
+.fieldplay .ring svg { width: 22px; height: 22px; max-height: none; fill: currentColor; margin: 0; transform: translateX(3px); }   /* override .field-wrap svg (auto margin pushed the icon left); nudge the triangle to look centered */
 .fieldplay .cap { padding: 3px 12px; border-radius: 999px; background: var(--panel); box-shadow: 0 4px 12px rgba(14,21,17,.22); }
 .fieldplay:hover .ring { filter: brightness(1.12); }
 .fieldplay:focus-visible .ring { outline: 3px solid var(--hole); outline-offset: 4px; }
 @media (prefers-reduced-motion: no-preference) {
   .fieldplay .ring { animation: fp-pulse 1.8s ease-in-out infinite; }
-  @keyframes fp-pulse { 50% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--accent) 12%, transparent), 0 10px 28px rgba(14,21,17,.35); } }
+  @keyframes fp-pulse { 50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent), 0 6px 16px rgba(14,21,17,.3); } }
 }
 .track { position: relative; padding-block: 14px 16px; }
 .track input { width: 100%; margin: 0; accent-color: var(--accent); }
@@ -351,6 +354,7 @@ button.mk:hover, button.mk:focus-visible { background: var(--paper); text-decora
 .g { font-family: var(--f-display); font-weight: 900; line-height: 1; }
 .gA, .gB { color: var(--good); } .gC { color: var(--warn); } .gD, .gF { color: var(--bad); }
 /* One line for every look (5 in 5v5, 6 in 7v7): long names wrap inside the tile */
+.scout-note { margin: 10px 0 0; font-size: 13px; line-height: 1.35; color: var(--muted); }
 .scout-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; }
 .sc { border: 1.5px solid var(--line); background: var(--paper); border-radius: 9px; padding: 6px 2px 5px; display: grid; justify-items: center; align-content: start; gap: 2px; cursor: pointer; }
 .sc[aria-pressed="true"] { border-color: var(--ink); }
@@ -543,7 +547,7 @@ span.beta { cursor: default; margin-left: 4px; }
 [data-stage="new"] .layout { grid-template-columns: minmax(0, 1fr); max-width: 760px; margin-inline: auto; width: 100%; }
 /* sign-in row + logo and intro ≈ 190 px above, the caption card ≈ 170 below: all of it on the first screen */
 [data-stage="new"] .field-wrap svg { max-height: max(300px, calc(100svh - 390px)); }
-@media (min-width: 700px) and (max-width: 979px) { [data-stage="new"] .field-wrap { padding-bottom: 0; } }
+@media (min-width: 700px) and (max-width: 979px) { [data-stage="new"] .field-wrap { padding-bottom: 0; --fp-bottom: 12px; } }
 /* Offered once after "Explore this sample first" */
 .offer { position: fixed; z-index: 35; left: 50%; transform: translateX(-50%); bottom: calc(16px + var(--dock-h) + var(--peek-h)); width: min(420px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px 10px 16px; background: var(--ink); color: var(--paper); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.3); }
 .offer b { flex: 1 1 auto; }
@@ -603,7 +607,9 @@ span.beta { cursor: default; margin-left: 4px; }
   .field-wrap svg { max-height: calc(100svh - 270px - var(--peek-h) - var(--dock-h)); }
   .pickbtn h2 { font-size: 18px; }
   .testbtn { padding: 0 14px; }
-  .testbtn .news .nl-long { display: none; }
+  /* the news pill shrinks to a dot so the play name keeps its room (the button's label still names the news) */
+  .testbtn { position: relative; }
+  .testbtn .news { position: absolute; top: 7px; right: 7px; width: 10px; height: 10px; padding: 0; font-size: 0; border-radius: 50%; }
   /* Field options: the line under the chips is one big tappable card (the button stretches over it) */
   .defline { position: relative; gap: 10px; min-height: 52px; padding: 6px 6px 6px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--muted); }
   .defline:has(.optbtn:hover), .defline:has(.optbtn[aria-expanded="true"]) { border-color: var(--muted); }
@@ -621,7 +627,8 @@ span.beta { cursor: default; margin-left: 4px; }
   .timeline .playbtn { width: 52px; min-width: 0; height: 52px; padding: 0; }
   .timeline .playbtn svg { width: 22px; height: 22px; }
   .timeline .playbtn .pl { display: none; }
-  .fieldplay .ring { width: 72px; height: 72px; }
+  .fieldplay .ring { width: 48px; height: 48px; }
+  .fieldplay .cap { display: none; }   /* ring only: the dock's play button sits right below, and the label would cover backs */
   .timeline .clock { min-width: 50px; }
   .timeline .clock b { font-size: 22px; }
   .timeline .clock span { font-size: 9px; letter-spacing: .05em; }
@@ -654,7 +661,7 @@ span.beta { cursor: default; margin-left: 4px; }
   .timeline { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2; border: 0; border-radius: 16px; background: color-mix(in srgb, var(--panel) 95%, transparent); box-shadow: 0 8px 24px rgba(14,21,17,.22); }
   .timeline .speed { display: flex; flex-direction: row; gap: 4px; }
   .timeline .speed .loop { margin-left: 4px; }
-  .field-wrap { padding-bottom: 56px; }
+  .field-wrap { padding-bottom: 56px; --fp-bottom: 96px; }
   .sheet[data-h="peek"] .read { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); padding-top: 0; }
   .sheet[data-h="peek"] .read > .card:nth-child(n+3) { display: none; }
   .sheet[data-h="peek"] .read > .card { border: 0; padding: 4px 0; background: none; }
@@ -757,6 +764,7 @@ span.beta { cursor: default; margin-left: 4px; }
           <button class="act" id="exportBtn" hidden title="Save your favorite plays as a playbook file or a scouting sheet"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export</button>
           <button class="act primary" id="saveDraftBtn" hidden>Save to My plays</button>
           <button class="act" id="photoBtn" hidden><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>Original diagram</button>
+          <button class="act" id="redoBtn" hidden title="Read this play from its diagram again"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Read diagram again</button>
           <button class="act" id="detailsBtn" hidden><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Number &amp; group</button>
           <button class="act danger" id="deletePlayBtn" hidden>Delete play</button>
         </div>
@@ -2330,7 +2338,11 @@ function renderRead() {
     const g = state.scout[c].grade;
     scout += `<button class="sc" aria-pressed="${state.cov === c}" data-cov="${c}"><span class="g g${g}">${g}</span><span>${tileName(covs, c)}</span></button>`;
   });
-  scout += `</div></div>`;
+  scout += `</div>`;
+  // the tiles grade the standard look; say so once the coach has dragged a defender and the badge no longer matches
+  const moved = Object.keys(state.nudges).length;
+  if (moved) scout += `<p class="scout-note"><b>Standard looks.</b> Your moved defender${moved > 1 ? 's change' : ' changes'} only the field and the grade at the top.</p>`;
+  scout += `</div>`;
 
   if (!cov) {
     $('read').innerHTML = `<div class="card verdict-card"><p class="empty">Drop a coverage on the field to see where this play wins and where it gets covered.</p></div>` + scout;
@@ -2608,6 +2620,7 @@ function renderHead() {
   $('deletePlayBtn').hidden = !state.play.mine;
   $('detailsBtn').hidden = !state.play.mine;
   $('photoBtn').hidden = !(state.play.photo && typeof account !== 'undefined' && account.user);
+  $('redoBtn').hidden = $('photoBtn').hidden || !state.play.mine;
   $('exportBtn').hidden = !library.favs.length;
   updateCards();
 }
@@ -4170,6 +4183,47 @@ async function saveCurrentAsMine() {
 }
 $('saveDraftBtn').addEventListener('click', () => saveCurrentAsMine());
 $('photoBtn').addEventListener('click', () => { if (state.play.photo) { showPhoto(state.play.photo, state.play.name); track('view_original_photo'); } });
+
+/* ---------- read one of My plays from its diagram again ----------
+   For a play the AI drew from a photo or a PDF page (it keeps that image as `photo`). The image goes back to POST /page, which
+   reads every play on it (one of the coach's PDF pages for the day); the play with the same number, or else the same name, or
+   the only one, replaces this play's players and routes. The coach's name, number and group stay. */
+function openRedo() {
+  const cur = library.mine.find(p => p.id === state.basePlay.id);
+  if (!cur || !cur.photo) return;
+  openDialog(`${dlgHead('Read diagram again')}
+    <p class="muted">The AI reads the diagram this play came from again and redraws its players and routes. Your name${cur.num ? ', number' : ''}${cur.group ? ' and group' : ''} stay. If the image is a whole playbook page, every play on it is read, and it uses one of your ${PDF_MAX_PICK} PDF pages for today.</p>
+    <div class="pdf-go"><button class="act primary" id="redoGo">Read it again</button><button class="act" data-close>Cancel</button></div>
+    <p class="status" id="redoStatus"></p>`);
+  $('redoGo').addEventListener('click', () => redoPlay(cur));
+}
+async function redoPlay(cur) {
+  const st = $('redoStatus'), go = $('redoGo'), ai = aiProvider();
+  go.disabled = true; go.textContent = 'Reading…';
+  st.className = 'status'; st.textContent = 'This takes up to a minute. Keep this window open.';
+  const fail = (msg, reason) => { if (!$('redoStatus')) return; st.className = 'status err'; st.textContent = msg; go.disabled = false; go.textContent = 'Read it again'; track('redo_diagram', { result: reason }); };
+  let found;
+  try {
+    if (!ai) throw { code: 'unavailable' };
+    const img = await (await accountApi('GET', '/photos/' + cur.photo, null, true)).blob();
+    const out = await ai.page(img);
+    found = out.plays.map(r => { try { return normalizePlay(r, 'u' + rid()); } catch (e) { return null; } }).filter(Boolean);
+  } catch (e) {
+    return fail(e && e.code === 'not_found' ? 'The diagram isn’t in your account anymore, so this play can’t be read again.' : aiError(e && e.code === 'refused' ? { code: 'refused_image' } : e), e && e.code || 'error');
+  }
+  const key = n => String(n || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const pick = (cur.num && found.find(p => p.num === cur.num)) || found.find(p => key(p.name) === key(cur.name)) || (found.length === 1 ? found[0] : null);
+  if (!pick) return fail(found.length ? `The diagram has ${found.length} plays and none matches this one’s number or name, so nothing changed.` : 'No play was found on the diagram, so nothing changed.', found.length ? 'no_match' : 'no_plays');
+  const next = stripFlags(cur);
+  for (const k of ['players', 'type', 'concept', 'handoff', 'format']) { if (pick[k] !== undefined) next[k] = pick[k]; else delete next[k]; }
+  try { await store.saveMine(next); } catch (e) { return fail('Couldn’t save the new reading. Try again.', 'save_failed'); }
+  next.mine = true;
+  library.mine = library.mine.map(p => p.id === next.id ? next : p); library.version++;
+  closeDialog(); loadPlay(next);
+  toast('Read again and saved.');
+  track('redo_diagram', { result: 'replaced', play_type: next.type });
+}
+$('redoBtn').addEventListener('click', openRedo);
 
 /* ---------- call number and group for one of My plays ---------- */
 function openDetails() {
