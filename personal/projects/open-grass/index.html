@@ -902,7 +902,7 @@ const PLAYS = [
   C_([15, 0], [[14, 4], [10.5, 11.3]], 'Bend left'),
   QB(15, -3, [[15.2, -3.3]], 'Hand off'),
   Z_([18.9, -1.4], [[12, -1.4], [9, 0], [8.3, 4], [8.3, 11.3]], 'Fake left (motion)', { dashed: true, motion: [[26.7, -1.4]], speed: 5.4 }),
-  X_([15, -7], [[12.3, -7], [15.5, -3.6], [21.3, 0], [23.4, 11.3]], 'Counter right', { shape: 'star', speed: 5.4 }) ] },
+  X_([15, -7], [[12.3, -7], [15.1, -4.5], [17.9, -2], [19.6, 0], [21.6, 4], [23.1, 8.5], [23.1, 11.3]], 'Counter right', { shape: 'star', speed: 5.4 }) ] },
 
 { num: 10, series: 'alternates', id: 'p20', name: 'Trips Right, X Motion, X Wheel', type: 'pass', concept: 'Motion wheel', players: [
   C_([15, 0], [[15, 2.2], [10.8, 2.6]], 'Out left (short)'),
@@ -1807,11 +1807,14 @@ function routeVariants(pl, F = FORMATS['5v5']) {
   const lead = pl.route.filter(p => p[1] < 0);            // keep any backfield action, like a play fake
   const base = lead.length ? lead[lead.length - 1] : pl.start;
   const bx = base[0];
-  const central = Math.abs(bx - MID) < 4;
+  // near the ball (backs, slots, the center) a receiver may run the flat and wheel; only one lined up right over the ball
+  // (within 1.5 yd) breaks either way. A slot 3 yards left of the ball runs his corner and out to the left: a "corner"
+  // breaking toward the middle is really a post (2026-10-28, owner).
+  const near = Math.abs(bx - MID) < 4, central = Math.abs(bx - MID) < 1.5;
   const dirs = central ? [[-1, 1, ' right'], [1, -1, ' left']] : [[bx < MID ? 1 : -1, bx < MID ? -1 : 1, '']];
   const list = [];
   for (const R of ROUTES) {
-    if (R.inside && !central) continue;
+    if (R.inside && !near) continue;
     const straight = R.key === 'go' || R.key === 'hitch';
     (straight ? dirs.slice(0, 1) : dirs).forEach(([i, o, tag]) => {
       const pts = R.pts(i, o).map(([dx, y]) => [clamp(bx + dx, 1, FIELD_W - 1), y]);
@@ -4047,7 +4050,7 @@ async function readPdf(doc, rows, group, ctl) {
   $('dialog').querySelectorAll('.pdf-pages li:not(.on)').forEach(r => { r.hidden = true; });
   const mark = (r, text, cls) => { const el = r.querySelector('.st'); el.textContent = text; el.className = 'st' + (cls ? ' ' + cls : ''); };
   const t0 = performance.now(), results = new Array(rows.length), saved = [];
-  let next = 0, flushed = 0, done = 0, ok = 0, skipped = 0, failed = 0, unsaved = 0, stop = null;
+  let next = 0, flushed = 0, done = 0, ok = 0, skipped = 0, failed = 0, unsaved = 0, bigNums = 0, stop = null;
   track('pdf_import_start', { page_count: doc.numPages, pages_picked: rows.length });
   // Save finished pages in page order, so the plays land in My plays in playbook order.
   const flush = async () => {
@@ -4077,6 +4080,7 @@ async function readPdf(doc, rows, group, ctl) {
         const out = await ai.page(await pdfPageImage(doc, pn, AI_MAX_EDGE), { signal: ctl.signal });
         let bad = 0;
         res.plays = out.plays.map(raw => {
+          if (Number(raw && raw.num) > 99) bigNums++;
           try {
             const p = normalizePlay({ ...raw, group }, 'u' + rid());
             if (out.photo) p.photo = out.photo;
@@ -4105,13 +4109,14 @@ async function readPdf(doc, rows, group, ctl) {
   if (aiCtl === ctl) aiCtl = null;
   track('pdf_import_done', { pages_picked: rows.length, pages_read: ok, pages_skipped: skipped, pages_failed: failed, play_count: saved.length, plays_unsaved: unsaved, stopped: stop ? stop.code : 'none', latency_ms: Math.round(performance.now() - t0) });
   if (saved.length) track('import_plays', { play_count: saved.length, storage: account.user ? 'account' : 'local', from: 'pdf' });
-  pdfReview(saved, group, stop, ok, skipped);
+  pdfReview(saved, group, stop, ok, skipped, bigNums);
 }
 // The last screen: what was saved, each with a Remove button, and the way into the first play.
-function pdfReview(saved, group, stop, read, skipped) {
+function pdfReview(saved, group, stop, read, skipped, bigNums = 0) {
   const pane = $('dialog') && $('dialog').querySelector('[data-pane="image"]');
   if (!pane) return;
-  const note = stop ? `<p class="status err">${aiError(stop)}</p>` : '';
+  const note = (stop ? `<p class="status err">${aiError(stop)}</p>` : '')
+    + (bigNums ? `<p class="muted">${bigNums} play number${bigNums === 1 ? ' was' : 's were'} over 99 and left off: play numbers go up to 99 for now.</p>` : '');
   if (!saved.length) {
     pane.innerHTML = `${note}<p class="status${stop ? '' : ' err'}">${stop ? '' : 'No plays were found on those pages. Pick the pages with play diagrams on them, or try a clearer copy of the PDF.'}</p><div><button class="act" id="pdfBack">Pick another file</button></div>`;
     $('pdfBack').addEventListener('click', () => openStudio('image'));
@@ -4172,7 +4177,7 @@ function openDetails() {
   if (!cur) return;
   const groups = myGroups();
   openDialog(`${dlgHead('Number &amp; group')}
-    <p class="muted">Number your plays to match your wristband or call sheet, and group them however you call them. Groups show up as sections in the play list.</p>
+    <p class="muted">Number your plays to match your wristband or call sheet (1 to 99 for now), and group them however you call them. Groups show up as sections in the play list.</p>
     <div class="details">
       <div><label class="eyebrow" for="dNum">Call #</label><input id="dNum" inputmode="numeric" maxlength="2" placeholder="—" value="${cur.num || ''}"></div>
       <div><label class="eyebrow" for="dName">Name</label><input id="dName" maxlength="80" value="${esc(cur.name)}"></div>
