@@ -201,6 +201,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
   .testbtn { width: 52px; padding: 0; justify-content: center; }
   .testbtn .tlabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .testbtn .news { position: absolute; top: -6px; right: -6px; }
+  .testbtn .news .nl { display: none; }
 }
 @media (max-width: 699px) {
   .top-in { flex-wrap: wrap; padding: 0 8px 10px 12px; column-gap: 8px; }
@@ -231,7 +232,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .testbtn:hover { filter: brightness(1.15); }
 /* What's new (studio.js NEWS): a "New" pill on Test a play for returning visitors */
 .testbtn { position: relative; }
-.testbtn .news { font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: .05em; text-transform: uppercase; padding: 3px 6px; border-radius: 99px; background: var(--warn); color: #15201A; }
+.testbtn .news { font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: .05em; text-transform: uppercase; padding: 3px 6px; border-radius: 99px; background: var(--warn); color: #15201A; white-space: nowrap; }
 
 /* Main grid */
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 20px; align-items: start; }
@@ -604,6 +605,7 @@ span.beta { cursor: default; margin-left: 4px; }
   .field-wrap svg { max-height: calc(100svh - 270px - var(--peek-h) - var(--dock-h)); }
   .pickbtn h2 { font-size: 18px; }
   .testbtn { padding: 0 14px; }
+  .testbtn .news .nl-long { display: none; }
   /* Field options: the line under the chips is one big tappable card (the button stretches over it) */
   .defline { position: relative; gap: 10px; min-height: 52px; padding: 6px 6px 6px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--muted); }
   .defline:has(.optbtn:hover), .defline:has(.optbtn[aria-expanded="true"]) { border-color: var(--muted); }
@@ -4439,13 +4441,15 @@ $('exportBtn').addEventListener('click', () => {
 });
 /* What's new: a "New" pill on Test a play for returning visitors (never on a first visit, when everything is new), until
    NEWS.until or until they open it once (og-news-<id>). Opening it from the pill lands on the tab the news is about. */
-const NEWS = { id: 'pdf', until: '2026-12-31', tab: 'image', label: 'Test a play. New: upload your playbook as a PDF' };
+// The pill names what's new (not the button's own action): "New: PDF upload", "New: PDF" on phones, "PDF" where the button is icon-only.
+const NEWS = { id: 'pdf', until: '2026-12-31', tab: 'image', label: 'Test a play. New: upload your playbook as a PDF',
+  pill: '<span class="nl">New: </span>PDF<span class="nl nl-long"> upload</span>' };
 const newsOn = () => {
   if (stage.now === 'new' || new Date().toISOString().slice(0, 10) > NEWS.until) return false;
   try { return !localStorage.getItem('og-news-' + NEWS.id); } catch (e) { return false; }
 };
 if (newsOn()) {
-  $('newPlayBtn').insertAdjacentHTML('beforeend', '<span class="news" aria-hidden="true">New</span>');
+  $('newPlayBtn').insertAdjacentHTML('beforeend', `<span class="news" aria-hidden="true">${NEWS.pill}</span>`);
   $('newPlayBtn').setAttribute('aria-label', NEWS.label);
   track('news_view', { id: NEWS.id });
 }
