@@ -200,6 +200,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 @media (min-width: 700px) and (max-width: 899px) {
   .testbtn { width: 52px; padding: 0; justify-content: center; }
   .testbtn .tlabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .testbtn .news { position: absolute; top: -6px; right: -6px; }
 }
 @media (max-width: 699px) {
   .top-in { flex-wrap: wrap; padding: 0 8px 10px 12px; column-gap: 8px; }
@@ -228,6 +229,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .testbtn { flex: none; min-height: 52px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 10px; background: var(--ink); color: var(--paper); font-weight: 700; cursor: pointer; white-space: nowrap; }
 .testbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
 .testbtn:hover { filter: brightness(1.15); }
+/* What's new (studio.js NEWS): a "New" pill on Test a play for returning visitors */
+.testbtn { position: relative; }
+.testbtn .news { font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: .05em; text-transform: uppercase; padding: 3px 6px; border-radius: 99px; background: var(--warn); color: #15201A; }
 
 /* Main grid */
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 20px; align-items: start; }
@@ -440,6 +444,28 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .batch .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .batch .st { color: var(--muted); }
 .batch .st.ok { color: var(--good); }
+/* PDF playbooks (studio.js openPdf): page picker, then the list of saved plays */
+.new-pill { display: inline-block; font-size: 11px; line-height: 1; padding: 3px 6px; margin-right: 4px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); vertical-align: 1px; text-transform: uppercase; letter-spacing: .04em; }
+.pdf-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pdf-group { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); flex: 1 1 220px; }
+.pdf-group input { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.pdf-pages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; max-height: 46vh; overflow-y: auto; }
+.pdf-pages li { display: grid; gap: 2px; font-size: 12px; }
+.pdf-pages li[hidden] { display: none; }
+.pdf-pages label { display: grid; gap: 4px; cursor: pointer; position: relative; }
+.pdf-pages input { position: absolute; top: 6px; left: 6px; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.pdf-pages .pg { display: block; aspect-ratio: 8.5 / 11; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; }
+.pdf-pages .pg img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.pdf-pages li:has(input:not(:checked)) .pg { opacity: .45; }
+.pdf-pages .cap { color: var(--muted); }
+.pdf-pages .st { color: var(--muted); }
+.pdf-pages .st.ok { color: var(--good); }
+.pdf-pages .st.err { color: var(--bad); }
+.pdf-go { display: flex; flex-wrap: wrap; gap: 8px; }
+.pdf-found { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.pdf-found li { display: grid; grid-template-columns: 64px 1fr auto auto; gap: 8px; align-items: center; font-size: 13px; }
+.pdf-found svg { width: 64px; height: 53px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.pdf-found .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .batch .st.err { color: var(--bad); }
 .sharebox { display: grid; gap: 6px; }
 .details { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; }
@@ -762,7 +788,7 @@ span.beta { cursor: default; margin-left: 4px; }
     <h2 id="aboutTitle">Test your flag football plays before game day</h2>
     <p class="lede">Open Grass tests the flag football plays you already have. Put a defense on your play, watch it run, and see exactly where the open grass is against Cover 1, Cover 2, Cover 3, Cover 4 and man coverage.</p>
     <div class="about-grid">
-      <div><h3>Bring your own playbook</h3><p>Keep drawing plays wherever you do now. Upload a screenshot from your play app or a photo of your play card or whiteboard, or just describe the play, and Open Grass puts it on the field. Sample plays are there to try it out.</p></div>
+      <div><h3>Bring your own playbook</h3><p>Keep drawing plays wherever you do now. Upload a screenshot from your play app, a photo of your play card or whiteboard, or your whole playbook as a PDF, or just describe the play, and Open Grass puts it on the field. Sample plays are there to try it out.</p></div>
       <div><h3>Watch the defense react</h3><p>Drag a coverage onto the field or move single defenders to match what the other team runs. Zone defenders guard their areas, man defenders chase their receiver, and a rusher comes after the QB from either side (or plays an extra safety when nobody rushes).</p></div>
       <div><h3>Find the hole</h3><p>A heatmap shows open grass before the snap and while the play runs, so you can see why a route is open, not just that it is.</p></div>
       <div><h3>Get a grade and a fix</h3><p>Every play gets an A–F grade against each coverage, a QB read order, and route changes you can try with one tap. Runs are graded too.</p></div>
@@ -3115,18 +3141,31 @@ function aiProvider() {
         if (img.size > AI_MAX_IMAGE) throw { code: 'image_too_large' };
         body = { image: { mediaType: img.type, data: await fileToBase64(img) } };
       } else body = { description: input.description };
-      let res;
-      try {
-        res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + '/draft', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}), ...(await authHeaders()) }, body: JSON.stringify(body), signal
-        });
-      } catch (e) { throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' }; }
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || !data.play) throw { code: (data && data.code) || 'upstream_error' };
+      const data = await aiPost('/draft', body, signal);
+      if (!data.play) throw { code: 'upstream_error' };
       return { play: data.play, photo: data.photo };
+    },
+    // One page of a PDF playbook, already drawn to an image (studio.js, pdfPageImage). Resolves to
+    // { plays: [raw play, ...], photo, skipped: 'no_plays' | 'people' | 'unclear' | undefined }; throws { code }.
+    async page(blob, { signal } = {}) {
+      if (blob.size > AI_MAX_IMAGE) throw { code: 'image_too_large' };
+      const data = await aiPost('/page', { page: { mediaType: blob.type, data: await fileToBase64(blob) } }, signal);
+      return { plays: Array.isArray(data.plays) ? data.plays : [], photo: data.photo, skipped: data.skipped };
     },
     limits: async () => ({ images: { mediaTypes: AI_IMAGE_TYPES } })
   };
+}
+
+async function aiPost(path, body, signal) {
+  let res;
+  try {
+    res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + path, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(ownerToken() ? { 'X-OG-Owner': ownerToken() } : {}), ...(await authHeaders()) }, body: JSON.stringify(body), signal
+    });
+  } catch (e) { throw { code: e && e.name === 'AbortError' ? 'cancelled' : 'network' }; }
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) throw { code: (data && data.code) || 'upstream_error' };
+  return data;
 }
 
 /* Every image is redrawn on a canvas before upload. That drops EXIF (GPS location, camera, time) and any other metadata,
@@ -3202,6 +3241,13 @@ const AI_ERRORS = {
   empty_completion: 'No answer came back. Add more detail and try again.', prompt_too_large: 'That’s too long. Shorten the description.',
   image_too_large: 'That image is too large. Try a screenshot or a smaller photo.',
   inappropriate: 'That can’t be used in Open Grass. Upload a play diagram or describe the play. Repeated uploads like this turn off AI drafting for the account.',
+  // PDF playbooks (POST /page): pages have their own daily budget (worker/wrangler.toml PDF_PAGES_PER_DAY, PDF_PAGES_DAILY)
+  page_limit: 'You’ve reached today’s PDF page limit. The rest can be read tomorrow: the plays already read are saved.',
+  page_limit_all: 'PDF reading is busy today. The plays already read are saved; try the rest tomorrow.',
+  pdf_unreadable: 'That PDF couldn’t be opened. If it has a password, save a copy without one and try again.',
+  too_many_plays: 'My plays is full (500 plays). Delete some to make room, then read the rest.',
+  save_failed: 'Some plays couldn’t be saved. Check your connection, then read the remaining pages again.',
+  pdf_too_large: 'That PDF is over 100 MB. Save it smaller (or split it) and try again.',
   blocked: 'AI drafting is turned off for this account because of content that isn’t allowed. If you think that’s a mistake, email opengrassllc@gmail.com.', network: 'Couldn’t reach the AI. Check your connection and try again.'
 };
 const aiError = e => e && e.code ? (AI_ERRORS[e.code] || (e.code === 'cancelled' ? '' : 'Something went wrong reaching the AI. Try again.')) : (e && e.message) || 'That play couldn’t be built. Try again.';
@@ -3607,6 +3653,7 @@ const GATE_COPY = {
   ai: 'You’ve used your free AI draft. With a free account, describe the rest of your playbook and test every play against every defense.',
   photo: 'You’ve used your free AI draft. With a free account, photograph the rest of your playbook and test every play against every defense.',
   anon_limit: 'Free AI drafts are busy today. With a free account, describe or photograph your playbook and test every play against every defense.',
+  pdf: 'Bring your whole playbook in at once: with a free account, upload it as a PDF and every play is drawn, saved and ready to test against every defense.',
   favorite: 'Star your go-to plays and they follow you to every device.',
   share: 'Send a link so assistant coaches and players can open the play and run it themselves.',
   save: `Without an account you can keep ${LOCAL_PLAY_LIMIT} plays in this browser. With one, save as many as you want, on any device.`,
@@ -3614,7 +3661,7 @@ const GATE_COPY = {
 };
 // The pitch is the coach's own playbook tested live against each defense; the sample library is a bonus.
 const perksHtml = () => `<ul class="perks">
-    <li><b>Bring your playbook:</b> snap a photo of a play card or describe the play, and it’s drawn for you</li>
+    <li><b>Bring your playbook:</b> upload it as a PDF, snap a photo of a play card, or describe the play, and it’s drawn for you</li>
     <li><b>See how it holds up</b> against Cover 1, 2, 3, 4 and Man: grades, open receivers and route fixes in real time</li>
     <li>Save every play, synced across your devices</li>
     <li>Share plays with your staff and players, plus all ${PLAYS.length} sample plays</li>
@@ -3689,10 +3736,10 @@ async function openStudio(tab) {
       <p class="status${sample ? '' : ' err'}" id="aiStatus">${sample ? '' : AI_UNAVAILABLE}</p>
     </div>
     <div class="pane" data-pane="image" hidden>
-      <p class="muted">Upload a screenshot or photo of a play card. The AI reads the players, routes, motion and fakes, and draws it as a draft you can test and save.</p>
-      <input type="file" id="imgFile" accept="${img ? esc(img.mediaTypes.join(',')) : 'image/*'}" ${img ? '' : 'disabled'} ${img && canBatch() ? 'multiple' : ''}>
-      <p class="muted">${canBatch() ? `Pick up to ${BATCH_MAX} at once: each one is drawn and saved to My plays.` : `With a free account, pick up to ${BATCH_MAX} diagrams at once.`} Play diagrams only: photos that show people are rejected. See the <a href="terms.html" target="_blank" rel="noopener">Terms</a>.</p>
-      <p class="soon"><b>Coming soon:</b> upload a whole playbook as a PDF.</p>
+      <p class="muted">Upload a screenshot or photo of a play card, or your whole playbook as a PDF. The AI reads the players, routes, motion and fakes, and draws each play for you to test.</p>
+      <input type="file" id="imgFile" accept="${img ? esc([...img.mediaTypes, PDF_TYPE, '.pdf'].join(',')) : 'image/*'}" ${img ? '' : 'disabled'} ${img && canBatch() ? 'multiple' : ''}>
+      <p class="soon"><b class="new-pill">New</b> ${canBatch() ? `Pick a <b>PDF playbook</b> and every play in it is drawn and saved to My plays. Made in Word or Google Docs? Save it as a PDF first.` : `With a free account, upload your <b>whole playbook as a PDF</b>, or up to ${BATCH_MAX} diagrams at once.`}</p>
+      <p class="muted">${canBatch() ? `Or pick up to ${BATCH_MAX} diagrams at once: each one is drawn and saved to My plays. ` : ''}Play diagrams only: photos that show people are rejected. See the <a href="terms.html" target="_blank" rel="noopener">Terms</a>.</p>
       <img class="preview-img" id="imgPrev" alt="Uploaded diagram" hidden>
       <ol class="batch" id="imgList" hidden></ol>
       <div><button class="act primary" id="imgGo" disabled>Read this diagram</button></div>
@@ -3745,6 +3792,14 @@ async function openStudio(tab) {
   let files = [];
   $('imgFile').addEventListener('change', e => {
     const picked = [...e.target.files], st = $('imgStatus');
+    const pdf = picked.find(isPdf);
+    if (pdf) {
+      e.target.value = '';
+      track('pdf_pick', { signed_in: !!account.user, can_import: canBatch() });
+      if (!canBatch()) { if (!needsAccount('pdf')) { st.className = 'status err'; st.textContent = AI_ERRORS.signed_out; } return; }
+      openPdf(pdf);
+      return;
+    }
     files = picked.slice(0, canBatch() ? BATCH_MAX : 1);
     const pv = $('imgPrev'), list = $('imgList');
     pv.hidden = files.length !== 1;
@@ -3840,6 +3895,218 @@ async function readMany(files) {
     b.addEventListener('click', () => { closeDialog(); loadPlay(saved[0]); });
     $('imgGo').replaceWith(b);
   }
+}
+
+/* ---------- PDF playbooks (signed in only, see canBatch) ----------
+   The PDF never leaves the device: pdf.js (vendor/pdfjs, loaded only now) draws each page the coach picks onto a canvas, and
+   that image goes to the Worker's POST /page (ai.js), which reads every play on it. Pages have their own daily budget on the
+   Worker (PDF_PAGES_PER_DAY, so PDF_MAX_PICK matches it); a skipped page (a cover, contents, a team photo) still uses one.
+   Plays are saved to My plays as they come in, in page order, in a group named after the file, so closing the dialog or hitting
+   a limit never loses what was read. The last screen lists them with a Remove button each. */
+const PDF_TYPE = 'application/pdf';
+const PDF_MAX_BYTES = 100 * 1024 * 1024;   // the file is read in the browser, so this only guards memory on phones
+const PDF_MAX_PICK = 60;                   // pages read per import = the Worker's PDF_PAGES_PER_DAY
+const PDF_AT_ONCE = 3;                     // pages in flight (the Worker's PAGE_LIMITER allows 30 a minute)
+const PDF_STOP = /^(page_limit|page_limit_all|inappropriate|blocked|signed_out|unavailable)$/;
+const isPdf = f => f && (f.type === PDF_TYPE || /\.pdf$/i.test(f.name || ''));
+let pdfjsLib = null;
+async function loadPdfJs() {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('/vendor/pdfjs/pdf.min.mjs');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs';
+  }
+  return pdfjsLib;
+}
+// One page drawn on a white canvas, its long edge at `edge` px (AI_MAX_EDGE for reading). WebP, or JPEG where the browser can't.
+// Pages are drawn one at a time (thumbnails and reading share the queue): two renders of the same page at once can stall pdf.js,
+// and one canvas at a time keeps memory down on phones.
+let pdfQueue = Promise.resolve();
+function pdfPageImage(doc, n, edge, quality) {
+  const run = pdfQueue.then(() => drawPdfPage(doc, n, edge, quality));
+  pdfQueue = run.catch(() => {});
+  return run;
+}
+async function drawPdfPage(doc, n, edge, quality = 0.85) {
+  const pg = await doc.getPage(n);
+  const v1 = pg.getViewport({ scale: 1 });
+  const vp = pg.getViewport({ scale: edge / Math.max(v1.width, v1.height) });
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+  // intent 'print' draws without waiting on animation frames, which stop while the tab is in the background (a long import).
+  await pg.render({ canvasContext: g, viewport: vp, intent: 'print' }).promise;
+  pg.cleanup();
+  const blob = type => new Promise(r => cv.toBlob(r, type, quality));
+  let out = await blob('image/webp');
+  if (!out || out.type !== 'image/webp') out = await blob('image/jpeg');
+  cv.width = cv.height = 0;
+  if (!out) throw { code: 'pdf_unreadable' };
+  return out;
+}
+// A small drawing of a play for the review list: routes and starting spots, no defense.
+function miniPlaySvg(p) {
+  const w = p.format === '7v7' ? 40 : 30, top = 18, bottom = -7, Y = y => (top - y).toFixed(1);
+  const lines = p.players.map(pl => {
+    const pts = [pl.start, ...pl.route].map(q => `${q[0].toFixed(1)},${Y(q[1])}`).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${COLOR[pl.color] || 'currentColor'}" stroke-width=".6" stroke-linejoin="round"${pl.dashed || pl.blocker ? ' stroke-dasharray="1 .8"' : ''}/>`
+      + `<circle cx="${pl.start[0]}" cy="${Y(pl.start[1])}" r="1.1" fill="${COLOR[pl.color] || 'currentColor'}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${top - bottom}" aria-hidden="true"><line x1="0" x2="${w}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)" stroke-width=".4"/>${lines}</svg>`;
+}
+async function openPdf(file) {
+  const pane = $('dialog').querySelector('[data-pane="image"]');
+  const back = () => openStudio('image');
+  if (file.size > PDF_MAX_BYTES) { $('imgStatus').className = 'status err'; $('imgStatus').textContent = AI_ERRORS.pdf_too_large; return; }
+  pane.innerHTML = `<p class="status" id="pdfStatus">Opening ${esc(file.name)}…</p>`;
+  if (aiCtl) aiCtl.abort();
+  const ctl = aiCtl = new AbortController();
+  let doc;
+  try {
+    const lib = await loadPdfJs();
+    doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+  } catch (e) {
+    track('pdf_error', { reason: e && e.name === 'PasswordException' ? 'password' : 'unreadable' });
+    if (!ctl.signal.aborted) {
+      pane.innerHTML = `<p class="status err">${AI_ERRORS.pdf_unreadable}</p><div><button class="act" id="pdfBack">Pick another file</button></div>`;
+      $('pdfBack').addEventListener('click', back);
+    }
+    return;
+  }
+  ctl.signal.addEventListener('abort', () => doc.destroy());
+  const n = doc.numPages, picked = new Set(Array.from({ length: Math.min(n, PDF_MAX_PICK) }, (_, i) => i + 1));
+  const group = cleanGroup(file.name.replace(/\.pdf$/i, '').replace(/[_]+/g, ' ')) || 'PDF playbook';
+  track('pdf_open', { page_count: n });
+  pane.innerHTML = `
+    <p class="muted"><b>${n} page${n > 1 ? 's' : ''}.</b> Untick covers, contents and notes pages: every page picked uses one of your ${PDF_MAX_PICK} PDF pages a day.</p>
+    <div class="pdf-tools"><button class="act" id="pdfAll">Pick all</button><button class="act" id="pdfNone">Pick none</button>
+      <label class="pdf-group">Save to group <input id="pdfGroup" maxlength="40" value="${esc(group)}"></label></div>
+    <ol class="pdf-pages" id="pdfPages">${Array.from({ length: n }, (_, i) => `<li data-n="${i + 1}"><label><input type="checkbox" ${picked.has(i + 1) ? 'checked' : ''}><span class="pg"><span class="ph"></span></span><span class="cap">Page ${i + 1}</span></label><span class="st"></span></li>`).join('')}</ol>
+    <div class="pdf-go"><button class="act primary" id="pdfGo"></button><button class="act" id="pdfBack">Pick another file</button></div>
+    <p class="status" id="pdfStatus"></p>`;
+  const rows = [...$('pdfPages').children], go = $('pdfGo'), st = $('pdfStatus');
+  const sync = () => {
+    rows.forEach(r => { r.querySelector('input').checked = picked.has(+r.dataset.n); });
+    go.textContent = `Read ${picked.size} page${picked.size === 1 ? '' : 's'}`;
+    go.disabled = !picked.size || picked.size > PDF_MAX_PICK;
+    st.className = picked.size > PDF_MAX_PICK ? 'status err' : 'status';
+    st.textContent = picked.size > PDF_MAX_PICK ? `Pick up to ${PDF_MAX_PICK} pages at a time.` : picked.size ? `About ${Math.max(1, Math.round(picked.size * 25 / PDF_AT_ONCE / 60))} minute${picked.size * 25 / PDF_AT_ONCE < 90 ? '' : 's'} to read. Keep this window open.` : '';
+  };
+  rows.forEach(r => r.querySelector('input').addEventListener('change', e => { e.target.checked ? picked.add(+r.dataset.n) : picked.delete(+r.dataset.n); sync(); }));
+  $('pdfAll').addEventListener('click', () => { for (let i = 1; i <= n; i++) picked.add(i); sync(); });
+  $('pdfNone').addEventListener('click', () => { picked.clear(); sync(); });
+  $('pdfBack').addEventListener('click', back);
+  go.addEventListener('click', () => readPdf(doc, rows.filter(r => picked.has(+r.dataset.n)), cleanGroup($('pdfGroup').value) || group, ctl));
+  sync();
+  // Thumbnails, one at a time in the background, so the list shows up right away even for a long PDF.
+  (async () => {
+    for (const r of rows) {
+      if (ctl.signal.aborted) return;
+      try {
+        const url = URL.createObjectURL(await pdfPageImage(doc, +r.dataset.n, 220, 0.7));
+        r.querySelector('.ph').outerHTML = `<img src="${url}" alt="">`;
+      } catch (e) {}
+    }
+  })();
+}
+async function readPdf(doc, rows, group, ctl) {
+  const ai = aiProvider(), st = $('pdfStatus');
+  $('dialog').querySelectorAll('.pdf-tools button, .pdf-tools input, .pdf-pages input, #pdfBack').forEach(el => { el.disabled = true; });
+  $('pdfGo').disabled = true; $('pdfGo').textContent = 'Reading…';
+  rows.forEach(r => { r.classList.add('on'); r.querySelector('.st').textContent = 'Waiting'; });
+  $('dialog').querySelectorAll('.pdf-pages li:not(.on)').forEach(r => { r.hidden = true; });
+  const mark = (r, text, cls) => { const el = r.querySelector('.st'); el.textContent = text; el.className = 'st' + (cls ? ' ' + cls : ''); };
+  const t0 = performance.now(), results = new Array(rows.length), saved = [];
+  let next = 0, flushed = 0, done = 0, ok = 0, skipped = 0, failed = 0, unsaved = 0, stop = null;
+  track('pdf_import_start', { page_count: doc.numPages, pages_picked: rows.length });
+  // Save finished pages in page order, so the plays land in My plays in playbook order.
+  const flush = async () => {
+    while (flushed < rows.length && results[flushed]) {
+      const res = results[flushed++];
+      for (const p of res.plays) {
+        if (unsaved) { unsaved++; continue; }
+        try {
+          await store.saveMine(p);
+          p.mine = true; library.mine.push(p); library.version++;
+          saved.push(p);
+        } catch (e) {
+          // My plays is full (the Worker's MAX_PLAYS), or the save failed: stop reading, since nothing more could be kept.
+          unsaved++; stop = stop || (e && e.code === 'too_many_plays' ? e : { code: 'save_failed' });
+        }
+      }
+    }
+  };
+  const status = () => { st.className = 'status'; st.textContent = `Read ${done} of ${rows.length} pages · ${saved.length} play${saved.length === 1 ? '' : 's'} saved so far. Keep this window open.`; };
+  const worker = async () => {
+    while (next < rows.length && !stop && !ctl.signal.aborted) {
+      const i = next++, r = rows[i], pn = +r.dataset.n;
+      mark(r, 'Reading…');
+      let res = { plays: [] };
+      try {
+        if (!ai) throw { code: 'unavailable' };
+        const out = await ai.page(await pdfPageImage(doc, pn, AI_MAX_EDGE), { signal: ctl.signal });
+        let bad = 0;
+        res.plays = out.plays.map(raw => {
+          try {
+            const p = normalizePlay({ ...raw, group }, 'u' + rid());
+            if (out.photo) p.photo = out.photo;
+            return p;
+          } catch (e) { bad++; return null; }
+        }).filter(Boolean);
+        ok++;
+        if (out.skipped) { skipped++; mark(r, out.skipped === 'people' ? 'Skipped: photo of people' : 'Skipped: no plays found'); }
+        else mark(r, `${res.plays.length} play${res.plays.length === 1 ? '' : 's'}${bad ? ` (${bad} couldn’t be read)` : ''}`, res.plays.length ? 'ok' : 'err');
+      } catch (e) {
+        if (ctl.signal.aborted || (e && e.code === 'cancelled')) return;
+        failed++;
+        mark(r, e && PDF_STOP.test(e.code) ? 'Not read' : aiError(e && e.code === 'refused' ? { code: 'refused_image' } : e), 'err');
+        if (e && PDF_STOP.test(e.code)) stop = stop || e;
+      }
+      results[i] = res; done++;
+      await flush();
+      if (!ctl.signal.aborted) status();
+    }
+  };
+  status();
+  await Promise.all(Array.from({ length: Math.min(PDF_AT_ONCE, rows.length) }, worker));
+  if (ctl.signal.aborted) return;
+  rows.forEach((r, i) => { if (!results[i]) { results[i] = { plays: [] }; mark(r, 'Not read', 'err'); } });
+  await flush();
+  if (aiCtl === ctl) aiCtl = null;
+  track('pdf_import_done', { pages_picked: rows.length, pages_read: ok, pages_skipped: skipped, pages_failed: failed, play_count: saved.length, plays_unsaved: unsaved, stopped: stop ? stop.code : 'none', latency_ms: Math.round(performance.now() - t0) });
+  if (saved.length) track('import_plays', { play_count: saved.length, storage: account.user ? 'account' : 'local', from: 'pdf' });
+  pdfReview(saved, group, stop, ok, skipped);
+}
+// The last screen: what was saved, each with a Remove button, and the way into the first play.
+function pdfReview(saved, group, stop, read, skipped) {
+  const pane = $('dialog') && $('dialog').querySelector('[data-pane="image"]');
+  if (!pane) return;
+  const note = stop ? `<p class="status err">${aiError(stop)}</p>` : '';
+  if (!saved.length) {
+    pane.innerHTML = `${note}<p class="status${stop ? '' : ' err'}">${stop ? '' : 'No plays were found on those pages. Pick the pages with play diagrams on them, or try a clearer copy of the PDF.'}</p><div><button class="act" id="pdfBack">Pick another file</button></div>`;
+    $('pdfBack').addEventListener('click', () => openStudio('image'));
+    return;
+  }
+  pane.innerHTML = `<p><b>Saved ${saved.length} play${saved.length === 1 ? '' : 's'}</b> from ${read} page${read === 1 ? '' : 's'} to My plays, in the group “${esc(group)}”.${skipped ? ` ${skipped} page${skipped === 1 ? '' : 's'} had no plays to read and ${skipped === 1 ? 'was' : 'were'} skipped.` : ''} Check each one against the PDF: remove any that came out wrong, and fix the rest by describing them again.</p>
+    ${note}
+    <ol class="pdf-found">${saved.map((p, i) => `<li data-i="${i}">${miniPlaySvg(p)}<span class="nm">${p.num ? p.num + ' · ' : ''}${esc(p.name)}</span><button class="act" data-open>Open</button><button class="act" data-rm>Remove</button></li>`).join('')}</ol>
+    <div><button class="act primary" id="pdfFirst">Open the first one</button></div>`;
+  const live = () => saved.filter(p => !p.removed);
+  pane.querySelectorAll('.pdf-found li').forEach(li => {
+    const p = saved[+li.dataset.i];
+    li.querySelector('[data-open]').addEventListener('click', () => { closeDialog(); loadPlay(p); });
+    li.querySelector('[data-rm]').addEventListener('click', async e => {
+      e.target.disabled = true;
+      try {
+        await store.deleteMine(p.id);
+        library.mine = library.mine.filter(q => q.id !== p.id); library.version++;
+        p.removed = true; li.remove();
+        track('pdf_play_removed');
+        if (!live().length) $('pdfFirst').disabled = true;
+      } catch (err) { e.target.disabled = false; toast('That play couldn’t be removed. Try again.'); }
+    });
+  });
+  $('pdfFirst').addEventListener('click', () => { const p = live()[0]; if (p) { closeDialog(); loadPlay(p); } });
 }
 
 /* ---------- save, delete, favorite ---------- */
@@ -4170,7 +4437,26 @@ $('exportBtn').addEventListener('click', () => {
     if (await saveFile('open-grass-favorites.csv', rows.map(r => r.map(q).join(',')).join('\n'))) { toast('Scouting sheet saved.'); track('file_download', { file_extension: 'csv', content_type: 'scouting_sheet', play_count: favs.length }); }
   });
 });
-$('newPlayBtn').addEventListener('click', () => openStudio());
+/* What's new: a "New" pill on Test a play for returning visitors (never on a first visit, when everything is new), until
+   NEWS.until or until they open it once (og-news-<id>). Opening it from the pill lands on the tab the news is about. */
+const NEWS = { id: 'pdf', until: '2026-12-31', tab: 'image', label: 'Test a play. New: upload your playbook as a PDF' };
+const newsOn = () => {
+  if (stage.now === 'new' || new Date().toISOString().slice(0, 10) > NEWS.until) return false;
+  try { return !localStorage.getItem('og-news-' + NEWS.id); } catch (e) { return false; }
+};
+if (newsOn()) {
+  $('newPlayBtn').insertAdjacentHTML('beforeend', '<span class="news" aria-hidden="true">New</span>');
+  $('newPlayBtn').setAttribute('aria-label', NEWS.label);
+  track('news_view', { id: NEWS.id });
+}
+$('newPlayBtn').addEventListener('click', () => {
+  const pill = $('newPlayBtn').querySelector('.news');
+  if (!pill) return openStudio();
+  pill.remove(); $('newPlayBtn').removeAttribute('aria-label');
+  try { localStorage.setItem('og-news-' + NEWS.id, '1'); } catch (e) {}
+  track('news_click', { id: NEWS.id });
+  openStudio(NEWS.tab);
+});
 
 /* ---------- Your data: analytics opt-out, download, delete (privacy.html describes all of this) ---------- */
 const GA_OFF_KEY = 'ga-disable-G-1T9DMC15V7';
@@ -4195,7 +4481,7 @@ function openYourData() {
       <div><button class="act danger" id="localClear">Clear Open Grass data from this browser</button></div>
       <p class="status" id="dataStatus"></p>
     </div>`}
-    <p class="muted">Photos you draw plays from are sent to Anthropic, whose AI reads them. A photo that shows people, has inappropriate content, or isn’t a play diagram is rejected and never stored.</p>
+    <p class="muted">Photos and PDF playbook pages you draw plays from are sent to Anthropic, whose AI reads them (a PDF stays on your device: only the pages you pick are sent, as images). A photo that shows people, has inappropriate content, or isn’t a play diagram is rejected and never stored.</p>
     <p class="muted"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms of Service</a></p>`);
   $('gaOn').addEventListener('change', e => {
     const on = e.target.checked;
@@ -4237,7 +4523,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k === 'og-fixvotes' || k.startsWith('og-nudge-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k === 'og-fixvotes' || k.startsWith('og-nudge-') || k.startsWith('og-news-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
         sessionStorage.removeItem('og-visit');
       } catch (e) {}
       location.replace(location.pathname);
