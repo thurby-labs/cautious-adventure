@@ -1464,7 +1464,7 @@ function simulate(play, defense, opts = {}) {
   // speed, and takes a beat to find a ball carrier after a handoff. Reaching the QB hurries the throw rather than ending the play (see evaluate).
   // The 5v5 rusher has declared himself before the snap (hand up) and has a shorter drop to beat, so he gets going a little sooner.
   const is7 = fmtOf(play).id === '7v7';
-  const rushRead = 0.45, rushStart = is7 ? 0.3 : 0.15, rushSpeed = is7 ? 5.0 : 5.4;
+  const rushRead = opts.rushRead ?? 0.45, rushStart = is7 ? 0.3 : 0.15, rushSpeed = is7 ? 5.0 : 5.4;
   const frames = [];
   const steps = Math.round((caught ? Math.max(playTime(play), caught.t + YAC_MAX) : playTime(play)) / DT);
   let pressure = null;
@@ -1722,10 +1722,34 @@ function playChecks(play, run) {
   return out.slice(0, 2);
 }
 
-function runPlay(play, covId, opts) {
+// Runs (since 2026-10-28, owner): a run is graded as the average of seven versions (as drawn, the rusher reading the handoff
+// 0.1 s faster or slower, the carrier's path after the exchange 0.5 or 1 yd to either side), so a near miss grades in between
+// instead of all-or-nothing: in the sim a flag pull is all or nothing, and a yard of drawing flipped a counter from F to A.
+// The field and the verdict's yards are the play as drawn; ev.single is its own grade, ev.spread every version's score.
+// opts.single skips the average (suggest() ranks run lanes that way, then averages the winners).
+const RUN_VARIANTS = [{}, { rushRead: 0.35 }, { rushRead: 0.55 }, { dx: -1 }, { dx: -0.5 }, { dx: 0.5 }, { dx: 1 }];
+function runPlay(play, covId, opts = {}) {
   const def = buildDefense(covId, play, opts);
   const sim = simulate(play, def, opts);
-  return { def, sim, ev: evaluate(play, sim) };
+  const ev = evaluate(play, sim);
+  const ho = play.handoff;
+  if (ho && !ho.thenPass && !opts.single) {
+    const scores = RUN_VARIANTS.map(v => {
+      if (!v.rushRead && !v.dx) return ev.score;
+      let p = play;
+      if (v.dx) {
+        p = clone(play);
+        const c = p.players.find(q => q.id === ho.to);
+        c.route = c.route.map((pt, i) => i > ho.at ? [clamp(pt[0] + v.dx, 0.5, fmtOf(p).w - 0.5), ...pt.slice(1)] : pt);
+      }
+      return evaluate(p, simulate(p, def, v.rushRead ? { ...opts, rushRead: v.rushRead } : opts)).score;
+    });
+    ev.single = { score: ev.score, grade: ev.grade };
+    ev.spread = scores;
+    ev.score = scores.reduce((a, b) => a + b, 0) / scores.length;
+    ev.grade = gradeFor(ev.score);
+  }
+  return { def, sim, ev };
 }
 
 /* A player's position at any time, blended between sim frames (the field draws the same blend). */
@@ -1859,11 +1883,15 @@ function suggest(play, covId, opts, baseScore) {
   const out = [];
   const ho = play.handoff;
   const def0 = buildDefense(covId, play, opts);
-  const tryChange = (pl, v) => {
+  // runs: rank each player's options on the play as drawn (one sim each), then grade only the winner the averaged way
+  const isRun = ho && !ho.thenPass;
+  const single = isRun ? { ...opts, single: true } : opts;
+  const base1 = isRun ? runPlay(play, covId, single).ev.score : baseScore;
+  const tryChange = (pl, v, o = single) => {
     const trial = clone(play);
     const tp = trial.players.find(p => p.id === pl.id);
     tp.route = v.route; tp.routeName = v.name;
-    return runPlay(trial, covId, opts);
+    return runPlay(trial, covId, o);
   };
   const F = fmtOf(play), tips = tipsFor(play);
   play.players.filter(p => p.eligible || (ho && ho.to === p.id)).forEach(pl => {
@@ -1873,7 +1901,7 @@ function suggest(play, covId, opts, baseScore) {
     const variants = isCarrier ? runLanes(pl, ho.at, F) : routeVariants(pl, F);
     for (const v of variants) {
       const r = tryChange(pl, v);
-      const gain = r.ev.score - baseScore;
+      const gain = r.ev.score - base1;
       if (!best || gain > best.gain) {
         const tip = isCarrier ? laneTip(def0, v.hx, v.dir)
           : ho && !ho.thenPass ? 'A better decoy. This route pulls a defender away from the ball carrier.'
@@ -1881,6 +1909,7 @@ function suggest(play, covId, opts, baseScore) {
         best = { id: pl.id, from: pl.routeName, to: v.name, fam: v.fam, route: v.route, gain, ev: r.ev, tip, r };
       }
     }
+    if (best && isRun) { const r = tryChange(pl, { route: best.route, name: best.to }, opts); Object.assign(best, { gain: r.ev.score - baseScore, ev: r.ev, r }); }
     if (best && best.gain > 0.06) out.push(best);
   });
   const top = out.sort((a, b) => b.gain - a.gain).slice(0, 3);
@@ -2358,6 +2387,13 @@ function renderRead() {
     let rs = `<b>${tp.label}</b> gets the ball at ${fmtT(r.th)} and ` + (r.t !== null
       ? `gains <b>${r.yards.toFixed(1)} yds</b> before the ${r.by} pulls the flag at ${fmtT(r.t)}.`
       : `is still running at ${fmtT(tEnd())}, <b>${r.yards.toFixed(1)} yds</b> downfield.`);
+    // the grade averages close versions of the run (engine.js, RUN_VARIANTS): say why it differs from the play as drawn
+    if (ev.single && ev.single.grade !== g) {
+      const vs = ev.spread.slice(1), worse = vs.filter(v => v < ev.single.score - 0.3).length, better = vs.filter(v => v > ev.single.score + 0.3).length;
+      rs += worse >= better
+        ? ` As drawn that’s a${'AF'.includes(ev.single.grade) ? 'n' : ''} ${ev.single.grade}, but in ${worse} of ${vs.length} close versions (the rusher a beat quicker, or the path a yard off) the flag comes off sooner, so it grades ${g}.`
+        : ` As drawn that’s a${'AF'.includes(ev.single.grade) ? 'n' : ''} ${ev.single.grade}, but in ${better} of ${vs.length} close versions (the rusher a beat slower, or the path a yard off) the run breaks free, so it grades ${g}.`;
+    }
     h += `<div class="card verdict-card"><div class="verdict"><div class="g bigg g${g}">${g}</div><div><div class="eyebrow">Run vs ${cov.name}${state.blitz ? ' + extra rusher' : ''}${rushNote()}</div><h2>${head}</h2><p>${rs}</p></div></div></div>`;
     h += nudgeHtml() + scout + sugsHtml(g, cov);
     renderPeek({ g, cov, head, sub: `${tp.label} gains ${r.yards.toFixed(1)} yds` });
@@ -2440,7 +2476,11 @@ function sugsHtml(g, cov) {
     h += `<div class="sug"><div class="sug-top">${dotFor(pl)}<span><b>${pl.label}</b> ${esc(sg.from)} <span class="arrow">→</span> <b>${esc(sg.to)}</b></span>${delta}</div>`;
     if (sg.tip && !tips.has(sg.tip)) { tips.add(sg.tip); h += `<p>${sg.tip}</p>`; }
     if (sg.why) h += `<p class="why"><b>Why it works:</b> ${esc(sg.why)}</p>`;
-    if (sg.ev.run) h += `<p class="muted">Ball carrier gains ${sg.ev.run.yards.toFixed(1)} yds instead of ${state.run.ev.run.yards.toFixed(1)}.</p>`;
+    if (sg.ev.run) {
+      // run grades average close versions (engine.js, RUN_VARIANTS): fewer yards as drawn can still be the safer lane
+      const ny = sg.ev.run.yards, oy = state.run.ev.run.yards;
+      h += `<p class="muted">Ball carrier gains ${ny.toFixed(1)} yds instead of ${oy.toFixed(1)}${ny < oy ? ' as drawn, but this lane holds up when the rusher is quicker or the path is a yard off' : ''}.</p>`;
+    }
     else if (nb.t !== null) h += `<p class="muted">${pl.label} gets ${nb.eff.toFixed(1)} yds of space at ${fmtT(nb.t)}, ${fmtY(nb.pos[1])} yds downfield.</p>`;
     h += `<div class="sug-actions"><button class="btn" data-sug="${i}">Try it</button></div></div>`;
   });
