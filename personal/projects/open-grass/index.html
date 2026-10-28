@@ -706,7 +706,7 @@ span.beta { cursor: default; margin-left: 4px; }
       </div>
       <div class="player" id="player">
         <div class="field-wrap" id="fieldWrap">
-          <svg id="field" viewBox="0 0 360 336" role="img" aria-label="Field diagram of the play against the selected coverage"></svg>
+          <svg id="field" viewBox="0 0 360 348" role="img" aria-label="Field diagram of the play against the selected coverage"></svg>
           <button class="gbadge" id="gradeBadge" hidden></button>
           <button class="fieldplay" id="fieldPlay" aria-label="Run the play"><span class="ring"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg></span><span class="cap">Run play</span></button>
         </div>
@@ -1888,7 +1888,7 @@ function suggest(play, covId, opts, baseScore) {
 
 </script>
 <script>
-const S = 12, YTOP = 21;
+const S = 12, YTOP = 21, FIELD_H = 348;   // 29 yards tall: 20 yards downfield to 8 in the backfield (deep backs, counters)
 const X = x => x * S, Y = y => (YTOP - y) * S;
 const COLOR = { orange: 'var(--r-orange)', green: 'var(--r-green)', purple: 'var(--r-purple)', red: 'var(--r-red)', ink: 'var(--r-ink)', teal: 'var(--r-teal)', gold: 'var(--r-gold)' };
 const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
@@ -1992,9 +1992,9 @@ function staticField(w) {
   });
   s += `<marker id="ah-ghost" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--chalk)" fill-opacity=".7"/></marker>`;
   s += `<marker id="ah-bad" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--bad)"/></marker></defs>`;
-  s += `<rect width="${PX}" height="336" style="fill:var(--turf)"/>`;
+  s += `<rect width="${PX}" height="${FIELD_H}" style="fill:var(--turf)"/>`;
   [[-5, 0], [5, 10], [15, 20]].forEach(([a, b]) => { s += `<rect x="0" y="${Y(b)}" width="${PX}" height="${(b - a) * S}" style="fill:var(--turf-2)"/>`; });
-  for (let y = -6; y <= 20; y++) {
+  for (let y = -7; y <= 20; y++) {
     if (y % 5 === 0) continue;
     s += `<path d="M${X(0.4)} ${Y(y)}h6M${X(w - 0.4) - 6} ${Y(y)}h6M${X(mid - 3) - 3} ${Y(y)}h6M${X(mid + 3) - 3} ${Y(y)}h6" style="stroke:var(--chalk)" stroke-opacity=".45" stroke-width="1"/>`;
   }
@@ -2142,7 +2142,7 @@ function holesLayer(f, roles, t) {
 }
 
 function renderField() {
-  const vb = `0 0 ${fieldW() * S} 336`;
+  const vb = `0 0 ${fieldW() * S} ${FIELD_H}`;
   if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
   svg.innerHTML = fieldMarkup(state.t);
 }
@@ -2251,7 +2251,7 @@ function playSketch(p) {
   let s = staticFor(w).replace(/<defs>[\s\S]*?<\/defs>/, '');
   p.players.forEach(pl => { if (!pl.blocker) s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
   p.players.forEach(pl => { s += `<circle cx="${X(pl.start[0])}" cy="${Y(pl.start[1])}" r="10" style="fill:${COLOR[pl.color]};stroke:var(--chalk)" stroke-width="1.5"/>`; });
-  return `<svg viewBox="0 0 ${w * S} 336" aria-hidden="true">${s}</svg>`;
+  return `<svg viewBox="0 0 ${w * S} ${FIELD_H}" aria-hidden="true">${s}</svg>`;
 }
 
 /* ---------- timeline ---------- */
@@ -2583,7 +2583,10 @@ function renderHead() {
   $('playEyebrow').textContent = `Play · ${fmtOf(p).id} · ${src}`;
   const n = Object.keys(state.changes).length;
   let t = `<span class="tag">${{ run: 'Run', pass: 'Pass', trick: 'Trick pass' }[state.play.type]}</span><span class="tag">${esc(state.play.concept)}</span>`;
-  if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span><button class="linkbtn" id="resetPlay">Reset play</button>`;
+  const moved = Object.keys(state.nudges).length;   // defenders the coach dragged pre-snap
+  if (n) t += `<span class="tag mod">${n} route${n > 1 ? 's' : ''} changed</span>`;
+  if (moved) t += `<span class="tag mod">${moved} defender${moved > 1 ? 's' : ''} moved</span>`;
+  if (n || moved) t += `<button class="linkbtn" id="resetPlay">${n ? 'Reset play' : 'Reset defense'}</button>`;
   if (state.play.draft) t = `<span class="tag mod">Draft · not saved</span>` + t;
   else if (state.play.mine) t = `<span class="tag">${state.play.group ? esc(state.play.group) : 'My play'}</span>` + t;
   else if (state.play.shared) t = `<span class="tag">Shared with you</span>` + t;
@@ -2799,9 +2802,13 @@ $('optBtn').addEventListener('click', () => {
 });
 $('playTags').addEventListener('click', e => {
   if (e.target.id === 'resetPlay') {
-    if (state.tried && !state.tried.vote) fixSignal('reset');
-    state.tried = null;
-    track('reset_play', { changes_count: Object.keys(state.changes).length, ...playInfo() }); state.play = clone(state.basePlay); state.changes = {}; stop(); recompute(); setT(0); }
+    const routes = Object.keys(state.changes).length;
+    if (routes) {
+      if (state.tried && !state.tried.vote) fixSignal('reset');
+      state.tried = null;
+    }
+    track('reset_play', { changes_count: routes, defenders_moved: Object.keys(state.nudges).length, ...playInfo() });
+    state.play = clone(state.basePlay); state.changes = {}; state.nudges = {}; stop(); recompute(); setT(0); }
 });
 $('c1Sel').addEventListener('change', e => {
   state.c1 = e.target.value;
@@ -3537,7 +3544,7 @@ const pidOf = p => { const k = String((p && (p.id || p.label)) || '').toUpperCas
 const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? clamp(n, lo, hi) : d; };
 const toPt = (p, d, w = 30) => {
   if (!Array.isArray(p) || p.length < 2) return null;
-  const q = [num(p[0], 0.5, w - 0.5, d[0]), num(p[1], -9, 20, d[1])];
+  const q = [num(p[0], 0.5, w - 0.5, d[0]), num(p[1], -7.2, 20, d[1])];   // the field shows 8 yards of backfield
   if (p[2]) q.push(num(p[2], 0, 2, 0));
   return q;
 };
@@ -3588,6 +3595,23 @@ function normalizePlay(raw, id) {
       if (c.qb) c.speed = 5.2;
       handoff = { to, at: Math.round(num(raw.handoff.at, 0, c.route.length - 1, 0)) };
       if (raw.handoff.thenPass || raw.type === 'trick') handoff.thenPass = true;
+      // Diagrams draw a handoff as the carrier's path running through the QB, and the AI often lists only the turns, so the
+      // spot at "at" can be yards past him (the engine then plays it as a pitch to a runner already at speed). When the path
+      // passes within a step of the QB before that spot, put the exchange there.
+      const qb = players.find(p => p.qb), q = qb && !c.qb ? qb.route[qb.route.length - 1] : null;
+      if (q && dist(c.route[handoff.at], q) > 1.5) {
+        const pts = [c.start, ...c.route];
+        for (let k = 0; k <= handoff.at; k++) {
+          const a = pts[k], b = pts[k + 1], dx = b[0] - a[0], dy = b[1] - a[1], len = dx * dx + dy * dy;
+          const u = len ? clamp(((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / len, 0, 1) : 0;
+          const m = [+(a[0] + u * dx).toFixed(1), +(a[1] + u * dy).toFixed(1)];
+          if (dist(m, q) <= 1.2) {
+            if (u > 0 && u < 1) c.route.splice(k, 0, m);
+            handoff.at = u === 0 && k ? k - 1 : k;
+            break;
+          }
+        }
+      }
     }
   }
   const play = {
@@ -3909,6 +3933,7 @@ const PDF_TYPE = 'application/pdf';
 const PDF_MAX_BYTES = 100 * 1024 * 1024;   // the file is read in the browser, so this only guards memory on phones
 const PDF_MAX_PICK = 60;                   // pages read per import = the Worker's PDF_PAGES_PER_DAY
 const PDF_AT_ONCE = 3;                     // pages in flight (the Worker's PAGE_LIMITER allows 30 a minute)
+const PDF_PAGE_S = 55;                     // seconds to read one page: 43-65 s measured for pages of 5-12 plays (2026-10-28)
 const PDF_STOP = /^(page_limit|page_limit_all|inappropriate|blocked|signed_out|unavailable)$/;
 const isPdf = f => f && (f.type === PDF_TYPE || /\.pdf$/i.test(f.name || ''));
 let pdfjsLib = null;
@@ -3948,7 +3973,7 @@ async function drawPdfPage(doc, n, edge, quality = 0.85) {
 }
 // A small drawing of a play for the review list: routes and starting spots, no defense.
 function miniPlaySvg(p) {
-  const w = p.format === '7v7' ? 40 : 30, top = 18, bottom = -7, Y = y => (top - y).toFixed(1);
+  const w = p.format === '7v7' ? 40 : 30, top = 18, bottom = -8, Y = y => (top - y).toFixed(1);
   const lines = p.players.map(pl => {
     const pts = [pl.start, ...pl.route].map(q => `${q[0].toFixed(1)},${Y(q[1])}`).join(' ');
     return `<polyline points="${pts}" fill="none" stroke="${COLOR[pl.color] || 'currentColor'}" stroke-width=".6" stroke-linejoin="round"${pl.dashed || pl.blocker ? ' stroke-dasharray="1 .8"' : ''}/>`
@@ -3987,17 +4012,23 @@ async function openPdf(file) {
     <div class="pdf-go"><button class="act primary" id="pdfGo"></button><button class="act" id="pdfBack">Pick another file</button></div>
     <p class="status" id="pdfStatus"></p>`;
   const rows = [...$('pdfPages').children], go = $('pdfGo'), st = $('pdfStatus');
+  // Reading the same PDF again adds its plays a second time: say so when the group already has plays.
+  const dupNote = () => {
+    const g = groupKey(cleanGroup($('pdfGroup').value) || group), have = library.mine.filter(p => groupKey(p.group) === g).length;
+    return have ? ` You already have ${have} play${have === 1 ? '' : 's'} in this group: reading adds the new ones beside ${have === 1 ? 'it' : 'them'}.` : '';
+  };
   const sync = () => {
     rows.forEach(r => { r.querySelector('input').checked = picked.has(+r.dataset.n); });
     go.textContent = `Read ${picked.size} page${picked.size === 1 ? '' : 's'}`;
     go.disabled = !picked.size || picked.size > PDF_MAX_PICK;
     st.className = picked.size > PDF_MAX_PICK ? 'status err' : 'status';
-    st.textContent = picked.size > PDF_MAX_PICK ? `Pick up to ${PDF_MAX_PICK} pages at a time.` : picked.size ? `About ${Math.max(1, Math.round(picked.size * 25 / PDF_AT_ONCE / 60))} minute${picked.size * 25 / PDF_AT_ONCE < 90 ? '' : 's'} to read. Keep this window open.` : '';
+    st.textContent = picked.size > PDF_MAX_PICK ? `Pick up to ${PDF_MAX_PICK} pages at a time.` : picked.size ? `About ${Math.max(1, Math.round(Math.ceil(picked.size / PDF_AT_ONCE) * PDF_PAGE_S / 60))} minute${Math.ceil(picked.size / PDF_AT_ONCE) * PDF_PAGE_S < 90 ? '' : 's'} to read. Keep this window open.${dupNote()}` : '';
   };
   rows.forEach(r => r.querySelector('input').addEventListener('change', e => { e.target.checked ? picked.add(+r.dataset.n) : picked.delete(+r.dataset.n); sync(); }));
   $('pdfAll').addEventListener('click', () => { for (let i = 1; i <= n; i++) picked.add(i); sync(); });
   $('pdfNone').addEventListener('click', () => { picked.clear(); sync(); });
   $('pdfBack').addEventListener('click', back);
+  $('pdfGroup').addEventListener('input', sync);
   go.addEventListener('click', () => readPdf(doc, rows.filter(r => picked.has(+r.dataset.n)), cleanGroup($('pdfGroup').value) || group, ctl));
   sync();
   // Thumbnails, one at a time in the background, so the list shows up right away even for a long PDF.
@@ -4092,7 +4123,8 @@ function pdfReview(saved, group, stop, read, skipped) {
   pane.innerHTML = `<p><b>Saved ${saved.length} play${saved.length === 1 ? '' : 's'}</b> from ${read} page${read === 1 ? '' : 's'} to My plays, in the group “${esc(group)}”.${skipped ? ` ${skipped} page${skipped === 1 ? '' : 's'} had no plays to read and ${skipped === 1 ? 'was' : 'were'} skipped.` : ''} Check each one against the PDF: remove any that came out wrong, and fix the rest by describing them again.</p>
     ${note}
     <ol class="pdf-found">${saved.map((p, i) => `<li data-i="${i}">${miniPlaySvg(p)}<span class="nm">${p.num ? p.num + ' · ' : ''}${esc(p.name)}</span><button class="act" data-open>Open</button><button class="act" data-rm>Remove</button></li>`).join('')}</ol>
-    <div><button class="act primary" id="pdfFirst">Open the first one</button></div>`;
+    <div class="pdf-go"><button class="act primary" id="pdfFirst">Open the first one</button><button class="act" id="pdfBack">Import another file</button></div>`;
+  $('pdfBack').addEventListener('click', () => openStudio('image'));
   const live = () => saved.filter(p => !p.removed);
   pane.querySelectorAll('.pdf-found li').forEach(li => {
     const p = saved[+li.dataset.i];
@@ -4328,7 +4360,7 @@ function indexer(palette) {
 }
 const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 async function renderGif(progress) {
-  const W = 18 * fmtOf(state.play).w, FH = 504, CAP = 46, H = FH + CAP, fps = 10, T = tEnd();
+  const W = 18 * fmtOf(state.play).w, FH = FIELD_H * 1.5, CAP = 46, H = FH + CAP, fps = 10, T = tEnd();
   const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const cs = getComputedStyle(document.documentElement);
@@ -4339,7 +4371,7 @@ async function renderGif(progress) {
   const mark = !account.user;   // signed out, the GIF carries the site address over the field
   const title = `${state.play.name}  ·  vs ${state.cov ? covsFor(state.play)[state.cov].name : 'no defense'}${state.blitz ? ' + extra rusher' : ''}${rushNote()}`;
   const draw = async t => {
-    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmtOf(state.play).w * S} 336" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmtOf(state.play).w * S} ${FIELD_H}" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
     const img = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr));
     ctx.fillStyle = tok('--panel'); ctx.fillRect(0, 0, W, CAP);
     ctx.fillStyle = tok('--ink'); ctx.font = '700 17px Barlow, Arial, sans-serif'; ctx.textBaseline = 'middle';
@@ -4542,6 +4574,8 @@ function parseHash() {
   return m ? { shared: !!m[1], packed: m[1] === 'j-', id: m[2], cov: m[3] === 'none' ? null : m[3], rusher: m[4] } : null;
 }
 const link = parseHash();
+// A share link opened in a tab that already shows the app only changes the hash: load it like a fresh visit.
+addEventListener('hashchange', () => { if (parseHash()) location.reload(); });
 if (link && link.rusher) setRusher(link.rusher);
 if (link && !link.shared) {
   const opt = link.id.endsWith('~opt');
