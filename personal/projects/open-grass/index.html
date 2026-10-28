@@ -1899,6 +1899,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 /* ---------- analytics: GA4 events (tagging plan in ANALYTICS.md) ----------
    Never pass free text, a coach's own play or route names, file names or emails. Built-in play ids are fine. */
 function track(name, params = {}) {
+  // Never name a param source, medium, campaign, term or content: GA takes them as the session's traffic source, which turned
+  // ad visits into Unassigned and kept sign_up from reaching Google Ads (fixed 2026-10-28).
   // Tour steps are real clicks: mark them so they can be filtered out of core-loop numbers. `tour` is declared later (tour.js), so guard it.
   try { if (tour.on) params = { ...params, in_tour: true }; } catch (e) {}
   try { gtag('event', name, params); } catch (e) {}
@@ -2746,7 +2748,7 @@ $('read').addEventListener('toggle', e => { if (e.target.id === 'moreNotes') gla
 $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
   const pb = e.target.closest('[data-play]'); if (pb) { pickPlay(pb.dataset.play, 'read_panel'); return; }
-  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', { ...covInfo(), source: 'read_panel' }); return; }
+  const j = e.target.closest('[data-jump]'); if (j && j.dataset.jump !== '') { stop(); setT(+j.dataset.jump); track('jump_to_moment', { ...covInfo(), where: 'read_panel' }); return; }
   const fv = e.target.closest('[data-fixvote]'); if (fv) { voteFix(fv.dataset.fixvote); return; }
   if (e.target.closest('[data-fixundo]')) { undoFix(); return; }
   const sb = e.target.closest('[data-sug]');
@@ -2805,7 +2807,7 @@ $('fieldPlay').addEventListener('click', () => togglePlay('field'));
 $('marks').addEventListener('click', e => {
   const m = e.target.closest('[data-jump]'); if (!m) return;
   stop(); setT(+m.dataset.jump);
-  track('jump_to_moment', { ...covInfo(), source: 'timeline', mark: m.dataset.mark });
+  track('jump_to_moment', { ...covInfo(), where: 'timeline', mark: m.dataset.mark });
 });
 $('loopBtn').addEventListener('click', e => {
   state.loop = !state.loop;
@@ -3827,7 +3829,7 @@ async function readMany(files) {
     }
   }
   if (aiCtl === ctl) aiCtl = null;
-  if (saved.length) track('import_plays', { play_count: saved.length, storage: account.user ? 'account' : 'local', source: 'diagrams' });
+  if (saved.length) track('import_plays', { play_count: saved.length, storage: account.user ? 'account' : 'local', from: 'diagrams' });
   st.className = saved.length ? 'status' : 'status err';
   st.textContent = saved.length
     ? `Saved ${saved.length} of ${files.length} to My plays, in the group “${BATCH_GROUP}”.${stop ? ' ' + aiError(stop) : ''}`
@@ -3859,7 +3861,7 @@ async function saveCurrentAsMine() {
     loadPlay(p);
     toast(account.user ? 'Saved to My plays in your account.' : 'Saved to My plays in this browser.');
     if (kept) fixSignal('kept', kept);
-    track('save_play', { source, storage: account.user ? 'account' : 'local', play_type: p.type, my_plays: library.mine.length });
+    track('save_play', { from: source, storage: account.user ? 'account' : 'local', play_type: p.type, my_plays: library.mine.length });
     return true;
   } catch (e) { toast('Couldn’t save the play. Try again.'); track('app_error', { where: 'save' }); return false; }
 }
