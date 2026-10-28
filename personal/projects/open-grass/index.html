@@ -489,6 +489,27 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .beta:hover { filter: brightness(1.05); }
 span.beta { cursor: default; margin-left: 4px; }
 .foot .beta { margin-right: 4px; }
+/* Header Beta pill: opens the feedback sheet. Quiet (outlined) so it never competes with the play row. */
+.beta-top { background: transparent; color: var(--muted); border-color: var(--line); font-size: 10px; padding: 3px 8px; flex: none; }
+.beta-top:hover { color: var(--ink); border-color: var(--hole-edge); background: var(--hole); filter: none; }
+/* phones: a small tag on the logo's top corner, out of the row, so Sign in and Create account keep the logo line */
+@media (max-width: 699px) {
+  .brand { position: relative; }
+  .beta-top { position: absolute; left: 100%; top: 5px; margin-left: -12px; font-size: 8px; padding: 1px 5px; background: var(--panel); }
+  .beta-top::after { content: ""; position: absolute; inset: -10px -6px; }   /* bigger tap area */
+}
+@media (max-width: 339px) { .beta-top { margin-left: -20px; } }
+/* Feedback sheet (showFeedback in studio.js) */
+.fb-lede { margin: 0; }
+.fb-topics .chipbtn { font-size: 13px; padding: 6px 12px; }
+.fb-topics .chipbtn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.fb-check { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
+.fb-check input { accent-color: var(--accent); width: 18px; height: 18px; margin: 1px 0 0; flex: none; }
+.fb-check small, .fb-email small { color: var(--muted); }
+.fb-email { display: grid; gap: 4px; font-size: 14px; }
+.fb-email input { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; background: var(--paper); }
+.fb-done { margin: 0; font-size: 16px; }
+.fb-beta p { font-size: 14px; }
 .sketch { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--turf); }
 .sketch svg { display: block; width: 100%; height: auto; max-height: 220px; filter: blur(5px); transform: scale(1.06); }
 .sketch .lockmsg { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 22px; text-transform: uppercase; color: var(--ink); }
@@ -678,6 +699,7 @@ span.beta { cursor: default; margin-left: 4px; }
   <div class="top-in">
     <div class="brand">
       <img class="mark-sm" src="logo/open-grass-wordmark.webp" width="127" height="34" alt="">
+      <button class="beta beta-top" id="betaTop" title="Send us feedback" aria-label="Beta: send us feedback">Beta</button>
     </div>
     <div class="playrow">
       <div class="pickbtn">
@@ -811,7 +833,7 @@ span.beta { cursor: default; margin-left: 4px; }
 
   <footer class="foot">
     <p>&copy; <span id="year">2026</span> Open Grass, LLC. All rights reserved. · <a href="/flag-football-play-designer">Bring your own plays</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <button class="linkbtn" id="dataBtn">Your data</button> · <button class="linkbtn" id="tourLink">Take the tour</button></p>
-    <p><button class="beta" id="betaBtn" title="Free while in beta">Beta</button> Free while in beta. Early coaches get founding-coach perks. · <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">Send feedback</a></p>
+    <p><button class="beta" id="betaBtn" title="Send us feedback">Beta</button> Free while in beta. Early coaches get founding-coach perks. · <button class="linkbtn" id="fbLink">Send feedback</button></p>
   </footer>
 </div>
 
@@ -3771,22 +3793,97 @@ function needsAccount(reason, play) {
   showGate(reason, play);
   return true;
 }
-function showBeta() {
-  track('beta_info_open', { signed_in: !!account.user });
+/* ---------- Beta feedback sheet ----------
+   The Beta pill (header and footer) and the footer's Send feedback open one sheet: a note, an optional topic, what's on screen
+   (format, defense, rusher, grade; built-in play ids only, never a coach's play or its name), and a way to reply (signed in: the
+   account email, signed out: an email they type). Sent to the Worker's POST /site-feedback (worker/src/sitefeedback.js), whatever
+   the analytics switch says, because the coach pressed Send. GA only hears that a note was sent and its topic, never the text. */
+const FEEDBACK_TOPICS = [['grades', 'Grades seem off'], ['diagram', 'Diagram read wrong'], ['confusing', 'Confusing'], ['idea', 'Idea'], ['bug', 'Something broke']];
+const FEEDBACK_MAX = 1500;
+const FEEDBACK_MAIL = '<a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">opengrassllc@gmail.com</a>';
+function feedbackContext() {
+  const play = state.play; if (!play) return null;
+  const fmt = fmtOf(play).id;
+  return { format: fmt, ...(state.cov ? { coverage: state.cov, rusher: state.rusher, blitz: !!state.blitz } : {}),
+    ...(state.run ? { grade: state.run.ev.grade } : {}), ...(builtIn(play) ? { play_id: play.id } : {}) };
+}
+const contextLine = c => !c ? '' : [c.format, c.coverage && covLabel(c.coverage), c.grade && 'grade ' + c.grade].filter(Boolean).join(' · ');
+const covLabel = id => { const c = covsFor(state.play)[id]; return c ? c.name : id; };
+function betaInfoHtml() {
   const founding = account.user && account.data && account.data.founding;
-  openDialog(`${dlgHead('Open Grass is in beta')}
+  return `<details class="more fb-beta"><summary>About the beta</summary>
     <p>Everything is free while we’re in beta. ${account.user ? 'Your account can test your own playbook against every defense.' : `Without an account you can try ${STARTERS.length} sample plays against every coverage${freeDraftUsed() ? '' : ', plus one free AI draft of your own play'}. A free account lets you test your whole playbook:`}</p>
     ${account.user ? '' : perksHtml()}
     <p>${founding ? '<b>You’re a founding coach.</b> Thanks for being early: you’ll get perks when paid plans arrive.' : 'Coaches who join during the beta become founding coaches, with perks when paid plans arrive.'}</p>
     ${account.user && account.data && account.data.admin ? '<p><b>Admin account:</b> no daily AI limits.</p>' : ''}
-    <p class="muted">Things may change or break while we build. Tell us what’s working and what isn’t: <a href="mailto:opengrassllc@gmail.com?subject=Open%20Grass%20feedback">opengrassllc@gmail.com</a></p>
-    ${account.user || gate.open ? '' : `<div class="gate-actions"><button class="act primary" id="gateUp">Create free account</button><button class="linkbtn" id="gateIn">I already have an account</button></div>`}`);
+    ${account.user || gate.open ? '' : `<div class="gate-actions"><button class="act primary" id="gateUp">Create free account</button><button class="linkbtn" id="gateIn">I already have an account</button></div>`}
+  </details>`;
+}
+function showFeedback(source) {
+  track('feedback_open', { source, signed_in: !!account.user });
+  const ctx = feedbackContext();
+  const on = !!AI_ENDPOINT;
+  openDialog(`${dlgHead('Help shape Open Grass <span class="beta">Beta</span>')}
+    <div class="pane fb">
+      <p class="fb-lede">You’re one of our first coaches. What should we fix next? We read every note.</p>
+      ${on ? `<div class="reasons fb-topics" role="group" aria-label="What’s it about? (optional)">${FEEDBACK_TOPICS.map(([k, l]) => `<button class="chipbtn" data-fbtopic="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
+      <label class="sr-only" for="fbText">Your feedback</label>
+      <textarea id="fbText" maxlength="${FEEDBACK_MAX}" placeholder="What worked, what didn’t, or what you wish it did."></textarea>
+      ${ctx ? `<label class="fb-check"><input type="checkbox" id="fbCtx" checked> Include what’s on screen <small>(${esc(contextLine(ctx))})</small></label>` : ''}
+      ${account.user ? `<label class="fb-check"><input type="checkbox" id="fbReply"> You can email me back at my account email</label>`
+        : `<label class="fb-email"><span>Email <small>(optional, only if you’d like a reply)</small></span><input type="email" id="fbEmail" autocomplete="email" maxlength="254" placeholder="you@example.com"></label>`}
+      <div class="gate-actions"><button class="act primary" id="fbGo">Send feedback</button></div>
+      <p class="status" id="fbStatus" role="status"></p>
+      <p class="muted">Or email ${FEEDBACK_MAIL}. See our <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>`
+      : `<p>Tell us what’s working and what isn’t: ${FEEDBACK_MAIL}</p>`}
+    </div>
+    ${betaInfoHtml()}`);
   if ($('gateUp')) {
     $('gateUp').addEventListener('click', () => openClerk('sign_up', 'beta'));
     $('gateIn').addEventListener('click', () => openClerk('sign_in', 'beta'));
   }
+  if (!on) return;
+  let topic = null;
+  $('dialog').querySelectorAll('[data-fbtopic]').forEach(b => b.addEventListener('click', () => {
+    topic = topic === b.dataset.fbtopic ? null : b.dataset.fbtopic;
+    $('dialog').querySelectorAll('[data-fbtopic]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.fbtopic === topic)));
+  }));
+  // the sheet opens on the touch screen without popping the keyboard; desktop gets the text box focused
+  if (matchMedia('(pointer: fine)').matches) $('fbText').focus(); else $('dialog').querySelector('[data-close]').focus();
+  $('fbGo').addEventListener('click', () => sendFeedback(topic, ctx));
 }
-$('betaBtn').addEventListener('click', showBeta);
+async function sendFeedback(topic, ctx) {
+  const st = $('fbStatus'), go = $('fbGo');
+  const message = $('fbText').value.trim();
+  const email = $('fbEmail') ? $('fbEmail').value.trim() : '';
+  st.classList.remove('err');
+  if (message.length < 2) { st.textContent = 'Write a few words first.'; st.classList.add('err'); $('fbText').focus(); return; }
+  if (email && !$('fbEmail').checkValidity()) { st.textContent = 'That email doesn’t look right. Fix it, or leave it blank.'; st.classList.add('err'); $('fbEmail').focus(); return; }
+  const body = { message, ...(topic ? { topic } : {}), ...(email ? { email } : {}), reply_ok: !!($('fbReply') && $('fbReply').checked),
+    ...(ctx && $('fbCtx') && $('fbCtx').checked ? { context: ctx } : {}),
+    screen: mqPhone.matches ? 'phone' : mqSheet.matches ? 'tablet' : 'desktop' };
+  go.disabled = true; st.textContent = 'Sending…';
+  let code = 'network';
+  try {
+    const tok = await authToken();
+    const res = await fetch(AI_ENDPOINT.replace(/\/$/, '') + '/site-feedback', {
+      method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) }
+    });
+    code = res.ok ? 'ok' : ((await res.json().catch(() => ({}))).code || 'http_' + res.status);
+  } catch (e) {}
+  if (code === 'ok') {
+    track('feedback_sent', { ...(topic ? { topic } : {}), context: !!body.context, reply: !!(email || body.reply_ok) });
+    $('dialog').querySelector('.fb').innerHTML = `<p class="fb-done"><b>Thanks, coach.</b> Your note is on its way${email || body.reply_ok ? ', and we’ll get back to you' : ''}.</p><div class="gate-actions"><button class="act primary" data-close>Back to the field</button></div>`;
+    $('dialog').querySelector('.fb [data-close]').focus();
+    return;
+  }
+  go.disabled = false; st.classList.add('err');
+  st.innerHTML = code === 'daily_limit_ip' || code === 'rate_limited' ? `That’s a lot of notes for one day. Try again tomorrow, or email ${FEEDBACK_MAIL}.`
+    : `Couldn’t send that. Your note is still here: try again, or email ${FEEDBACK_MAIL}.`;
+}
+$('betaBtn').addEventListener('click', () => showFeedback('footer_pill'));
+$('betaTop').addEventListener('click', () => showFeedback('header_pill'));
+$('fbLink').addEventListener('click', () => showFeedback('footer_link'));
 
 /* ---------- New play studio ---------- */
 const EXAMPLES = [
@@ -4604,9 +4701,9 @@ function openYourData() {
     </div>
     ${signedIn ? `<div class="pane">
       <div><button class="act" id="acctExport">Download my account data (.json)</button></div>
-      <p class="muted">Your plays, favorites, photo list, AI draft history and fix ratings.</p>
+      <p class="muted">Your plays, favorites, photo list, AI draft history, fix ratings and feedback notes.</p>
       <div><button class="act danger" id="acctDelete">Delete my account</button></div>
-      <p class="muted">Permanently deletes your account, plays, favorites and play-card photos (fix ratings stay, without your account). This can’t be undone.</p>
+      <p class="muted">Permanently deletes your account, plays, favorites, play-card photos and feedback notes (fix ratings stay, without your account). This can’t be undone.</p>
       <p class="status" id="dataStatus"></p>
     </div>` : `<div class="pane">
       <p class="muted">You’re not signed in, so your plays and favorites are only in this browser. We don’t store them.</p>

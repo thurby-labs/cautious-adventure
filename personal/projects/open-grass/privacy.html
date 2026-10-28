@@ -91,6 +91,9 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <h3>Fix ratings</h3>
     <p>After you try one of the app's suggested route fixes, you can rate it 👍 or 👎 and, after a 👎, pick a reason from a short list. We store each rating on our server so we can find fixes that coaches keep turning down and improve them. A rating holds only the app's own terms: the format, defense and rusher settings, which position the fix was for, the route the app suggested, the grades before and after, and the reason you picked. It never includes your play, your play's name, or your own route names (for the app's sample plays, it includes which sample play it was). With it we store your account ID if you're signed in, or a <b>salted, one-way hash</b> of your IP address if you're not, so one person counts once and can't flood the tally; at most 50 ratings a day are accepted from one IP address. After 90 days we remove the account ID and hashed IP, and keep only the anonymous rating. Turning off usage statistics (section 6), or a Global Privacy Control signal from your browser, stops ratings from being sent; your 👍 or 👎 is then remembered only in your browser.</p>
 
+    <h3>Feedback you send us</h3>
+    <p>During the beta, the <b>Beta</b> button and <b>Send feedback</b> link open a short form. We store what you write, the topic you pick, and, unless you uncheck "Include what's on screen," the app's own settings at that moment: the format, defense, rusher settings and grade (and which sample play, for the app's sample plays; never your own play or its name). We also note whether you're on a phone, tablet or computer. If you're signed in, the note is stored with your account ID, and we email you back at your account email only if you tick that box. If you're not signed in, you can add an email address for a reply; otherwise we store a <b>salted, one-way hash</b> of your IP address to stop spam (at most 10 notes a day from one IP address). Feedback is sent even when usage statistics are off, because you chose to send it; Google Analytics only learns that a note was sent and its topic, never what you wrote. After 90 days we remove the account ID, email address and hashed IP, and we delete the note after one year. Please don't put personal details in a note that you don't want us to keep.</p>
+
     <h3>Analytics</h3>
     <p>We use Google Analytics to understand how the app is used, for example which coverages coaches test, whether AI drafting succeeds, and whether share links get opened. Google Analytics uses cookies (<code>_ga</code>, <code>_ga_*</code>) and collects information such as pages visited, the features you use, your browser and device type, and approximate location (city level, derived from your IP address by Google).</p>
     <ul>
@@ -121,6 +124,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
       <li>To keep it working and affordable: rate limits, daily AI limits, abuse prevention, and cost tracking.</li>
       <li>To improve it: understanding which features coaches use, through analytics, and which suggested fixes coaches rate down.</li>
       <li>To see whether our ads on Google lead to sign-ups and play tests, as described under Advertising on Google.</li>
+      <li>To read your feedback, fix what you report, and reply when you ask us to.</li>
       <li>To respond to you when you contact us.</li>
     </ul>
     <p>We don't sell personal information, and we don't share it for cross-context behavioral advertising. We don't use your plays or photos to train AI models.</p>
@@ -131,7 +135,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
       <tr><th>Provider</th><th>What for</th><th>What they receive</th></tr>
       <tr><td>Clerk</td><td>Accounts and sign-in</td><td>Email, name and photo from Google sign-in, sign-in records</td></tr>
       <tr><td>Google</td><td>"Sign in with Google," Analytics, ad measurement (Google Ads), and fonts</td><td>Sign-in, if you choose it; usage statistics as described above; a page-view signal, and whether a visitor who clicked our ad signed up; IP address when fonts load</td></tr>
-      <tr><td>Cloudflare</td><td>Our server, database and photo storage</td><td>Account plays, favorites, photos, usage records, fix ratings</td></tr>
+      <tr><td>Cloudflare</td><td>Our server, database and photo storage</td><td>Account plays, favorites, photos, usage records, fix ratings, feedback notes</td></tr>
       <tr><td>Anthropic</td><td>The AI model that draws plays</td><td>The text or image you submit for a draft. Under Anthropic's commercial terms, it isn't used to train their models.</td></tr>
       <tr><td>GitHub</td><td>Hosting the website</td><td>Standard web request information</td></tr>
     </table></div>
@@ -144,6 +148,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
       <tr><td>Play-card photos</td><td>Until you delete the play or your account. Photos no saved play uses are deleted after 7 days. Photos and PDF pages the AI check rejects or skips are never stored.</td></tr>
       <tr><td>AI usage records</td><td>Hashed IP and account ID removed after 90 days. Anonymous counts kept for cost tracking.</td></tr>
       <tr><td>Fix ratings</td><td>Account ID or hashed IP removed after 90 days. The anonymous rating is kept to improve the app's suggestions.</td></tr>
+      <tr><td>Feedback notes</td><td>Account ID, email address and hashed IP removed after 90 days. The note is deleted after one year.</td></tr>
       <tr><td>Daily usage counters</td><td>30 days</td></tr>
       <tr><td>Google Analytics data</td><td>14 months</td></tr>
       <tr><td>Data in your browser</td><td>Until you clear it</td></tr>
@@ -169,9 +174,9 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <h2>6. Your choices and rights</h2>
     <ul>
       <li><b>Turn off analytics.</b> In the app, open <b>Your data</b> (bottom of the page) and uncheck "Share usage statistics." This also stops the Google Ads signals and sending fix ratings. If your browser sends a <a href="https://globalprivacycontrol.org" rel="noopener">Global Privacy Control</a> signal, we turn analytics and these ad signals off automatically. You can also use Google's <a href="https://tools.google.com/dlpage/gaoptout" rel="noopener">Analytics opt-out browser add-on</a>.</li>
-      <li><b>Download your data.</b> Signed in, choose <b>Your data → Download my account data</b> for a file with your plays, favorites, photo list, AI draft history and fix ratings. <b>Export favorites</b> also saves your favorite plays as a file you can import elsewhere.</li>
+      <li><b>Download your data.</b> Signed in, choose <b>Your data → Download my account data</b> for a file with your plays, favorites, photo list, AI draft history, fix ratings and feedback notes. <b>Export favorites</b> also saves your favorite plays as a file you can import elsewhere.</li>
       <li><b>Correct your data.</b> Edit or delete plays in the app. Update your email or name from the account menu (your profile picture, top right).</li>
-      <li><b>Delete your data.</b> Delete any play you've saved, or choose <b>Your data → Delete my account</b> to permanently delete your account, plays, favorites and photos; your fix ratings are kept only as anonymous ratings, with your account ID removed. Not signed in? Use <b>Clear Open Grass data from this browser</b>.</li>
+      <li><b>Delete your data.</b> Delete any play you've saved, or choose <b>Your data → Delete my account</b> to permanently delete your account, plays, favorites, photos and feedback notes; your fix ratings are kept only as anonymous ratings, with your account ID removed. Not signed in? Use <b>Clear Open Grass data from this browser</b>.</li>
       <li><b>Ask us.</b> You can also email us to access, correct or delete your information, including analytics data tied to your account. We'll respond within 30 days and may need to confirm the request comes from you.</li>
     </ul>
     <p>Depending on where you live (for example California, or other U.S. states with privacy laws), you may have additional rights, such as to know what we collect, to have it deleted or corrected, and not to be treated differently for using these rights. We honor these rights for all users, wherever they live.</p>
