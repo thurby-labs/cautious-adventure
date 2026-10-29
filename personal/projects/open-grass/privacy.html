@@ -9,9 +9,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="logo/favicon-48.png">
 <link rel="apple-touch-icon" href="logo/apple-touch-icon.png">
 <title>Privacy Policy · Open Grass</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Barlow:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <!-- No analytics on this page. Keep it in sync with worker/README.md "Privacy" and the "Your data" dialog in studio.js. -->
 <style>
 :root {
@@ -66,7 +64,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
       <ul>
         <li>You can use Open Grass without an account. Your plays then stay in your own browser. You get one free AI draft; after that, AI drafting needs a free account.</li>
         <li>If you sign in, we store your email (through our sign-in provider), your plays, favorites, and any play-card photos you upload, so they follow you across devices.</li>
-        <li>We use Google Analytics to see which features coaches use. It never receives your plays, play names, descriptions, or email. You can turn it off.</li>
+        <li>We use Google Analytics to see which features coaches use. It never receives your plays, play names, descriptions, or email. You can turn it off, and in Europe we ask before turning it on.</li>
         <li>We advertise Open Grass on Google and measure whether those ads lead to sign-ups and play tests. We don't sell your information, and we don't use it to target ads at you: no ad cookies, no retargeting, no personalized ads.</li>
         <li>You can download or delete your account and its data at any time from <b>Your data</b> at the bottom of the app.</li>
       </ul>
@@ -95,7 +93,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <p>During the beta, the <b>Beta</b> button and <b>Send feedback</b> link open a short form. We store what you write, the topic you pick, and, unless you uncheck "Include what's on screen," the app's own settings at that moment: the format, defense, rusher settings and grade (and which sample play, for the app's sample plays; never your own play or its name). We also note whether you're on a phone, tablet or computer. If you're signed in, the note is stored with your account ID, and we email you back at your account email only if you tick that box. If you're not signed in, you can add an email address for a reply; otherwise we store a <b>salted, one-way hash</b> of your IP address to stop spam (at most 10 notes a day from one IP address). Feedback is sent even when usage statistics are off, because you chose to send it; Google Analytics only learns that a note was sent and its topic, never what you wrote. After 90 days we remove the account ID, email address and hashed IP, and we delete the note after one year. To make sure we see new notes quickly, an AI tool (Anthropic's) copies each new note, with its details and the email for a reply, into an email to our own inbox (Gmail). Please don't put personal details in a note that you don't want us to keep.</p>
 
     <h3>Analytics</h3>
-    <p>We use Google Analytics to understand how the app is used, for example which coverages coaches test, whether AI drafting succeeds, and whether share links get opened. Google Analytics uses cookies (<code>_ga</code>, <code>_ga_*</code>) and collects information such as pages visited, the features you use, your browser and device type, and approximate location (city level, derived from your IP address by Google).</p>
+    <p>We use Google Analytics to understand how the app is used, for example which coverages coaches test, whether AI drafting succeeds, and whether share links get opened. Google Analytics uses cookies (<code>_ga</code>, <code>_ga_*</code>) and collects information such as pages visited, the features you use, your browser and device type, and approximate location (city level, derived from your IP address by Google). In Europe it only runs after you allow it (see <a href="#europe">Visitors in Europe</a>).</p>
     <ul>
       <li>We deliberately <b>never send</b> your plays, play names, play descriptions, file names, or email address to Google Analytics, and we remove the part of a link that contains a shared play before the page address is recorded.</li>
       <li>If you're signed in, we send your random account ID so visits from your different devices count as one coach. We never send your email or name.</li>
@@ -116,7 +114,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <p>When you share a play you created or changed, the entire play is encoded inside the link itself. We don't store it on a server. Anyone who has the link can open the play, so share it only with people you want to see it.</p>
 
     <h3>Information your browser sends automatically</h3>
-    <p>Like any website, the services that deliver Open Grass receive your IP address and basic browser information when you load the page: our host (GitHub Pages), Google Fonts (for the app's typefaces), and our server provider (Cloudflare) when you use AI drafting or an account.</p>
+    <p>Like any website, the services that deliver Open Grass receive your IP address and basic browser information when you load the page: our host (GitHub Pages) and our server provider (Cloudflare) when you use AI drafting or an account.</p>
 
     <h2>2. How we use information</h2>
     <ul>
@@ -135,7 +133,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <div class="tbl"><table>
       <tr><th>Provider</th><th>What for</th><th>What they receive</th></tr>
       <tr><td>Clerk</td><td>Accounts and sign-in</td><td>Email, name and photo from Google sign-in, sign-in records</td></tr>
-      <tr><td>Google</td><td>"Sign in with Google," Analytics, ad measurement (Google Ads), fonts, and our email (Gmail)</td><td>Sign-in, if you choose it; usage statistics as described above; your email address and our messages when we email you; feedback notes we forward to our own inbox; a page-view signal, and whether a visitor who clicked our ad signed up; IP address when fonts load</td></tr>
+      <tr><td>Google</td><td>"Sign in with Google," Analytics, ad measurement (Google Ads), and our email (Gmail)</td><td>Sign-in, if you choose it; usage statistics as described above; your email address and our messages when we email you; feedback notes we forward to our own inbox; a page-view signal, and whether a visitor who clicked our ad signed up</td></tr>
       <tr><td>Cloudflare</td><td>Our server, database and photo storage</td><td>Account plays, favorites, photos, usage records, fix ratings, feedback notes</td></tr>
       <tr><td>Anthropic</td><td>The AI model that draws plays, and AI tools we use to prepare our emails and forward feedback notes</td><td>The text or image you submit for a draft. When we use AI tools to prepare our emails to you, your email address, name and account activity counts (such as how many plays you've saved). Feedback notes you send us, with their details and reply email, when an AI tool forwards them to our inbox. Under Anthropic's commercial terms, none of it is used to train their models.</td></tr>
       <tr><td>GitHub</td><td>Hosting the website</td><td>Standard web request information</td></tr>
@@ -167,8 +165,9 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
       <tr><td><code>og-nudge-&lt;name&gt;</code></td><td>Open Grass (local storage)</td><td>Remembers that you closed a "create a free account" reminder, so it stays away for 7 days</td></tr>
       <tr><td><code>og-fixvotes</code></td><td>Open Grass (local storage)</td><td>Remembers how you rated each suggested fix, so your 👍 or 👎 shows again</td></tr>
       <tr><td><code>og-no-analytics</code></td><td>Open Grass (local storage)</td><td>Remembers that you turned analytics off</td></tr>
+      <tr><td><code>og-consent</code></td><td>Open Grass (local storage)</td><td>Remembers that you allowed usage statistics (asked in Europe)</td></tr>
       <tr><td><code>__session</code>, <code>__client_uat</code> and similar</td><td>Clerk (cookies)</td><td>Keep you signed in. Required for accounts.</td></tr>
-      <tr><td><code>_ga</code>, <code>_ga_*</code></td><td>Google Analytics (cookies)</td><td>Usage statistics. Optional, see below.</td></tr>
+      <tr><td><code>_ga</code>, <code>_ga_*</code></td><td>Google Analytics (cookies)</td><td>Usage statistics. Optional, see below. In Europe, set only after you tap Allow.</td></tr>
     </table></div>
     <p>Google Ads doesn't set cookies on Open Grass: advertising cookies are turned off for every visitor.</p>
 
@@ -182,6 +181,24 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     </ul>
     <p>Depending on where you live (for example California, or other U.S. states with privacy laws), you may have additional rights, such as to know what we collect, to have it deleted or corrected, and not to be treated differently for using these rights. We honor these rights for all users, wherever they live.</p>
 
+    <h3 id="europe">Visitors in Europe (EU, EEA, UK and Switzerland)</h3>
+    <p>If you're in Europe, the General Data Protection Regulation (GDPR) or the UK and Swiss equivalents apply. Open Grass, LLC is the controller of your information; contact details are in section 11.</p>
+    <ul>
+      <li><b>We ask before analytics.</b> If your device's time zone is in Europe, the app doesn't load Google Analytics or the Google Ads signals, and doesn't send fix ratings, until you tap <b>Allow</b> on the banner. <b>No thanks</b> keeps them off for good. You can change your mind anytime under <b>Your data</b>; turning usage statistics off also deletes the analytics cookies from your browser. Our fonts are served from our own site, so loading a page doesn't contact Google.</li>
+      <li><b>Why we're allowed to use your information</b> (legal bases):
+        <ul>
+          <li>To provide what you ask for (your account, saving and syncing plays, photos, AI drafting, account emails): to perform our agreement with you (Art. 6(1)(b) GDPR).</li>
+          <li>To keep Open Grass safe and affordable (rate limits, daily AI limits, content checks, salted IP hashes, sign-in security records) and to read and answer your feedback: our legitimate interest in running a secure, sustainable service (Art. 6(1)(f)).</li>
+          <li>Usage statistics, Google Ads measurement and fix ratings: your consent (Art. 6(1)(a)), which you can withdraw at any time without affecting what happened before.</li>
+          <li>Where the law requires us to keep or disclose something: our legal obligations (Art. 6(1)(c)).</li>
+        </ul>
+      </li>
+      <li><b>Your rights.</b> You can ask to access, correct or delete your information, to restrict or object to how we use it (including anything based on legitimate interest), and to receive it in a portable format. Most of this is self-serve under <b>Your data</b>; otherwise email us and we'll answer within one month.</li>
+      <li><b>Automated decisions.</b> We don't make decisions with legal or similarly significant effects about you by automated means alone. If the automatic content check turns off AI drafting for your account, email us and a person will review it.</li>
+      <li><b>Transfers outside Europe.</b> Open Grass is run from the United States, so your information is processed there. We rely on our providers' certification under the EU–U.S. Data Privacy Framework (and its UK and Swiss extensions) where they have one, and otherwise on the European Commission's Standard Contractual Clauses in their data processing terms.</li>
+      <li><b>Complaints.</b> You have the right to complain to the data protection authority where you live or work (in Germany, your state's data protection authority; in the UK, the Information Commissioner's Office). The EU authorities are listed on the <a href="https://www.edpb.europa.eu/about-edpb/about-edpb/members_en" rel="noopener">European Data Protection Board's site</a>. We'd appreciate the chance to fix things first, so please email us.</li>
+    </ul>
+
     <h2>7. Children's privacy</h2>
     <p>Open Grass is built for coaches, parents and other adults. It isn't directed to children under 13, and we don't knowingly collect personal information from them. If you believe a child has given us personal information, contact us and we'll delete it. Coaches: please don't put players' full names or other personal details about children into play names, descriptions or photos.</p>
 
@@ -189,7 +206,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <p>Connections to Open Grass are encrypted (HTTPS). Account data is only available to the signed-in account it belongs to, photos are stored privately, and IP addresses are stored only as salted hashes. No system is perfectly secure, but we work to protect your information and will notify you as required by law if a breach affects it.</p>
 
     <h2>9. Where information is processed</h2>
-    <p>Open Grass is operated from the United States. Our providers may process information in the United States and other countries where they operate.</p>
+    <p>Open Grass is operated from the United States. Our providers may process information in the United States and other countries where they operate. For visitors in Europe, <a href="#europe">Visitors in Europe</a> explains how these transfers are protected.</p>
 
     <h2>10. Changes to this policy</h2>
     <p>If we change this policy, we'll update the effective date above. If the changes are significant, we'll also tell you in the app.</p>

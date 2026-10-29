@@ -19,16 +19,57 @@
      A browser holding the owner token (ai.js) is tagged traffic_type=internal for the Internal traffic data filter.
      Analytics is off when the visitor turned it off under "Your data" (og-no-analytics) or their browser sends Global Privacy Control:
      then gtag.js never loads, so neither GA4 nor the linked Google Ads page-view ping is sent (the ga-disable flag alone only
-     stops GA4). privacy.html promises that opting out stops both. */
+     stops GA4). privacy.html promises that opting out stops both.
+     Europe (EU/EEA, UK, Switzerland): GDPR and the ePrivacy rules (Germany's TDDDG §25) need consent BEFORE analytics cookies, so
+     a browser whose time zone is in Europe loads nothing until the visitor taps Allow on a small banner (og-consent = 'yes').
+     No thanks sets og-no-analytics like the Your data switch, and the banner never comes back. Static hosting can't see the
+     country, so the time zone stands in for it; it errs toward asking. privacy.html ("Visitors in Europe") describes this. */
   (() => {
-    let off = !!navigator.globalPrivacyControl;
+    let off = !!navigator.globalPrivacyControl, ask = false;
     try { off = off || localStorage.getItem('og-no-analytics') === '1'; } catch (e) {}
-    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
-    else {
+    let tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    if (!off && /^(Europe\/|Atlantic\/(Reykjavik|Canary|Madeira|Azores|Faroe))/.test(tz)) {
+      let c = null;
+      try { c = localStorage.getItem('og-consent'); } catch (e) {}
+      if (c !== 'yes') { off = true; ask = true; }
+    }
+    window.ogLoadGA = () => {
+      window['ga-disable-G-1T9DMC15V7'] = false;
+      if (document.getElementById('og-gtag')) return;
       const t = document.createElement('script');
-      t.async = true;
+      t.async = true; t.id = 'og-gtag';
       t.src = 'https://www.googletagmanager.com/gtag/js?id=G-1T9DMC15V7';
       document.head.appendChild(t);
+    };
+    if (off) window['ga-disable-G-1T9DMC15V7'] = true;
+    else window.ogLoadGA();
+    if (ask) {
+      const show = () => {
+        const b = document.createElement('div');
+        b.id = 'ogConsent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Usage statistics');
+        b.innerHTML = `<style>
+          #ogConsent { position: fixed; z-index: 2147483000; left: 16px; right: 16px; bottom: 16px; max-width: 400px; margin-left: auto;
+            background: var(--panel, #fff); color: var(--ink, #15201A); border: 1px solid var(--line, #D5DECF); border-radius: 12px;
+            padding: 14px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.22); font: 15px/1.45 var(--f-body, system-ui, sans-serif); }
+          #ogConsent p { margin: 0 0 12px; }
+          #ogConsent a { color: var(--accent, #1C5A37); font-weight: 600; }
+          #ogConsent .ogc-row { display: flex; gap: 8px; }
+          #ogConsent button { flex: 1; min-height: 44px; border-radius: 8px; font: 600 15px var(--f-body, system-ui, sans-serif);
+            background: var(--panel, #fff); color: var(--ink, #15201A); border: 1.5px solid var(--ink, #15201A); cursor: pointer; }
+        </style>
+        <p>Can we count your visit? With your OK, Google Analytics sets cookies so we can see which features coaches use. Never your plays, play names or email. <a href="/privacy.html#europe">Privacy</a></p>
+        <div class="ogc-row"><button type="button" data-v="no">No thanks</button><button type="button" data-v="yes">Allow</button></div>`;
+        b.addEventListener('click', e => {
+          const v = e.target.closest && e.target.closest('button')?.dataset.v;
+          if (!v) return;
+          try { v === 'yes' ? localStorage.setItem('og-consent', 'yes') : localStorage.setItem('og-no-analytics', '1'); } catch (err) {}
+          if (v === 'yes') window.ogLoadGA();
+          b.remove();
+        });
+        document.body.appendChild(b);
+      };
+      document.body ? show() : document.addEventListener('DOMContentLoaded', show);
     }
     const h = location.hash.slice(1);
     // Clerk's sign-in can return with a dev session token in the query (__clerk_db_jwt) or handshake params: never record those.
@@ -76,9 +117,7 @@
     {"@type": "ListItem", "position": 2, "name": "7 on 7 Flag Football Plays", "item": "https://open-grass.com/7-on-7-flag-football-plays"}]}
 ]}
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <style>
 /* Content pages (pages/*.html, built by build.py). Same tokens as the app and privacy.html. */
 :root {
