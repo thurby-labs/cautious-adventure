@@ -80,7 +80,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <h3>If you create an account</h3>
     <ul>
       <li><b>Account details.</b> Sign-in is handled by our provider, Clerk. Clerk stores your email address and, if you sign in with Google, the name and profile picture Google shares. Clerk also keeps sign-in records (such as time, IP address and browser) to keep accounts secure. We receive a random account ID from Clerk, not your password.</li>
-      <li><b>Your plays and favorites.</b> The plays you save, their names, and your list of favorites, stored with your account ID.</li>
+      <li><b>Your plays and favorites.</b> The plays you save, their names, your list of favorites, and which sample plays you hid, stored with your account ID.</li>
       <li><b>Play-card photos.</b> If you create a play from a photo or screenshot while signed in, we keep the image so you can view the original later. Only you can access it. If no saved play uses a photo, we delete it after 7 days. We only keep photos that pass the check described under AI drafting.</li>
       <li><b>PDF playbooks.</b> If you upload a playbook as a PDF while signed in, the PDF itself stays on your device. The app draws each page you pick as an image, and only those page images are sent, the same way as a photo. We keep a page image only when plays were found on it, so you can view the original page later; it's handled and deleted like a play-card photo. Pages that are skipped (no plays on them, or a photo of people) are never stored.</li>
     </ul>
@@ -158,7 +158,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 2
     <h2>5. Cookies and browser storage</h2>
     <div class="tbl"><table>
       <tr><th>Name</th><th>Set by</th><th>Purpose</th></tr>
-      <tr><td><code>og-mine</code>, <code>og-favs</code>, <code>og-play</code></td><td>Open Grass (local storage)</td><td>Plays, favorites and last play when you're not signed in</td></tr>
+      <tr><td><code>og-mine</code>, <code>og-favs</code>, <code>og-hidden</code>, <code>og-play</code></td><td>Open Grass (local storage)</td><td>Plays, favorites, hidden sample plays and last play when you're not signed in</td></tr>
       <tr><td><code>og-signed</code></td><td>Open Grass (local storage)</td><td>Remembers that this browser was signed in, so the full library shows while sign-in loads</td></tr>
       <tr><td><code>og-free-draft</code></td><td>Open Grass (local storage)</td><td>Remembers that this browser used its free AI draft</td></tr>
       <tr><td><code>og-cloud:&lt;id&gt;</code></td><td>Open Grass (local storage)</td><td>A copy of your account's plays, so they show if our server can't be reached</td></tr>

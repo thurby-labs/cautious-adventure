@@ -230,6 +230,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, .cov:focus-visi
 .testbtn:hover { filter: brightness(1.15); }
 /* What's new (studio.js NEWS): a "New" pill on Test a play for returning visitors */
 .testbtn { position: relative; }
+/* Playbook (studio.js openPlaybook): an outlined twin of Test a play; icon only below 900 px */
+.pbbtn { flex: none; min-height: 52px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font-weight: 700; cursor: pointer; white-space: nowrap; }
+.pbbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
+.pbbtn:hover { border-color: var(--muted); }
+@media (max-width: 899px) { .pbbtn { width: 52px; padding: 0; } .pbbtn .tlabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 .testbtn .news { font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: .05em; text-transform: uppercase; padding: 3px 6px; border-radius: 99px; background: var(--warn); color: #15201A; white-space: nowrap; }
 
 /* Main grid */
@@ -469,6 +474,22 @@ dl.notes .linkbtn { padding: 0; font-size: 14px; text-align: left; }
 .pdf-found li { display: grid; grid-template-columns: 64px 1fr auto auto; gap: 8px; align-items: center; font-size: 13px; }
 .pdf-found svg { width: 64px; height: 53px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
 .pdf-found .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pb { display: grid; gap: 10px; min-height: 0; }
+.pb-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; max-height: 60vh; overflow: hidden auto; padding-right: 2px; }
+.pb-body h4 { margin: 8px 0 0; font-size: 15px; }
+.pb-body > p { margin: 0; font-size: 13px; }
+.pb-group ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.pb-gh { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
+.pb-group li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.pb-group li label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 44px; }
+.pb-group input[type="checkbox"], .pb-gh input { width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
+.pb-group svg { width: 52px; height: 43px; flex: none; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.pb-group .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pb-hid label { opacity: .55; }
+.pb-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 99px; background: var(--chip); color: var(--muted); }
+.pb-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.pb-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; min-height: 44px; }
+.pb-bar input { flex: 1; min-width: 160px; font-size: 16px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
 .batch .st.err { color: var(--bad); }
 .sharebox { display: grid; gap: 6px; }
 .details { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; }
@@ -708,6 +729,7 @@ span.beta { cursor: default; margin-left: 4px; }
         <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
         <select id="playSel" aria-label="Play"></select>
       </div>
+      <button class="pbbtn" id="playbookBtn" title="Manage your playbook: delete, group and hide plays"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13z"/></svg><span class="tlabel">Playbook</span></button>
       <button class="testbtn" id="newPlayBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="tlabel">Test a play</span></button>
     </div>
     <div class="head-actions">
@@ -1985,7 +2007,8 @@ const ST = { open: 'var(--good)', tight: 'var(--warn)', covered: 'var(--bad)' };
 const gate = { signedIn: false, open: false, extra: new Set() };
 try { gate.signedIn = localStorage.getItem('og-signed') === '1'; } catch (e) {}
 function isLocked(p) { return !!p && builtIn(p) && !p.starter && !gate.signedIn && !gate.open && !gate.extra.has(p.id); }
-const firstOpenPlay = () => PLAYS.find(p => !isLocked(p));
+// After a delete: the first open sample the coach hasn't hidden, else one of their own plays, else any open sample
+const firstOpenPlay = () => PLAYS.find(p => !isLocked(p) && !library.hidden.has(p.id)) || library.mine[0] || PLAYS.find(p => !isLocked(p));
 let savedPlay = PLAYS.findIndex(p => p.id === STARTERS[0]);
 try {
   const i = PLAYS.findIndex(p => p.id === localStorage.getItem('og-play'));
@@ -2677,7 +2700,7 @@ const bestCache = {};
 function bestPlaysFor(covId) {
   // only plays of the same format: a 7v7 coverage says nothing about a 5v5 play
   const fmt = fmtOf(state.play).id, key = fmt + covId + (state.blitz ? '+b' : '') + state.rusher + ':' + library.version;
-  if (!bestCache[key]) bestCache[key] = allPlays().filter(p => fmtOf(p).id === fmt).map(p => ({ p, ev: runPlay(p, covId, look()).ev }))
+  if (!bestCache[key]) bestCache[key] = allPlays().filter(p => fmtOf(p).id === fmt && !isHidden(p)).map(p => ({ p, ev: runPlay(p, covId, look()).ev }))
     .sort((x, y) => y.ev.score - x.ev.score).slice(0, 3);
   return bestCache[key].map(({ p, ev }) => `<button class="linkbtn" data-play="${p.id}">${esc(playLabel(p))}${isLocked(p) ? ' 🔒' : ''}</button> <span class="g g${ev.grade}">${ev.grade}</span>`).join('<br>');
 }
@@ -2838,7 +2861,10 @@ svg.addEventListener('pointerdown', e => {
 
 /* ---------- wiring ---------- */
 /* Play library: built-in plays plus the coach's own (My plays), shared plays opened from a link, and an unsaved AI draft. */
-const library = { mine: [], shared: [], favs: [], version: 0 };
+const library = { mine: [], shared: [], favs: [], hidden: new Set(), version: 0 };
+// A sample play the coach hid in the Playbook manager stays out of the play list and the read panel's suggestions,
+// unless it's the play on screen (a share link, the tour). It still opens from links.
+const isHidden = p => !!p && builtIn(p) && library.hidden.has(p.id) && !(state.basePlay && state.basePlay.id === p.id);
 const groupKey = g => String(g || '').toLowerCase();
 // The coach's group names, A–Z, merging ones that differ only in case (the first spelling wins)
 function myGroups() {
@@ -2861,12 +2887,12 @@ function buildSelect() {
     const ps = list.filter(p => fmtOf(p).id === f);
     return ps.length ? `<optgroup label="${label} · ${f}">${ps.map(sample).join('')}</optgroup>` : '';
   }).join('');
-  const gated = PLAYS.some(isLocked);
-  let h = '';
+  const gated = PLAYS.some(isLocked), shown = PLAYS.filter(p => !isHidden(p));
+  let h = '<option value="__playbook">Manage playbook…</option>';
   if (state.play && state.play.draft) h += `<optgroup label="Draft"><option value="${esc(state.basePlay.id)}">${esc(state.basePlay.name)} (draft)</option></optgroup>`;
   // Signed out: the open plays first; the rest of the library follows with a lock (picking one asks them to sign up)
-  if (gated) h += byFormat(PLAYS.filter(p => !isLocked(p)), 'Sample plays (free)');
-  const favs = library.favs.map(findPlay).filter(Boolean);
+  if (gated) h += byFormat(shown.filter(p => !isLocked(p)), 'Sample plays (free)');
+  const favs = library.favs.map(findPlay).filter(p => p && !isHidden(p));
   if (favs.length) h += `<optgroup label="★ Favorites">${favs.map(p => `<option value="${esc(p.id)}">★ ${esc(playLabel(p))}${typeTag(p)}${fmtTag(p)}${lockTag(p)}</option>`).join('')}</optgroup>`;
   if (library.shared.length) h += `<optgroup label="Shared with you">${library.shared.map(opt).join('')}</optgroup>`;
   // My plays: one section per group (A–Z), numbered plays first in call-number order, then the ungrouped ones
@@ -2874,8 +2900,10 @@ function buildSelect() {
   groups.forEach(g => { h += `<optgroup label="${esc(g)}">${byNum(library.mine.filter(p => groupKey(p.group) === groupKey(g))).map(opt).join('')}</optgroup>`; });
   const loose = library.mine.filter(p => !p.group);
   if (loose.length || !groups.length) h += `<optgroup label="${groups.length ? 'My plays · no group' : 'My plays'}">${loose.length ? byNum(loose).map(opt).join('') : '<option disabled>None yet · use New play</option>'}</optgroup>`;
-  const samples = PLAYS.filter(p => !(gated && !isLocked(p)));
+  const samples = shown.filter(p => !(gated && !isLocked(p)));
   if (samples.length) h += byFormat(samples, gated ? 'More sample plays (free account)' : 'Sample plays');
+  const nHidden = PLAYS.filter(p => library.hidden.has(p.id)).length;
+  if (nHidden) h += `<optgroup label="Sample plays"><option value="__playbook">${nHidden} hidden · show them in Playbook</option></optgroup>`;
   $('playSel').innerHTML = h;
   $('playSel').value = state.basePlay.id;
 }
@@ -2896,7 +2924,10 @@ function pickPlay(id, method) {
   loadPlay(pl);
   track('select_play', { ...playInfo(pl), favorite: library.favs.includes(pl.id), method });
 }
-$('playSel').addEventListener('change', e => pickPlay(e.target.value, 'dropdown'));
+$('playSel').addEventListener('change', e => {
+  if (e.target.value === '__playbook') { e.target.value = state.basePlay.id; openPlaybook('picker'); return; }
+  pickPlay(e.target.value, 'dropdown');
+});
 $('read').addEventListener('toggle', e => { if (e.target.id === 'moreNotes') glanceOpen = e.target.open; }, true);
 $('read').addEventListener('click', e => {
   const sc = e.target.closest('[data-cov]'); if (sc) { setCoverage(sc.dataset.cov, 'read_panel'); return; }
@@ -3394,7 +3425,7 @@ const CLERK_PUBLISHABLE_KEY = 'pk_live_Y2xlcmsub3Blbi1ncmFzcy5jb20k';
 
 const account = {
   user: null,          // { id, label } when signed in
-  data: null,          // { plays, favs } from the account
+  data: null,          // { plays, favs, hidden } from the account (hidden: sample plays left out of the play list)
   ready: false,        // Clerk has loaded (or there's no Clerk)
   cacheKey() { return 'og-cloud:' + this.user.id; },
   saveCache() { try { localStorage.setItem(this.cacheKey(), JSON.stringify(this.data)); } catch (e) {} },
@@ -3408,7 +3439,8 @@ const account = {
     this.data.favs = this.data.favs.filter(f => f !== id);
     this.saveCache();
   },
-  setFavs(ids) { this.data.favs = ids.slice(); this.saveCache(); }
+  setFavs(ids) { this.data.favs = ids.slice(); this.saveCache(); },
+  setHidden(ids) { this.data.hidden = ids.slice(); this.saveCache(); }
 };
 
 async function authToken() {
@@ -3546,13 +3578,13 @@ async function switchAccount(user) {
   account.user = user;
   let cached = null;
   try { cached = JSON.parse(localStorage.getItem(account.cacheKey()) || 'null'); } catch (e) {}
-  const localPlays = store.local('og-mine') || [], localFavs = store.local('og-favs') || [];
+  const localPlays = store.local('og-mine') || [], localFavs = store.local('og-favs') || [], localHidden = store.local('og-hidden') || [];
   try {
-    if (localPlays.length || localFavs.length) {
-      const r = await accountApi('POST', '/sync', { plays: localPlays, favs: localFavs });
-      account.data = { plays: r.plays, favs: r.favs, founding: !!r.founding, admin: !!r.admin };
+    if (localPlays.length || localFavs.length || localHidden.length) {
+      const r = await accountApi('POST', '/sync', { plays: localPlays, favs: localFavs, hidden: localHidden });
+      account.data = { plays: r.plays, favs: r.favs, hidden: r.hidden || [], founding: !!r.founding, admin: !!r.admin };
       // The account has them now: clear this browser's copy so a later sign-in by someone else doesn't pick them up.
-      try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); } catch (e) {}
+      try { localStorage.removeItem('og-mine'); localStorage.removeItem('og-favs'); localStorage.removeItem('og-hidden'); } catch (e) {}
       account.saveCache();
       track('account_sync', { plays_moved: r.added || 0, favs_moved: localFavs.length });
       return r.added ? `Moved ${r.added} play${r.added > 1 ? 's' : ''} from this browser into your account.` : 'Signed in. Your plays are synced.';
@@ -3561,8 +3593,8 @@ async function switchAccount(user) {
     account.saveCache();
     return '';
   } catch (e) {
-    track('account_error', { stage: localPlays.length || localFavs.length ? 'sync' : 'me' });
-    account.data = cached || { plays: [], favs: [] };
+    track('account_error', { stage: localPlays.length || localFavs.length || localHidden.length ? 'sync' : 'me' });
+    account.data = cached || { plays: [], favs: [], hidden: [] };
     return cached ? 'Couldn’t reach your account. Showing the last synced copy.' : 'Couldn’t reach your account. Try reloading.';
   }
 }
@@ -3629,6 +3661,12 @@ const store = {
       return;
     }
     try { this.local('og-favs', ids); } catch (e) { toast('Couldn’t save favorites. Try again.'); }
+  },
+  // Sample plays the coach hid from the play list (the Playbook manager). Nothing is deleted; the samples are part of the site.
+  async loadHidden() { return (account.user ? account.data.hidden : this.local('og-hidden')) || []; },
+  async saveHidden(ids) {
+    if (account.user) { await accountApi('PUT', '/hidden', { hidden: ids }); account.setHidden(ids); return; }
+    this.local('og-hidden', ids);
   }
 };
 
@@ -4462,6 +4500,21 @@ function openDetails() {
 }
 $('detailsBtn').addEventListener('click', openDetails);
 
+// Deletes some of My plays (one at a time through the Worker when signed in, three in flight), unfavorites them, and moves
+// off the play on screen if it went. Returns how many were deleted.
+async function removeMine(ids) {
+  const gone = [], queue = ids.slice();
+  await Promise.all([0, 1, 2].map(async () => {
+    while (queue.length) { const id = queue.shift(); try { await store.deleteMine(id); gone.push(id); } catch (e) {} }
+  }));
+  if (!gone.length) return 0;
+  library.mine = library.mine.filter(p => !gone.includes(p.id));
+  if (library.favs.some(f => gone.includes(f))) { library.favs = library.favs.filter(f => !gone.includes(f)); store.saveFavs(library.favs); }
+  library.version++;
+  if (gone.includes(state.basePlay.id)) loadPlay(firstOpenPlay()); else { buildSelect(); renderHead(); }
+  return gone.length;
+}
+
 let delArm = null;
 $('deletePlayBtn').addEventListener('click', async () => {
   const b = $('deletePlayBtn');
@@ -4471,17 +4524,130 @@ $('deletePlayBtn').addEventListener('click', async () => {
     return;
   }
   clearTimeout(delArm); delArm = null; b.textContent = 'Delete play';
-  const id = state.basePlay.id;
-  try {
-    await store.deleteMine(id);
-    library.mine = library.mine.filter(p => p.id !== id);
-    if (library.favs.includes(id)) { library.favs = library.favs.filter(f => f !== id); store.saveFavs(library.favs); }
-    library.version++;
-    loadPlay(firstOpenPlay());
+  if (await removeMine([state.basePlay.id])) {
     toast('Play deleted.');
     track('delete_play', { storage: account.user ? 'account' : 'local', my_plays: library.mine.length });
-  } catch (e) { toast('Couldn’t delete the play. Try again.'); track('app_error', { where: 'delete' }); }
+  } else { toast('Couldn’t delete the play. Try again.'); track('app_error', { where: 'delete' }); }
 });
+
+/* ---------- Playbook: manage My plays (delete, move to a group) and hide the sample plays a coach doesn't use ----------
+   Opened from the Playbook button beside the play picker, or "Manage playbook…" at the top of the picker.
+   Sample plays are part of the site, so they're hidden (library.hidden, synced like favorites), never deleted. */
+function openPlaybook(from) {
+  const sel = new Set();   // "m:<id>" for My plays, "s:<id>" for samples
+  let mode = '', arm = null;   // mode: '' | 'move'
+  track('playbook_open', { from, my_plays: library.mine.length, hidden: library.hidden.size });
+  const tags = p => (p.type === 'run' ? ' <span class="pb-tag">Run</span>' : p.type === 'pass' ? '' : ' <span class="pb-tag">Trick</span>') + (fmtOf(p).id === '7v7' ? ' <span class="pb-tag">7v7</span>' : '');
+  const row = (p, k) => {
+    const hid = k === 's' && library.hidden.has(p.id);
+    return `<li class="${hid ? 'pb-hid' : ''}"><label><input type="checkbox" data-k="${k}:${esc(p.id)}"${sel.has(k + ':' + p.id) ? ' checked' : ''}>${miniPlaySvg(p)}<span class="nm">${esc(playLabel(p))}${tags(p)}${hid ? ' <span class="pb-tag">Hidden</span>' : ''}${isLocked(p) ? ' 🔒' : ''}</span></label><button class="act" data-open="${esc(p.id)}">Open</button></li>`;
+  };
+  const block = (title, list, k) => {
+    if (!list.length) return '';
+    const all = list.every(p => sel.has(k + ':' + p.id));
+    return `<div class="pb-group"><label class="pb-gh"><input type="checkbox" data-all="${k}"${all ? ' checked' : ''} data-ids="${esc(list.map(p => p.id).join(' '))}"><span>${title} <span class="muted">${list.length}</span></span></label><ol>${list.map(p => row(p, k)).join('')}</ol></div>`;
+  };
+  const byNum = ps => [...ps].sort((a, b) => (a.num || 1e3) - (b.num || 1e3));
+  function bar() {
+    const mine = [...sel].filter(k => k[0] === 'm'), samp = [...sel].filter(k => k[0] === 's');
+    if (!sel.size) return `<div class="pb-bar"><span class="muted">Tick plays to delete or move them, or tick sample plays to hide them.</span></div>`;
+    if (mode === 'move') {
+      const groups = myGroups();
+      return `<div class="pb-bar"><input id="pbGroup" maxlength="40" list="pbGroups" placeholder="Group name (blank = no group)" aria-label="Group"><datalist id="pbGroups">${groups.map(g => `<option value="${esc(g)}">`).join('')}</datalist>
+        <button class="act primary" id="pbMoveGo">Move ${mine.length}</button><button class="act" id="pbCancel">Cancel</button></div>`;
+    }
+    const anyHidden = samp.some(k => library.hidden.has(k.slice(2))), anyShown = samp.some(k => !library.hidden.has(k.slice(2)));
+    return `<div class="pb-bar"><b>${sel.size} selected</b>
+      ${mine.length ? `<button class="act" id="pbMove">Move to group</button><button class="act danger" id="pbDelete">${arm ? `Tap again to delete ${mine.length}` : `Delete ${mine.length}`}</button>` : ''}
+      ${anyShown ? `<button class="act" id="pbHide">Hide</button>` : ''}${anyHidden ? `<button class="act" id="pbShow">Show</button>` : ''}
+      <button class="act" id="pbClear">Clear</button></div>`;
+  }
+  function render() {
+    const groups = myGroups(), loose = library.mine.filter(p => !p.group);
+    const mineHtml = library.mine.length
+      ? groups.map(g => block(esc(g), byNum(library.mine.filter(p => groupKey(p.group) === groupKey(g))), 'm')).join('') + block(groups.length ? 'No group' : 'All my plays', byNum(loose), 'm')
+      : `<p class="muted">No plays of your own yet. Use <b>Test a play</b> to bring one in from a photo, a PDF, a description or a file.</p>`;
+    const sampHtml = ['5v5', '7v7'].map(f => block(`Sample plays · ${f}`, PLAYS.filter(p => fmtOf(p).id === f), 's')).join('');
+    const nh = library.hidden.size;
+    const body = $('pbBody'), top = body ? body.scrollTop : 0;
+    $('dialog').querySelector('.pb').innerHTML = `
+      <div class="pb-body" id="pbBody">
+        <h4>My plays <span class="muted">${library.mine.length}</span></h4>${mineHtml}
+        <h4>Sample plays <span class="muted">${nh ? `${nh} of ${PLAYS.length} hidden` : `${PLAYS.length}`}</span></h4>
+        <p class="muted">Hidden samples leave your play list. Show them again any time.</p>
+        <div class="pb-quick">${nh < PLAYS.length ? `<button class="act" id="pbHideAll">Hide all samples</button>` : ''}${nh ? `<button class="act" id="pbShowAll">Show all samples</button>` : ''}</div>
+        ${sampHtml}
+      </div>${bar()}`;
+    $('pbBody').scrollTop = top;
+    if (mode === 'move' && $('pbGroup')) $('pbGroup').focus();
+  }
+  async function setHidden(ids, hide) {
+    const next = new Set(library.hidden);
+    ids.forEach(id => hide ? next.add(id) : next.delete(id));
+    try { await store.saveHidden([...next]); } catch (e) { toast('Couldn’t save that. Try again.'); track('app_error', { where: 'playbook_hide' }); return; }
+    library.hidden = next; library.version++;
+    ids.forEach(id => sel.delete('s:' + id));
+    buildSelect(); recompute();
+    track('playbook_hide', { count: ids.length, hide, hidden: next.size });
+  }
+  async function moveTo(raw) {
+    const ids = [...sel].filter(k => k[0] === 'm').map(k => k.slice(2));
+    let group = cleanGroup(raw);
+    if (hasBadWords(group)) { toast('Pick a different group name.'); return; }
+    group = myGroups().find(g => g.toLowerCase() === group.toLowerCase()) || group;
+    let moved = 0;
+    for (const id of ids) {
+      const cur = library.mine.find(p => p.id === id);
+      if (!cur) continue;
+      const next = stripFlags(cur);
+      if (group) next.group = group; else delete next.group;
+      try { await store.saveMine(next); } catch (e) { continue; }
+      for (const p of [cur, ...(state.basePlay.id === id ? [state.basePlay, state.play] : [])]) { if (group) p.group = group; else delete p.group; }
+      moved++; sel.delete('m:' + id);
+    }
+    library.version++; buildSelect(); renderHead();
+    toast(moved < ids.length ? `Moved ${moved} of ${ids.length}. Try the rest again.` : group ? `Moved to ${group}.` : 'Moved out of their group.');
+    track('playbook_move', { count: moved });
+  }
+  openDialog(`${dlgHead('Playbook')}<div class="pb"></div>`);
+  // Listeners go on this dialog's own container: #dialog itself is reused by every dialog.
+  const d = $('dialog').querySelector('.pb');
+  render();
+  d.addEventListener('change', e => {
+    const c = e.target;
+    if (c.dataset.k) c.checked ? sel.add(c.dataset.k) : sel.delete(c.dataset.k);
+    else if (c.dataset.all) c.dataset.ids.split(' ').forEach(id => c.checked ? sel.add(c.dataset.all + ':' + id) : sel.delete(c.dataset.all + ':' + id));
+    else return;
+    if (![...sel].some(k => k[0] === 'm')) mode = '';
+    clearTimeout(arm); arm = null; render();
+  });
+  d.addEventListener('keydown', e => { if (e.target.id === 'pbGroup' && e.key === 'Enter' && !e.isComposing) $('pbMoveGo').click(); });
+  d.addEventListener('click', async e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.open) { closeDialog(); pickPlay(b.dataset.open, 'playbook'); return; }
+    const mine = [...sel].filter(k => k[0] === 'm').map(k => k.slice(2)), samp = [...sel].filter(k => k[0] === 's').map(k => k.slice(2));
+    if (b.id === 'pbClear') { sel.clear(); mode = ''; }
+    else if (b.id === 'pbMove') mode = 'move';
+    else if (b.id === 'pbCancel') mode = '';
+    else if (b.id === 'pbMoveGo') { b.disabled = true; await moveTo($('pbGroup').value); mode = ''; }
+    else if (b.id === 'pbHide') await setHidden(samp.filter(id => !library.hidden.has(id)), true);
+    else if (b.id === 'pbShow') await setHidden(samp.filter(id => library.hidden.has(id)), false);
+    else if (b.id === 'pbHideAll') await setHidden(PLAYS.map(p => p.id).filter(id => !library.hidden.has(id)), true);
+    else if (b.id === 'pbShowAll') await setHidden([...library.hidden], false);
+    else if (b.id === 'pbDelete') {
+      if (!arm) { arm = setTimeout(() => { arm = null; render(); }, 4000); render(); return; }
+      clearTimeout(arm); arm = null; b.disabled = true;
+      const n = await removeMine(mine);
+      mine.forEach(id => { if (!library.mine.some(p => p.id === id)) sel.delete('m:' + id); });
+      toast(n === mine.length ? `Deleted ${n} play${n === 1 ? '' : 's'}.` : `Deleted ${n} of ${mine.length}. Try the rest again.`);
+      track('playbook_delete', { count: n, storage: account.user ? 'account' : 'local', my_plays: library.mine.length });
+      if (n < mine.length) track('app_error', { where: 'playbook_delete' });
+    } else return;
+    render();
+  });
+}
+$('playbookBtn').addEventListener('click', () => openPlaybook('button'));
 
 $('favBtn').addEventListener('click', async () => {
   if (state.play.draft) return;
@@ -4801,7 +4967,7 @@ function openYourData() {
   } else {
     arm($('localClear'), 'Clear Open Grass data from this browser', async () => {
       try {
-        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k === 'og-fixvotes' || k.startsWith('og-nudge-') || k.startsWith('og-news-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k === 'og-mine' || k === 'og-favs' || k === 'og-hidden' || k === 'og-play' || k === 'og-signed' || k === 'og-free-draft' || k === 'og-tour-done' || k === 'og-signup-sent' || k === 'og-stage' || k === 'og-tour-offered' || k === 'og-fixvotes' || k.startsWith('og-nudge-') || k.startsWith('og-news-') || k.startsWith('og-cloud:')).forEach(k => localStorage.removeItem(k));
         sessionStorage.removeItem('og-visit');
       } catch (e) {}
       location.replace(location.pathname);
@@ -4828,9 +4994,10 @@ if (link && !link.shared) {
 }
 async function loadLibrary() {
   try {
-    const [mine, favs] = await Promise.all([store.loadMine(), store.loadFavs()]);
+    const [mine, favs, hidden] = await Promise.all([store.loadMine(), store.loadFavs(), store.loadHidden()]);
     library.mine = mine.map(p => { try { const n = normalizePlay(p, p.id); n.mine = true; return n; } catch (e) { return null; } }).filter(Boolean);
     library.favs = favs.filter(id => typeof id === 'string');
+    library.hidden = new Set(hidden.filter(id => typeof id === 'string'));
     // Built-in plays favorited in this browser before the beta gate stay open
     if (!account.user) library.favs.forEach(id => gate.extra.add(id));
     const n = library.mine.length;
