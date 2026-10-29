@@ -1357,6 +1357,31 @@ function catchWindow(pts, ptTimes, pl) {
   return ptTimes[i - 1] + (ptTimes[i] - ptTimes[i - 1]) * frac + (y0 > 7 ? 0 : 0);
 }
 
+/* Pre-snap motion, for playback only: the sim starts at the snap with everyone at their alignment. Each motion player jogs
+   from where the motion begins to his spot, all arriving at the snap. mt is seconds into the motion (0 to motionTime). */
+const MOTION_SPEED = 5;   // yd/s
+const motionPath = pl => [...pl.motion, pl.start];
+const polyLen = pts => pts.reduce((s, p, i) => i ? s + dist(pts[i - 1], p) : 0, 0);
+const motionTime = play => Math.max(0, ...play.players.filter(p => p.motion && p.motion.length).map(p => polyLen(motionPath(p)) / MOTION_SPEED));
+function motionAt(play, mt) {
+  const T = motionTime(play), at = {};
+  play.players.forEach(pl => {
+    if (!pl.motion || !pl.motion.length) return;
+    const pts = motionPath(pl);
+    let d = polyLen(pts) - Math.max(0, T - mt) * MOTION_SPEED;   // yards covered so far, counted back from the snap
+    let p = [...pts[0]];
+    for (let i = 1; i < pts.length && d > 0; i++) {
+      const L = dist(pts[i - 1], pts[i]), u = Math.min(1, d / (L || 1));
+      p = [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * u, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * u];
+      d -= L;
+    }
+    at[pl.id] = p;
+  });
+  return at;
+}
+// a receiver drawn with no route (a back who stays in to protect): the field shows a STAYS IN tag instead of a route line
+const staysIn = pl => !pl.qb && !pl.blocker && !!pl.route.length && pl.route.every(p => dist(p, pl.start) < 1);
+
 function posAt(path, t) {
   const k = path.keys;
   if (t <= k[0].t) return [...k[0].p];
@@ -1969,7 +1994,7 @@ try {
 const state = {
   basePlay: clone(PLAYS[savedPlay]), play: clone(PLAYS[savedPlay]), changes: {},
   cov: 'c2', blitz: false, rusher: 'R', c1: 'man', holes: true, t: 0, playing: false, speed: 0.5, loop: false, nudges: {},
-  run: null, scout: {}, sugs: [], tried: null
+  run: null, scout: {}, sugs: [], tried: null, mt: null
 };
 const $ = id => document.getElementById(id);
 const svg = $('field');
@@ -2108,6 +2133,16 @@ function frameAt(t) {
   for (const id in a.off) off[id] = mix(a.off[id], b.off[id]);
   return { t, off, def: a.def.map((p, j) => mix(p, b.def[j])) };
 }
+/* Pre-snap motion (motionAt in engine.js): playback from the snap first runs it (state.mt, seconds into it). A man defender
+   slides across with his receiver (the tell coaches look for); zones hold. */
+function motionFrame(f, mt) {
+  const off = { ...f.off, ...motionAt(state.play, mt) };
+  const def = f.def.map((p, i) => {
+    const d = state.run.def.defenders[i], pl = d.role === 'man' && playerById(d.man);
+    return pl && pl.motion && pl.motion.length ? [clamp(p[0] + off[pl.id][0] - pl.start[0], 0.5, fieldW() - 0.5), p[1]] : p;
+  });
+  return { ...f, off, def };
+}
 
 /* Pre-snap, holes are the gaps between where each zone will be. After the snap, they are the gaps between actual defenders. */
 /* The ball's trip: snap from C to Q, then a list of legs (pitch, handoff, lateral, pass), each with a release and arrival time. */
@@ -2203,13 +2238,13 @@ function holesLayer(f, roles, t) {
 function renderField() {
   const vb = `0 0 ${fieldW() * S} ${FIELD_H}`;
   if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
-  svg.innerHTML = fieldMarkup(state.t);
+  svg.innerHTML = fieldMarkup(state.t, state.mt);
 }
-function fieldMarkup(t) {
+function fieldMarkup(t, mt = null) {
   const run = state.run, play = state.play;
   const w = fieldW();
   let s = staticFor(w);
-  const f = run ? frameAt(t) : null;
+  const f = run ? (mt === null ? frameAt(t) : motionFrame(frameAt(t), mt)) : null;
   const def = run ? run.def : null, roles = run ? run.sim.roles : [];
 
   if (run && def.defenders.some(d => d.role === 'rush')) {
@@ -2234,7 +2269,7 @@ function fieldMarkup(t) {
     if (pl.motion) s += `<path d="${zigzag([...pl.motion, pl.start])}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="2" stroke-linejoin="round"/>`;
   });
   play.players.forEach(pl => {
-    if (pl.blocker) return;   // a 7v7 center who snaps and stays in has no route to draw
+    if (pl.blocker || staysIn(pl)) return;   // a 7v7 center who snaps and stays in, or a back who stays in: no route to draw
     const dash = pl.dashed ? ' stroke-dasharray="5 5"' : '';
     s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="${pl.qb ? 2.5 : 3}" stroke-linejoin="round" stroke-linecap="round"${dash} marker-end="url(#ah-${pl.color})"/>`;
     if (state.changes[pl.id]) {
@@ -2274,6 +2309,7 @@ function fieldMarkup(t) {
       s += `<circle cx="${cx}" cy="${cy}" r="10" style="fill:${COLOR[pl.color]};stroke:var(--chalk)" stroke-width="1.5"/>`;
       s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" class="lbl" font-size="11" fill="#fff">${pl.label}</text>`;
     }
+    if (t === 0 && staysIn(pl)) s += `<text x="${cx}" y="${cy + 24}" text-anchor="middle" class="lbl" font-size="9" letter-spacing="1" style="fill:var(--chalk)">STAYS IN</text>`;
   });
   if (run) s += ballLayer(t, f);
   if (run && run.ev.run && t >= run.ev.run.th) {
@@ -2308,13 +2344,14 @@ function fieldMarkup(t) {
 function playSketch(p) {
   const w = fieldW(p);
   let s = staticFor(w).replace(/<defs>[\s\S]*?<\/defs>/, '');
-  p.players.forEach(pl => { if (!pl.blocker) s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
+  p.players.forEach(pl => { if (!pl.blocker && !staysIn(pl)) s += `<path d="${routePath(pl)}" fill="none" style="stroke:${COLOR[pl.color]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`; });
   p.players.forEach(pl => { s += `<circle cx="${X(pl.start[0])}" cy="${Y(pl.start[1])}" r="10" style="fill:${COLOR[pl.color]};stroke:var(--chalk)" stroke-width="1.5"/>`; });
   return `<svg viewBox="0 0 ${w * S} ${FIELD_H}" aria-hidden="true">${s}</svg>`;
 }
 
 /* ---------- timeline ---------- */
 function setT(t) {
+  state.mt = null;   // any move on the timeline ends the motion
   state.t = clamp(+t, 0, tEnd());
   $('scrub').value = state.t;
   $('clockT').textContent = fmtT(state.t);
@@ -2349,7 +2386,11 @@ function tick(ts) {
   if (!state.playing) return;
   const dt = last ? (ts - last) / 1000 : 0; last = ts;
   if (holdUntil) {
-    if (ts >= holdUntil) { holdUntil = 0; setT(0); }
+    if (ts >= holdUntil) { holdUntil = 0; setT(0); startMotion(); }
+  } else if (state.mt !== null) {
+    state.mt += dt * state.speed;
+    if (state.mt >= motionTime(state.play)) setT(0);
+    else renderField();
   } else {
     const nt = state.t + dt * state.speed;
     if (nt >= tEnd()) {
@@ -2361,9 +2402,14 @@ function tick(ts) {
   }
   raf = requestAnimationFrame(tick);
 }
+// playback from the snap runs any pre-snap motion first
+function startMotion() {
+  if (state.t === 0 && state.run && motionTime(state.play) > 0) { state.mt = 0; $('clockL').textContent = 'Motion'; renderField(); }
+}
 function play() {
   if (state.t >= tEnd() - 0.01) setT(0);
   state.playing = true; last = 0; holdUntil = 0; completed = false;
+  startMotion();
   $('fieldPlay').hidden = true;
   $('playBtn').innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"/></svg><span class="pl">Pause</span>';
   $('playBtn').setAttribute('aria-label', 'Pause');
@@ -2371,6 +2417,7 @@ function play() {
 }
 function stop() {
   state.playing = false; cancelAnimationFrame(raf);
+  if (state.mt !== null) setT(0);   // paused during the motion: back to the snap, where defenders can be dragged
   $('fieldPlay').hidden = state.t > 0;
   $('playBtn').innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg><span class="pl">Run play</span>';
   $('playBtn').setAttribute('aria-label', 'Run the play');
@@ -3657,7 +3704,7 @@ function normalizePlay(raw, id) {
     if (r.star || r.shape === 'star') p.shape = 'star';
     if (r.dashed) p.dashed = true;
     if (r.fake) p.fake = true;
-    if (Array.isArray(r.motion) && r.motion.length) p.motion = r.motion.map(m => toPt(m, start)).filter(Boolean).slice(0, 4).map(m => m.slice(0, 2));
+    if (Array.isArray(r.motion) && r.motion.length) p.motion = r.motion.map(m => toPt(m, start, w)).filter(Boolean).slice(0, 4).map(m => m.slice(0, 2));
     players.push(p);
   }
   if (players.filter(p => p.eligible).length < 2) throw new Error('A play needs at least two receivers.');
@@ -4563,15 +4610,15 @@ async function renderGif(progress) {
     .replace(/class="def[^"]*"/g, '');
   const mark = !account.user;   // signed out, the GIF carries the site address over the field
   const title = `${state.play.name}  ·  vs ${state.cov ? covsFor(state.play)[state.cov].name : 'no defense'}${state.blitz ? ' + extra rusher' : ''}${rushNote()}`;
-  const draw = async t => {
-    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmtOf(state.play).w * S} ${FIELD_H}" width="${W}" height="${FH}">${resolve(fieldMarkup(t))}</svg>`;
+  const draw = async (t, mt = null) => {
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmtOf(state.play).w * S} ${FIELD_H}" width="${W}" height="${FH}">${resolve(fieldMarkup(t, mt))}</svg>`;
     const img = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr));
     ctx.fillStyle = tok('--panel'); ctx.fillRect(0, 0, W, CAP);
     ctx.fillStyle = tok('--ink'); ctx.font = '700 17px Barlow, Arial, sans-serif'; ctx.textBaseline = 'middle';
     let tt = title; while (ctx.measureText(tt).width > W - 130 && tt.length > 10) tt = tt.slice(0, -2);
     ctx.fillText(tt === title ? tt : tt + '…', 14, CAP / 2);
     ctx.fillStyle = tok('--muted'); ctx.font = '600 13px Barlow, Arial, sans-serif'; ctx.textAlign = 'right';
-    ctx.fillText(`${t.toFixed(1)}s · Open Grass`, W - 14, CAP / 2); ctx.textAlign = 'left';
+    ctx.fillText(`${mt === null ? t.toFixed(1) + 's' : 'Motion'} · Open Grass`, W - 14, CAP / 2); ctx.textAlign = 'left';
     ctx.drawImage(img, 0, CAP, W, FH);
     if (mark) {
       ctx.font = '700 15px Barlow, Arial, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
@@ -4583,14 +4630,16 @@ async function renderGif(progress) {
     }
     return ctx.getImageData(0, 0, W, H).data;
   };
-  const times = [];
-  for (let k = 0; k <= Math.round(T * fps); k++) times.push(k / fps);
+  // pre-snap motion first (fieldMarkup's mt), then the play from the snap
+  const times = [], MT = motionTime(state.play);
+  for (let k = 0; k < Math.round(MT * fps); k++) times.push([0, k / fps]);
+  for (let k = 0; k <= Math.round(T * fps); k++) times.push([k / fps, null]);
   const samples = [];
   for (const t of [0, T / 3, (2 * T) / 3, T]) samples.push(await draw(t));
   const palette = buildPalette(samples), toIdx = indexer(palette);
   const frames = [];
   for (let i = 0; i < times.length; i++) {
-    frames.push({ idx: toIdx(await draw(times[i])), delay: i === 0 ? 80 : i === times.length - 1 ? 180 : 10 });
+    frames.push({ idx: toIdx(await draw(...times[i])), delay: i === 0 ? 80 : i === times.length - 1 ? 180 : 10 });
     progress(i / times.length);
     if (i % 4 === 3) await new Promise(r => setTimeout(r, 0));
   }
