@@ -1688,8 +1688,14 @@ function simulate(play, defense, opts = {}) {
           if (target[1] < floor) target = [target[0], floor];
         }
         const dx = target[0] - d.p[0], dy = target[1] - d.p[1], m = Math.hypot(dx, dy);
-        const step = speed * DT;
-        if (m > 0) d.p = m <= step ? [...target] : [d.p[0] + dx / m * step, d.p[1] + dy / m * step];
+        const step = speed * DT, was = d.p;
+        if (caught && t > ballRun.th) {
+          // after the catch (display only) defenders carry momentum like the ball carrier: no stopping or reversing on the spot
+          const want = m > 0 ? (m <= step ? [dx / m * m / DT, dy / m * m / DT] : [dx / m * speed, dy / m * speed]) : [0, 0];
+          d.v = steerStep(d.v || [0, 0], want, 1, DT, Math.max(speed, Math.hypot(...want)));
+          d.p = [d.p[0] + d.v[0] * DT, d.p[1] + d.v[1] * DT];
+        } else if (m > 0) d.p = m <= step ? [...target] : [d.p[0] + dx / m * step, d.p[1] + dy / m * step];
+        if (caught && t <= ballRun.th) d.v = [(d.p[0] - was[0]) / DT, (d.p[1] - was[1]) / DT];
       }
     }
     if (carrier && !ballRun.tackle) {
@@ -1878,30 +1884,58 @@ function passLeg(sim, ev, holder, ready, at = (id, t) => offAt(sim, id, t)) {
   return { from: holder, to: top, kind: 'pass', release, arrive };
 }
 
-/* After the catch the ball carrier heads for his sideline and up the field: on the left half of the field he only runs up, left, or
-   anywhere between (right half: up and right). Inside that fan he picks the heading that keeps him away from the defenders, favoring 45°
-   (equal parts up and out) when he's clear; within 3 yards of the sideline he turns up it. */
+/* After the catch the ball carrier heads for his sideline and up the field. His sideline is the one he's already running toward (a
+   crosser keeps going the way he's going), or, if he's barely moving sideways, the one on the half he caught it on. He can't stop or
+   turn on the spot: his velocity changes by at most STEER_ACC yd/s each second, so reversing a full-speed crosser takes about two seconds.
+   Each frame he tries two-step paths (a first heading for STEER_T1 s, then a second one up to 80° toward his sideline, or carrying on),
+   run with that same limit, and takes the one that gets the most yards before the first defender could reach him (a defender closes
+   at 5.2 yd/s with a yard of reach; stepping out of bounds ends the run), plus STEER_ALIVE yards a second for staying clear, so he
+   steps around a defender in his lane instead of running into him for a yard. Getting outside counts for a bit while he's more than
+   3 yards from his sideline, so in the open he runs about 45° up and out. The first heading may also cut back inside (up to 60°) for
+   STEER_CUT yards, so he only does it when the outside is closed. */
+const STEER_T1 = 0.4, STEER_H = 1.5, STEER_DT = 0.1, STEER_ALIVE = 2.5, STEER_CUT = 1.0, STEER_ACC = 8, STEER_SIDE_V = 2.0;
+// one step from velocity vel toward dir * speed: the velocity changes by at most STEER_ACC * dt, and stays under max (default speed)
+function steerStep(vel, dir, speed, dt, max = speed) {
+  const goal = [dir[0] * speed, dir[1] * speed], want = [goal[0] - vel[0], goal[1] - vel[1]], m = Math.hypot(...want), cap = STEER_ACC * dt;
+  const v = m > cap ? [vel[0] + want[0] / m * cap, vel[1] + want[1] / m * cap] : goal;
+  const n = Math.hypot(...v);
+  if (n <= max) return v;
+  // over his top speed (or a new, lower one): slow down, but that takes time too
+  const s = [v[0] / n * max - vel[0], v[1] / n * max - vel[1]], k = Math.min(1, cap / (Math.hypot(...s) || 1));
+  return [vel[0] + s[0] * k, vel[1] + s[1] * k];
+}
 function steerCarrier(br, defs, speed, w) {
   const pos = br.pos, mid = w / 2;
-  if (!br.side) br.side = pos[0] < mid ? -1 : pos[0] > mid ? 1 : Math.sign(br.vel[0]) || 1;   // the half he catches it on, for the whole run
+  if (!br.side) br.side = Math.abs(br.vel[0]) >= STEER_SIDE_V ? Math.sign(br.vel[0])
+    : pos[0] < mid ? -1 : pos[0] > mid ? 1 : Math.sign(br.vel[0]) || 1;   // for the whole run
   const side = br.side, room = side > 0 ? w - 1 - pos[0] : pos[0] - 1;   // yards to his sideline
-  let best = null, bs = -Infinity;
-  for (let a = 0; a <= 80; a += 10) {
-    const r = side * a * Math.PI / 180, dir = [Math.sin(r), Math.cos(r)];
-    let margin = Infinity, ok = true;
-    for (const tau of [0.25, 0.5, 0.75, 1.0]) {
-      const q = [pos[0] + dir[0] * speed * tau, pos[1] + dir[1] * speed * tau];
-      if (q[0] < 0.5 || q[0] > w - 0.5) { ok = false; break; }
-      for (const d of defs) margin = Math.min(margin, dist(d.p, q) - 5.2 * tau - 1.0);
+  const head = a => { const r = side * a * Math.PI / 180; return [Math.sin(r), Math.cos(r)]; };
+  // yards up the field, plus some for getting outside, at the moment a defender could first reach him (or at the horizon)
+  const value = (d1, d2) => {
+    let q = pos, v = br.vel, alive = 0;
+    for (let tau = STEER_DT; tau <= STEER_H + 1e-9; tau += STEER_DT) {
+      v = steerStep(v, tau <= STEER_T1 + 1e-9 ? d1 : d2, speed, STEER_DT);
+      const n = [q[0] + v[0] * STEER_DT, q[1] + v[1] * STEER_DT];
+      if (n[0] < 0.5 || n[0] > w - 0.5) break;
+      q = n; alive = tau;
+      // a defender can get there if it's within his top speed and he can bend his momentum (d.v) that far in time
+      if (defs.some(df => dist(df.p, q) <= 5.2 * tau + 1.0 && (!df.v || dist([df.p[0] + df.v[0] * tau, df.p[1] + df.v[1] * tau], q) <= STEER_ACC * tau * tau / 2 + 1.0))) break;
     }
-    if (!ok && a > 0) continue;
-    const lane = room > 3 ? (dir[1] + side * dir[0]) / 2 : dir[1];
-    const score = lane + 0.8 * clamp(margin, -8, 1);
-    if (score > bs) { bs = score; best = dir; }
+    const out = side * (q[0] - pos[0]);
+    return q[1] - pos[1] + (room > 3 ? 0.6 * clamp(out, 0, room - 3) : 0) + STEER_ALIVE * alive;
+  };
+  let best = null, bs = -Infinity;
+  for (let a1 = -60; a1 <= 80; a1 += 10) {
+    const d1 = head(a1);
+    for (let a2 = 0; a2 <= 90; a2 += 10) {
+      const d2 = a2 === 90 ? d1 : head(a2);   // 90: carry on with the first heading
+      if (a2 === 90 && a1 >= 0) continue;
+      // cutting back inside gives up the sideline
+      const score = value(d1, d2) - (a1 < 0 ? STEER_CUT : 0);
+      if (score > bs) { bs = score; best = d1; }
+    }
   }
-  // he can't change direction instantly (a crosser has to plant and turn outside): blend toward the new heading
-  const v = [br.vel[0] * 0.4 + best[0] * speed * 0.6, br.vel[1] * 0.4 + best[1] * speed * 0.6], m = Math.hypot(...v) || 1;
-  br.vel = [v[0] / m * speed, v[1] / m * speed];
+  br.vel = steerStep(br.vel, best, speed, DT);
   br.pos = [clamp(pos[0] + br.vel[0] * DT, 0.5, w - 0.5), pos[1] + br.vel[1] * DT];
 }
 
